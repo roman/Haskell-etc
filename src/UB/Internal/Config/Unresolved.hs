@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 module UB.Internal.Config.Unresolved where
 
@@ -13,8 +14,6 @@ import qualified Data.EDN.Types.Class as EDN
 
 --------------------------------------------------------------------------------
 -- Types
-
-type ConfigKey = Text
 
 data ConfigSource
   = File
@@ -38,9 +37,12 @@ data ConfigValue
   = ConfigValue { defaultValue  :: Maybe EDN.Value
                 , configSources :: ConfigSources
                 }
+  | SubConfig { subConfig :: Map EDN.Value ConfigValue }
   deriving (Show, Eq)
 
-type Config = Map ConfigKey ConfigValue
+newtype Config
+  = Config { fromConfig :: ConfigValue }
+  deriving (Show, EDN.FromEDN)
 
 --------------------------------------------------------------------------------
 -- Constants
@@ -155,6 +157,10 @@ parseConfigValueWithMeta taggedVal =
 instance EDN.FromEDN ConfigValue where
   parseEDN taggedVal =
     case taggedVal of
+      EDN.NoTag (EDN.Map m) ->
+        SubConfig
+          <$> Map.traverseWithKey (\_k val -> EDN.parseEDN val) m
+
       EDN.NoTag val ->
         return
           <| ConfigValue (Just val) fileConfigSource

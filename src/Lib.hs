@@ -14,13 +14,8 @@ import qualified Data.EDN.Types.Class as EDN
 import qualified Data.Vector as V
 
 
-data FileConfigSource
-  = UnresolvedFile
-  | ResolvedFile { index :: Int
-                 , filename :: Text }
-
-data ConfigSource
-  = File     { source  :: FileConfigSource }
+data
+  = File
   | EnvVar   { varname :: Text }
   | OptParse { option  :: Text }
   deriving (Show, Eq)

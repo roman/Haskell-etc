@@ -16,7 +16,9 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     UB.Internal.Config.Unresolved
+                       , UB.Internal.Config.Resolver
                        , UB.Prelude
+                       , UB.EDN
   build-depends:       base >= 4.7 && < 5
                        , bytestring
                        , containers
@@ -25,6 +27,8 @@ library
                        , hedn
                        , unordered-containers
                        , vector
+                       , text
+                       , lens
 
   default-language:    Haskell2010
 
@@ -46,6 +50,7 @@ test-suite configtool-test
                      , text
                      , hedn
                      , configtool
+                     , containers
                      , tasty
                      , tasty-hunit
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall

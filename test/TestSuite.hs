@@ -3,7 +3,7 @@
 module Main where
 
 import UB.Prelude
-import qualified UB.Internal.Config.Unresolved.Test as Unresolved
+import qualified UB.Internal.Config.UnresolvedTests as Unresolved
 import Test.Tasty (defaultMain)
 
 main :: IO ()
