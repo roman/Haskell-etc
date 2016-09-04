@@ -18,15 +18,15 @@ library
   exposed-modules:     UB.Config
                        , UB.Prelude
   other-modules:       UB.Config.Internal.Types
-                       , UB.Lens.EDN
                        , UB.Config.Internal.Unresolved
-                       , UB.Config.Internal.Resolver
+                       , UB.Config.Internal.Spec
+                       , UB.Config.Internal.Plain
   build-depends:       base >= 4.7 && < 5
                        , bytestring
                        , containers
                        , protolude
                        , exceptions
-                       , hedn
+                       , aeson
                        , unordered-containers
                        , vector
                        , text
@@ -49,8 +49,8 @@ test-suite configtool-test
   build-depends:       base
                      , protolude
                      , bytestring
+                     , aeson
                      , text
-                     , hedn
                      , configtool
                      , containers
                      , tasty
