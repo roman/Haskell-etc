@@ -2,9 +2,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Internal.Config.Resolver where
+module UB.Config.Internal.Resolver where
 
-import UB.Internal.Types
+import UB.Config.Internal.Types
 import UB.Prelude hiding ((&))
 import UB.Lens.EDN
 
@@ -17,7 +17,6 @@ import Data.Vector (Vector)
 import System.Environment (getEnv, lookupEnv)
 
 import qualified Control.Lens as L
-import qualified UB.Internal.Config.Unresolved as Unresolved
 import qualified Data.ByteString.Lazy.Char8 as B8
 import qualified Data.EDN as EDN
 import qualified Data.EDN.Types.Class as EDN (fromEDNv, Result(..))
@@ -26,6 +25,10 @@ import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text (encodeUtf8)
 import qualified Data.Vector as Vector
 import qualified Data.Map as Map
+
+import qualified UB.Config.Internal.Unresolved as Unresolved
+
+--------------------------------------------------------------------------------
 
 type ConfigKey = Text
 

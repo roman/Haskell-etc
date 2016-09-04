@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Internal.Types where
+module UB.Config.Internal.Types where
 
 import UB.Prelude
 

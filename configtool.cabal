@@ -15,10 +15,12 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     UB.Internal.Config.Unresolved
-                       , UB.Internal.Config.Resolver
+  exposed-modules:     UB.Config
                        , UB.Prelude
-                       , UB.EDN
+  other-modules:       UB.Config.Internal.Types
+                       , UB.Lens.EDN
+                       , UB.Config.Internal.Unresolved
+                       , UB.Config.Internal.Resolver
   build-depends:       base >= 4.7 && < 5
                        , bytestring
                        , containers

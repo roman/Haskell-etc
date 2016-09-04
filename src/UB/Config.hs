@@ -6,7 +6,7 @@ module UB.Config
   , Resolver.getConfigValue
   ) where
 
-import qualified UB.Internal.Config.Unresolved as Unresolved
-import qualified UB.Internal.Config.Resolver as Resolver
+import qualified UB.Config.Internal.Unresolved as Unresolved
+import qualified UB.Config.Internal.Resolver as Resolver
 
 type UnresolvedConfig = Unresolved.Config

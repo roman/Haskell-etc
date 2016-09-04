@@ -1,13 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
-module UB.Internal.Config.Unresolved where
+module UB.Config.Internal.Unresolved where
 
 import Prelude (fail)
 import UB.Prelude
-import UB.Internal.Types
+import UB.Config.Internal.Types
 import Control.Monad.Catch (MonadThrow(..))
-import Data.EDN.Types.Class (parseMaybe)
 
 import qualified Data.Text as Text
 import qualified Data.Map as Map
