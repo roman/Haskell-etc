@@ -4,19 +4,26 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module UB.Internal.Config.Resolver where
 
+import UB.Internal.Types
 import UB.Prelude hiding ((&))
 import UB.Lens.EDN
 
-import Data.Vector (Vector)
 import Control.Lens ((&), (.~), (%~))
-import System.Environment (getEnv, lookupEnv)
+import Control.Monad.Catch (MonadThrow(..))
 import Data.Maybe (fromMaybe)
+import Data.Ord (comparing)
+import Data.Set (Set)
+import Data.Vector (Vector)
+import System.Environment (getEnv, lookupEnv)
 
 import qualified Control.Lens as L
 import qualified UB.Internal.Config.Unresolved as Unresolved
 import qualified Data.ByteString.Lazy.Char8 as B8
 import qualified Data.EDN as EDN
+import qualified Data.EDN.Types.Class as EDN (fromEDNv, Result(..))
+import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text (encodeUtf8)
 import qualified Data.Vector as Vector
 import qualified Data.Map as Map
 
@@ -24,15 +31,32 @@ type ConfigKey = Text
 
 data ConfigSource
   = File     { filepath :: Text
-             , index    :: Int
+             , configIndex    :: Int
              , value    :: EDN.Value }
-  | EnvVar   { value :: EDN.Value, envVar :: Text }
-  | OptParse { option :: Text }
-  deriving (Show)
+  | EnvVar   { envVar :: Text, value :: EDN.Value }
+  | OptParse { value :: EDN.Value, option :: Text }
+  deriving (Show, Eq)
+
+instance Ord ConfigSource where
+  compare a b =
+    case (a, b) of
+      (OptParse {}, _) ->
+        LT
+
+      (_, OptParse {}) ->
+        GT
+
+      (EnvVar {}, _) ->
+        LT
+
+      (_, EnvVar {}) ->
+        GT
+
+      (File {}, File {}) ->
+        comparing configIndex a b
 
 data ConfigValue
-  = ConfigValue { configValue  :: EDN.Value
-                , configSource :: Vector [ConfigSource] }
+  = ConfigValue { configSource :: Set ConfigSource }
   | SubConfig { subConfig :: Map EDN.Value ConfigValue }
   deriving (Show)
 
@@ -47,11 +71,10 @@ $(L.makePrisms ''Config)
 -- Works like the _Just prism, but instead of not doing anything on Nothing, it
 -- creates a ConfigValue record
 _JustConfigValue
-  :: EDN.Value
-    -> Vector [ConfigSource]
+  :: Set ConfigSource
     -> L.Prism (Maybe ConfigValue) (Maybe ConfigValue) ConfigValue ConfigValue
-_JustConfigValue ednVal source =
-  L.prism Just <| maybe (Right <| ConfigValue ednVal source) Right
+_JustConfigValue source =
+  L.prism Just <| maybe (Right <| ConfigValue source) Right
 
 
 _JustSubConfig :: L.Prism (Maybe ConfigValue) (Maybe ConfigValue) ConfigValue ConfigValue
@@ -60,188 +83,183 @@ _JustSubConfig =
 
 --------------------------------------------------------------------------------
 
-readEnvVar :: Text -> IO Text
-readEnvVar name =
-  Text.pack <$> getEnv (Text.unpack name)
+resolveEnvVarSource
+  :: Unresolved.ConfigSources
+  -> IO (Maybe ConfigSource)
+resolveEnvVarSource unresolvedSources =
+  let
+    toEnvVarSource varname value =
+      value
+      |> Text.pack
+      |> EDN.String
+      |> EnvVar varname
 
-maybeReadEnvVar :: Text -> IO (Maybe Text)
-maybeReadEnvVar name =
-  (Text.pack <$>) <$> lookupEnv (Text.unpack name)
+  in
+    case Unresolved.envVar unresolvedSources of
+      Unresolved.Pending (Unresolved.EnvVar varname) ->
+        fmap (fmap <| toEnvVarSource varname)
+             (lookupEnv <| Text.unpack varname)
 
--- buildConfigResolver
---   :: (Int, Text)
---     -> L.Lens' Unresolved.Config Unresolved.Config
---     -> Vector (Config -> IO Config)
-buildConfigResolver (index, filepath) lensFn config =
-  case config of
-    Unresolved.Config (Unresolved.SubConfig configm) ->
-      let
+      Unresolved.Skip ->
+        return Nothing
 
-        step key unresolvedConfigVal acc =
-          case unresolvedConfigVal of
-            Unresolved.ConfigValue defaultVal sources ->
-              case (defaultVal, sources) of
+resolveDefaultValue
+  :: Int
+  -> Text
+  -> EDN.Value
+  -> ConfigSource
+resolveDefaultValue configIndex filepath defaultValue =
+  File filepath configIndex defaultValue
 
-                -- there is no default value on the file configuration
-                -- but there is an EnvVar
-                ( Nothing
-                  , Unresolved.ConfigSources
-                      (Unresolved.Pending (Unresolved.EnvVar varname))
-                      _
-                      _
-                  ) ->
-                  let
-                    result =
-                      Vector.singleton <|
-                      (\resolvedConfig -> do
-                          envValue <- EDN.String <$> readEnvVar varname
+envVarConfigResolver configIndex filepath mDefaultValue sources configLens config = do
+  mEnvVarSource <- resolveEnvVarSource sources
 
-                          let
-                            sources =
-                              [ EnvVar envValue varname ]
+  let
+    mFileSource =
+      resolveDefaultValue configIndex filepath <$> mDefaultValue
 
-                            fieldLens =
-                              lensFn
-                              << _SubConfig
-                              << L.at key
-                              << (_JustConfigValue envValue Vector.empty)
-                              << _ConfigValue
+    sources =
+      [mEnvVarSource, mFileSource]
+      |> catMaybes
+      |> Set.fromList
 
-                          return <|
-                            resolvedConfig
-                            & (fieldLens << L._1) .~ envValue
-                            & (fieldLens << L._2) %~ (Vector.cons sources))
-                  in
-                    Vector.concat [ acc
-                                  , result ]
+  return <| config & configLens %~ (Set.union sources)
 
+buildEnvVarResolver_ configIndex filepath configLens unresolvedConfigValue =
+  let
+    configEntryReducer configKey unresolvedConfigVal acc =
+      case unresolvedConfigVal of
+        Unresolved.ConfigValue mdefaultVal sources ->
+          let
+            subConfigLens =
+              configLens
+              << _SubConfig
+              << L.at configKey
+              << (_JustConfigValue Set.empty)
+              << _ConfigValue
 
-                -- there is a default value on the file configuration
-                -- but there is an EnvVar and it has precedence
-                ( Just fileValue
-                  , Unresolved.ConfigSources
-                      (Unresolved.Pending (Unresolved.EnvVar varname))
-                      _
-                      _
-                  ) ->
-                  let
-                    result =
-                      Vector.singleton <|
-                      (\resolvedConfig -> do
-                          menvValue <- (EDN.String <$>) <$> maybeReadEnvVar varname
+            resolver =
+              Vector.singleton <|
+                envVarConfigResolver configIndex
+                                     filepath
+                                     mdefaultVal
+                                     sources
+                                     subConfigLens
 
-                          let
-                            ednValue =
-                              fromMaybe fileValue menvValue
+          in
+            Vector.concat [ acc, resolver ]
 
-                            sources =
-                              maybe
-                              [ File filepath index fileValue ]
-                              (\envValue ->
-                                  [ EnvVar envValue varname
-                                  , File filepath index fileValue ])
-                              menvValue
+        Unresolved.SubConfig {} ->
+          let
+            subConfigLens =
+              configLens
+              << _SubConfig
+              << L.at configKey
+              << _JustSubConfig
 
-                            fieldLens =
-                              lensFn
-                              << _SubConfig
-                              << L.at key
-                              << (_JustConfigValue ednValue Vector.empty)
-                              << _ConfigValue
-
-                          return <|
-                            resolvedConfig
-                            & (fieldLens << L._1)
-                            .~ ednValue
-                            & (fieldLens << L._2)
-                            %~ (Vector.cons sources))
-                  in
-                    Vector.concat [ acc
-                                  , result ]
-
-
-                -- there is only a default value on the file configuration
-                ( Just fileValue
-                  , Unresolved.ConfigSources Unresolved.Skip
-                                             _
-                                             _
-                  ) ->
-                  let
-                    result =
-                      Vector.singleton <|
-                        (\resolvedConfig ->
-                           let
-                             sources =
-                               [ File filepath index fileValue ]
-
-                             fieldLens =
-                               lensFn
-                               << _SubConfig
-                               << L.at key
-                               << (_JustConfigValue fileValue Vector.empty)
-                               << _ConfigValue
-
-                           in
-                             return <|
-                               resolvedConfig
-                                 & (fieldLens << L._1) .~ fileValue
-                                 & (fieldLens << L._2) %~ (Vector.cons sources))
-                  in
-                    Vector.concat [ acc
-                                  , result ]
-
-                -- there is no default value, and no EnvVar entry, this
-                -- means is possibly another source like OptParser
-                ( Nothing
-                  , configSources@(
-                      Unresolved.ConfigSources Unresolved.Skip
-                                               (Unresolved.Pending _)
-                                               -- OptParser option should be
-                                               -- there
-                                               _)
-                  ) ->
-                  acc
-
-                _ ->
-                  acc
-
-            Unresolved.SubConfig {} ->
-              Vector.concat [ acc
-                            , buildConfigResolver
-                                   (index, filepath)
-                                   (lensFn << _SubConfig << L.at key << _JustSubConfig)
-                                   (Unresolved.Config unresolvedConfigVal)
-                            ]
-      in
+            resolver =
+              buildEnvVarResolver_ configIndex
+                                   filepath
+                                   subConfigLens
+                                   unresolvedConfigVal
+          in
+            Vector.concat [ acc, resolver ]
+  in
+    case unresolvedConfigValue of
+      Unresolved.SubConfig configm ->
         if Map.null configm then
           Vector.empty
         else
-          Map.foldWithKey step Vector.empty configm
+          Map.foldWithKey configEntryReducer Vector.empty configm
 
-    Unresolved.Config _ ->
-      -- error "malformed Unresolved.Config"
-      Vector.empty
+      _ ->
+        Vector.empty
 
-buildResolvers :: [Text] -> IO (Vector (Config -> IO Config))
-buildResolvers files =
+buildEnvVarResolver
+  :: Int
+  -> Unresolved.Config
+  -> Vector (Config -> IO Config)
+buildEnvVarResolver configIndex unresolvedConfig =
   let
-    step input@(index, filepath) = do
-      mUnresolvedConfig <- EDN.decode <$> B8.readFile (Text.unpack filepath)
-      case mUnresolvedConfig of
-        Nothing ->
-          return Vector.empty
+    filepath =
+      Unresolved.configFilePath unresolvedConfig
 
-        Just unresolvedConfig -> do
-          return <| buildConfigResolver input _Config unresolvedConfig
+    configValue =
+      Unresolved.configValue unresolvedConfig
   in
-    files
-    |> zip [0..]
-    |> mapM step
-    |> (Vector.concat <$>)
+    buildEnvVarResolver_ configIndex filepath _Config configValue
+
+buildEnvVarResolvers :: [Unresolved.Config] -> IO (Vector (Config -> IO Config))
+buildEnvVarResolvers unresolvedConfigList =
+  unresolvedConfigList
+  |> L.imapM (\configIndex unresolvedConfig ->
+               return <| buildEnvVarResolver configIndex unresolvedConfig)
+  |> (Vector.concat <$>)
 
 
-buildConfiguration :: [Text] -> IO Config
-buildConfiguration files =
-  files
-  |> buildResolvers
+resolveEnvVarConfiguration :: [Unresolved.Config] -> IO Config
+resolveEnvVarConfiguration unresolvedConfigList =
+  unresolvedConfigList
+  |> buildEnvVarResolvers
   >>= foldM (|>) (Config (SubConfig Map.empty))
+
+
+configValueToEdnMap :: ConfigValue -> EDN.TaggedValue
+configValueToEdnMap configValue =
+  case configValue of
+    ConfigValue sources ->
+      case Set.minView sources of
+        Nothing ->
+          error "config value is empty? impossible"
+        Just (source, _) ->
+          EDN.tag "" "" (value source)
+
+    SubConfig configm ->
+      configm
+      |> Map.foldWithKey (\key value acc ->
+                             Map.insert key (configValueToEdnMap value) acc)
+                         Map.empty
+      |> EDN.Map
+      |> EDN.tag "" ""
+
+getConfigValue
+  :: (MonadThrow m, EDN.FromEDN result)
+  => [Text]
+  -> Config
+  -> m result
+getConfigValue keys0 config@(Config configValue0) =
+  let
+    loop keys configValue =
+      case (keys, configValue) of
+        ([], ConfigValue sources) ->
+          case Set.minView sources of
+            Nothing ->
+              throwM <| InvalidConfigKeyPath keys0
+
+            Just (source, _) ->
+              case EDN.fromEDNv (value source) of
+                EDN.Error err ->
+                  throwM <| InvalidConfiguration (Text.pack err)
+
+                EDN.Success result ->
+                  return result
+
+        ([], configValue) ->
+          case EDN.fromEDN (configValueToEdnMap configValue) of
+            EDN.Error err ->
+              throwM <| InvalidConfiguration (Text.pack err)
+
+            EDN.Success result ->
+              return result
+
+        (k:keys1, SubConfig configm) ->
+          case Map.lookup (EDN.Keyword <| Text.encodeUtf8 k) configm of
+            Nothing ->
+              throwM <| InvalidConfigKeyPath keys0
+            Just configValue1 ->
+              loop keys1 configValue1
+
+        _ ->
+          throwM <| InvalidConfigKeyPath keys0
+  in
+    loop keys0 configValue0

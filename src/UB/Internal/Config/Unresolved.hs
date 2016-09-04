@@ -5,7 +5,11 @@ module UB.Internal.Config.Unresolved where
 
 import Prelude (fail)
 import UB.Prelude
+import UB.Internal.Types
+import Control.Monad.Catch (MonadThrow(..))
 import Data.EDN.Types.Class (parseMaybe)
+
+import qualified Data.Text as Text
 import qualified Data.Map as Map
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy.Char8 as LB8
@@ -16,8 +20,7 @@ import qualified Data.EDN.Types.Class as EDN
 -- Types
 
 data ConfigSource
-  = File
-  | EnvVar   { varname :: Text }
+  = EnvVar   { varname :: Text }
   | OptParse { option  :: Text }
   deriving (Show, Eq)
 
@@ -29,7 +32,6 @@ data ConfigSourceSpec
 data ConfigSources
   = ConfigSources { envVar   :: ConfigSourceSpec
                   , optParse :: ConfigSourceSpec
-                  , file     :: ConfigSourceSpec
                   }
   deriving (Show, Eq)
 
@@ -40,16 +42,10 @@ data ConfigValue
   | SubConfig { subConfig :: Map EDN.Value ConfigValue }
   deriving (Show, Eq)
 
-newtype Config
-  = Config { fromConfig :: ConfigValue }
-  deriving (Show, EDN.FromEDN)
-
---------------------------------------------------------------------------------
--- Constants
-
-fileConfigSource :: ConfigSources
-fileConfigSource =
-  ConfigSources Skip Skip (Pending File)
+data Config
+  = Config { configFilePath :: Text
+           , configValue    :: ConfigValue }
+  deriving (Show)
 
 --------------------------------------------------------------------------------
 -- EDN Parsers
@@ -115,27 +111,19 @@ parseEnvVarStatus val =
             <> show val
             <> " instead")
 
-configFileSourceStatus :: Maybe a -> ConfigSourceSpec
-configFileSourceStatus =
-  maybe
-    Skip
-    (always <| Pending File)
-
 parseConfigSources :: EDN.Value -> EDN.Parser ConfigSources
-parseConfigSources val = do
-  defVal   <- parseConfigDefValue val
+parseConfigSources val =
   ConfigSources
     <$> parseEnvVarStatus val
     <*> parseOptParseStatus val
-    <*> pure (configFileSourceStatus defVal)
 
-parseConfigValueWithMeta :: EDN.TaggedValue -> EDN.Parser ConfigValue
-parseConfigValueWithMeta taggedVal =
+parseConfigValueWithSpec :: EDN.TaggedValue -> EDN.Parser ConfigValue
+parseConfigValueWithSpec taggedVal =
   let
      EDN.Tagged val ns tag =
        taggedVal
   in
-     if ns == "config" && tag == "meta" then
+     if ns == "config" && tag == "spec" then
        case val of
          EDN.Map {} -> do
            defVal       <- parseConfigDefValue val
@@ -145,7 +133,7 @@ parseConfigValueWithMeta taggedVal =
              <| ConfigValue defVal sourceStatus
 
          _ ->
-           fail "#config/meta reader macro must be used before a map"
+           fail "#config/spec reader macro must be used before a map"
 
      else
        fail ("Invalid reader macro "
@@ -162,7 +150,27 @@ instance EDN.FromEDN ConfigValue where
           <$> Map.traverseWithKey (\_k val -> EDN.parseEDN val) m
 
       EDN.NoTag val ->
-        return
-          <| ConfigValue (Just val) fileConfigSource
+        let
+          fileConfigSource =
+            ConfigSources Skip Skip
+        in
+          return
+            <| ConfigValue (Just val) fileConfigSource
       _ ->
-        parseConfigValueWithMeta taggedVal
+        parseConfigValueWithSpec taggedVal
+
+--------------------------------------------------------------------------------
+-- Public API
+
+readConfigurationFile :: (MonadIO m, MonadThrow m) => Text -> m Config
+readConfigurationFile filepath = do
+  input <- liftIO <| LB8.readFile (Text.unpack filepath)
+  case EDN.eitherDecode input of
+    Left err ->
+      err
+      |> Text.pack
+      |> InvalidConfiguration
+      |> throwM
+
+    Right unresolvedConfig ->
+      return (Config filepath unresolvedConfig)
