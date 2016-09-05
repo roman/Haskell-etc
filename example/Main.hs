@@ -9,28 +9,13 @@ import UB.Prelude
 
 main :: IO ()
 main = do
-  spec <-
-    Config.readConfigSpec "test/fixtures/spec.json"
+  config <-
+    Config.readConfigFromAllSources
+      "test/fixtures/spec.json"
+      [ "test/fixtures/one.json"
+      , "test/fixtures/two.json" ]
+      (Opt.fullDesc
+       `mappend` Opt.progDesc "An Example of all configurations sources"
+       `mappend` Opt.header "example - a way to test all configuration sources")
 
-  envConfig  <-
-    Config.resolveEnvVars spec
-
-  fileConfig <-
-    Config.readConfigFromFiles [ "test/fixtures/one.json"
-                               , "test/fixtures/two.json" ]
-
-  let
-    configParser =
-      Config.configSpecToOptParser spec
-
-    programParser =
-      Opt.info
-        (Opt.helper <*> configParser)
-        (Opt.fullDesc
-        `mappend` Opt.progDesc "An Example of all configurations"
-        `mappend` Opt.header "example - a way to test all configuration sources")
-
-  optConfig <- Opt.execParser programParser
-  print (envConfig
-         <> optConfig
-         <> fileConfig)
+  print config

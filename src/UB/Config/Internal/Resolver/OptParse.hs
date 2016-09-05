@@ -23,10 +23,10 @@ optParseSpecToOptVarFieldMod optParseSpec =
   optParseSpecToOptSwitchFieldMod optParseSpec
   `mappend` maybe Opt.idm (Text.unpack >> Opt.metavar) (Spec.optParseMetavar optParseSpec)
 
-optParseSpecToConfigValueParser
+optParseSpecToJSONParser
   :: Spec.OptParseSpec
   -> Opt.Parser (Maybe JSON.Value)
-optParseSpecToConfigValueParser optParseSpec =
+optParseSpecToJSONParser optParseSpec =
   let
     optParseField =
       case Spec.optParseType optParseSpec of
@@ -47,12 +47,12 @@ optParseSpecToConfigValueParser optParseSpec =
     else
       Opt.optional optParseField
 
-configSpecToConfigValueOptParser_
+configSpecToConfigValueOptParser
   :: Text
   -> Spec.ConfigValue
   -> Opt.Parser ConfigValue
   -> Opt.Parser ConfigValue
-configSpecToConfigValueOptParser_ key specConfigValue parentConfigValueParser =
+configSpecToConfigValueOptParser key specConfigValue parentConfigValueParser =
   case specConfigValue of
     Spec.ConfigValue mDefaultValue sources ->
       case Spec.optParse sources of
@@ -61,27 +61,28 @@ configSpecToConfigValueOptParser_ key specConfigValue parentConfigValueParser =
 
         Just (Spec.OptParse optParseSpec) ->
           let
-            sourceOptParser =
-              fmap
-                (\mValue ->
-                    ConfigValue
-                    <| Set.singleton
-                    <| case (mValue, mDefaultValue) of
-                         (Just val, _) ->
-                           OptParse val
+            jsonToConfigValue mValue =
+              ConfigValue
+              <| Set.singleton
+              <| case (mValue, mDefaultValue) of
+                   (Just val, _) ->
+                     OptParse val
 
-                         (_, Just defValue) ->
-                           Default defValue
+                   (_, Just defValue) ->
+                     Default defValue
 
-                         (Nothing, Nothing) ->
-                           error <| "invalid spec creation" <> show sources)
-                (optParseSpecToConfigValueParser optParseSpec)
+                   (Nothing, Nothing) ->
+                     error <| "invalid spec creation" <> show sources
+
+            configValueOptParser =
+              fmap jsonToConfigValue
+                   (optParseSpecToJSONParser optParseSpec)
           in
             (\configValue parentConfigValue ->
                parentConfigValue
                  &  (_SubConfig << at key << _JustConfigValue Set.empty)
                  .~ configValue)
-              <$> sourceOptParser
+              <$> configValueOptParser
               <*> parentConfigValueParser
 
         Just _ ->
@@ -91,7 +92,7 @@ configSpecToConfigValueOptParser_ key specConfigValue parentConfigValueParser =
       let
         subConfigParser =
           HashMap.foldrWithKey
-            configSpecToConfigValueOptParser_
+            configSpecToConfigValueOptParser
             (pure <| SubConfig HashMap.empty)
             subConfigSpec
       in
@@ -112,6 +113,6 @@ configSpecToOptParser (Spec.ConfigSpec specConfigValue) =
     Spec.SubConfig configSpec ->
       Config
       <$> HashMap.foldrWithKey
-            configSpecToConfigValueOptParser_
+            configSpecToConfigValueOptParser
             (pure <| SubConfig HashMap.empty)
             configSpec

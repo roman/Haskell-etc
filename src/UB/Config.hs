@@ -5,13 +5,17 @@ module UB.Config
   , Spec.readConfigSpec
   , Spec.parseConfigSpec
   , Plain.parseConfig
-  , Plain.readConfigFromFiles
   , Resolver.resolveEnvVars
   , Resolver.configSpecToOptParser
   , getConfigValue
   , getConfigValueWith
   , getSelectedConfigSource
   , getConfigSources
+
+  , readConfigFromAllSources
+  , readConfigFromEnv
+  , readConfigFromOptParse
+  , Plain.readConfigFromFiles
   ) where
 
 
@@ -22,6 +26,7 @@ import qualified Data.Aeson.Internal as JSON (iparse, formatError, IResult(..))
 import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
+import qualified Options.Applicative as Opt
 
 import UB.Prelude
 import UB.Config.Internal.Types
@@ -51,6 +56,7 @@ configValueToJsonObject configValue =
           HashMap.empty
       |> JSON.Object
 
+-- Can't add signature given JSON.Parser is not exposed ¯\_(ツ)_/¯
 -- getConfigValueWith
 --   :: MonadThrow m
 --   => (JSON.Value -> JSON.Parser value)
@@ -161,3 +167,50 @@ getConfigValue
   -> m result
 getConfigValue =
   getConfigValueWith JSON.parseJSON
+
+
+readConfigFromAllSources
+  :: Text
+  -> [Text]
+  -> Opt.InfoMod Config
+  -> IO Config
+readConfigFromAllSources specPath filepaths programFlags = do
+  spec <- Spec.readConfigSpec specPath
+
+  let
+    optConfigParser =
+      Resolver.configSpecToOptParser spec
+
+    programParser =
+      Opt.info
+        (Opt.helper <*> optConfigParser)
+        programFlags
+
+  optConfig  <- Opt.execParser programParser
+  envConfig  <- Resolver.resolveEnvVars spec
+  fileConfig <- Plain.readConfigFromFiles filepaths
+
+  return (optConfig <> envConfig <> fileConfig)
+
+readConfigFromEnv :: Text -> IO Config
+readConfigFromEnv specPath = do
+  spec <- Spec.readConfigSpec specPath
+  Resolver.resolveEnvVars spec
+
+readConfigFromOptParse
+  :: Text
+  -> Opt.InfoMod Config
+  -> IO Config
+readConfigFromOptParse specPath programFlags = do
+  spec <- Spec.readConfigSpec specPath
+
+  let
+    optConfigParser =
+      Resolver.configSpecToOptParser spec
+
+    programParser =
+      Opt.info
+        (Opt.helper <*> optConfigParser)
+        programFlags
+
+  Opt.execParser programParser
