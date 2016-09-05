@@ -28,6 +28,7 @@ library
                        , containers
                        , protolude
                        , exceptions
+                       , directory
                        , ansi-wl-pprint
                        , aeson
                        , unordered-containers

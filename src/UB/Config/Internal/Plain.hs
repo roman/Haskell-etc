@@ -5,6 +5,8 @@ module UB.Config.Internal.Plain where
 import Control.Lens hiding ((<|), (|>))
 import Control.Monad.Catch (MonadThrow(..))
 import Data.List (foldl1')
+import Data.Maybe (catMaybes)
+import System.Directory (doesFileExist)
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Internal as JSON (iparse, IResult(..))
 import qualified Data.ByteString.Lazy.Char8 as LB8
@@ -62,7 +64,15 @@ parseConfig fileIndex filepath' contents =
 readConfigFromFiles :: [Text] -> IO Config
 readConfigFromFiles files =
   files
-  |> imapM (\fileIndex filepath' -> do
-               contents <- LB8.readFile <| Text.unpack filepath'
-               parseConfig fileIndex filepath' contents)
+  |> imapM (\fileIndex filepath' ->
+               let
+                 filepathS = Text.unpack filepath'
+               in do
+                 fileExists <- doesFileExist filepathS
+                 if fileExists then do
+                   contents <- LB8.readFile filepathS
+                   Just <$> parseConfig fileIndex filepath' contents
+                 else
+                   return Nothing)
+  |> (catMaybes <$>)
   |> ((foldl1' (<>)) <$>)

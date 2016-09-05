@@ -20,7 +20,11 @@ data TestDbConfig
 readConfigFromFilesTests :: TestTree
 readConfigFromFilesTests =
   testGroup "readConfigFromFiles"
-    [ testCase "gives higher precedence to latter config files" <| do
+    [ testCase "ignores files that do not exist" <| do
+        _config <- SUT.readConfigFromFiles [ "test/fixtures/not_found.json" ]
+        assertBool "" True
+
+    , testCase "gives higher precedence to latter config files" <| do
         config <- SUT.readConfigFromFiles [ "test/fixtures/one.json"
                                           , "test/fixtures/two.json" ]
 
@@ -62,9 +66,11 @@ resolveEnvVarsTests =
         -- config sources for the user key must be 3
         maybe
           (assertFailure "expected config entry user not present")
-          (Set.size
-           >> assertEqual "unexpected number of config source entries"
-                          3)
+          (\result ->
+             assertEqual
+               ("unexpected number of config source entries " <> show result)
+               4
+               (Set.size result))
           (SUT.getConfigSources ["user"] config)
 
         case SUT.getSelectedConfigSource ["user"] config of
