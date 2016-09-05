@@ -116,9 +116,8 @@ buildEnvVarResolver
 buildEnvVarResolver (Spec.ConfigSpec configValue) =
   buildEnvVarResolver_ _Config configValue
 
-resolveEnvVars :: Spec.ConfigSpec -> Config -> IO Config
-resolveEnvVars specConfig config =
+resolveEnvVars :: Spec.ConfigSpec -> IO Config
+resolveEnvVars specConfig =
   specConfig
   |> buildEnvVarResolver
   |> foldM (|>) (Config (SubConfig HashMap.empty))
-  |> ((config <>) <$>)

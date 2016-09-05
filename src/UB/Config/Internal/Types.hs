@@ -33,34 +33,37 @@ data ConfigSource
              , value       :: JSON.Value }
   | EnvVar   { envVar :: Text
              , value :: JSON.Value }
-  | OptParse { option :: Text
-             , value :: JSON.Value }
+  | OptParse { value :: JSON.Value }
   | Default  { value :: JSON.Value }
   deriving (Show, Eq)
 
 instance Ord ConfigSource where
   compare a b =
-    case (a, b) of
-      (Default {}, _) ->
-        LT
+    if a == b then
+      EQ
+    else
+      case (a, b) of
+        (Default {}, _) ->
+          LT
 
-      (OptParse {}, _) ->
-        GT
+        (OptParse {}, _) ->
+          GT
 
-      (_, OptParse {}) ->
-        LT
+        (_, OptParse {}) ->
+          LT
 
-      (EnvVar {}, _) ->
-        GT
+        (EnvVar {}, _) ->
+          GT
 
-      (_, EnvVar {}) ->
-        LT
+        (_, EnvVar {}) ->
+          LT
 
-      (File {}, File {}) ->
-        comparing configIndex a b
+        (File {}, File {}) ->
+          comparing configIndex a b
 
-      (File {}, _) ->
-        GT
+        (File {}, _) ->
+          GT
+
 
 data ConfigValue
   = ConfigValue { configSource :: Set ConfigSource }

@@ -53,7 +53,11 @@ resolveEnvVarsTests =
         config0 <- SUT.readConfigFromFiles [ "test/fixtures/one.json"
                                            , "test/fixtures/two.json" ]
 
-        config <- SUT.resolveEnvVars spec config0
+        config1 <- SUT.resolveEnvVars spec
+
+        let
+          config =
+            config0 <> config1
 
         -- config sources for the user key must be 3
         maybe
@@ -80,7 +84,11 @@ resolveEnvVarsTests =
         config0 <- SUT.readConfigFromFiles [ "test/fixtures/one.json"
                                            , "test/fixtures/two.json" ]
 
-        config <- SUT.resolveEnvVars spec config0
+        config1 <- SUT.resolveEnvVars spec
+
+        let
+          config =
+            config0 <> config1
 
         case SUT.getSelectedConfigSource ["password"] config of
           Nothing ->
@@ -116,7 +124,12 @@ getConfigValueTests =
           config0 <- SUT.readConfigFromFiles [ "test/fixtures/one.json"
                                              , "test/fixtures/two.json" ]
 
-          config <- SUT.resolveEnvVars spec config0
+          config1 <- SUT.resolveEnvVars spec
+
+          let
+            config =
+              config0 <> config1
+
           case SUT.getConfigValueWith dbParser ["sub-system", "db"] config of
             Nothing ->
               assertFailure "Expected to parse a TestDbConfig record"

@@ -7,6 +7,7 @@ module UB.Config
   , Plain.parseConfig
   , Plain.readConfigFromFiles
   , Resolver.resolveEnvVars
+  , Resolver.configSpecToOptParser
   , getConfigValue
   , getConfigValueWith
   , getSelectedConfigSource
@@ -26,6 +27,7 @@ import UB.Prelude
 import UB.Config.Internal.Types
 import qualified UB.Config.Internal.Spec as Spec
 import qualified UB.Config.Internal.Resolver.EnvVar as Resolver
+import qualified UB.Config.Internal.Resolver.OptParse as Resolver
 import qualified UB.Config.Internal.Plain as Plain
 
 --------------------------------------------------------------------------------

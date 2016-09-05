@@ -1,7 +1,16 @@
 {
     "user": {
         "config/spec": {
-            "env": "USER"
+            "default": "roman",
+            "env": "USER",
+            "optparse": {
+                "long": "user",
+                "short": "u",
+                "metavar": "USER",
+                "help": "User of the system",
+                "type": "string",
+                "required": false
+            }
         }
     },
 
