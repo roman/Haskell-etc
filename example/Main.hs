@@ -16,6 +16,6 @@ main = do
       , "test/fixtures/two.json" ]
       (Opt.fullDesc
        `mappend` Opt.progDesc "An Example of all configurations sources"
-       `mappend` Opt.header "example - a way to test all configuration sources")
+       `mappend` Opt.header "configtool-example - a way to test all configuration sources")
 
-  print config
+  Config.printPrettyConfig config

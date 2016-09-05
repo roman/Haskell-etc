@@ -2,6 +2,7 @@
 module UB.Config
   ( Spec.ConfigSpec
   , ConfigSource (..)
+
   , Spec.readConfigSpec
   , Spec.parseConfigSpec
   , Plain.parseConfig
@@ -11,6 +12,9 @@ module UB.Config
   , getConfigValueWith
   , getSelectedConfigSource
   , getConfigSources
+  , Printer.renderConfig
+  , Printer.printPrettyConfig
+  , Printer.hPrintPrettyConfig
 
   , readConfigFromAllSources
   , readConfigFromEnv
@@ -19,6 +23,7 @@ module UB.Config
   ) where
 
 
+import Text.PrettyPrint.ANSI.Leijen (putDoc, hPutDoc)
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Set (Set)
 import qualified Data.Aeson as JSON
@@ -34,6 +39,7 @@ import qualified UB.Config.Internal.Spec as Spec
 import qualified UB.Config.Internal.Resolver.EnvVar as Resolver
 import qualified UB.Config.Internal.Resolver.OptParse as Resolver
 import qualified UB.Config.Internal.Plain as Plain
+import qualified UB.Config.Internal.Printer as Printer
 
 --------------------------------------------------------------------------------
 

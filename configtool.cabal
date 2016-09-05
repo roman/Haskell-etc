@@ -22,11 +22,13 @@ library
                        , UB.Config.Internal.Resolver.EnvVar
                        , UB.Config.Internal.Resolver.OptParse
                        , UB.Config.Internal.Plain
+                       , UB.Config.Internal.Printer
   build-depends:       base >= 4.7 && < 5
                        , bytestring
                        , containers
                        , protolude
                        , exceptions
+                       , ansi-wl-pprint
                        , aeson
                        , unordered-containers
                        , optparse-applicative
