@@ -4,36 +4,54 @@
 :ADDED:    [2016-08-05 Fri 14:46]
 :END:
 
-** Investigate configuration options in the Haskell community
+** DONE Investigate configuration options in the Haskell community
 :PROPERTIES:
 :ID:       661136e3-bf85-49f2-abc5-d31c3ca7b72f
 :ADDED:    [2016-08-05 Fri 14:48]
 :END:
-** Investigate other configuration tools from other languages (ruby, ocaml, rust)
+:LOGBOOK:
+- State "DONE"       from              [2016-09-05 Mon 19:03]
+:END:
+** DONE Investigate other configuration tools from other languages (ruby, ocaml, rust)
 :PROPERTIES:
 :ID:       dfc31ff4-5d48-4dd8-8d5b-440ccdd119bc
 :ADDED:    [2016-08-05 Fri 14:49]
 :END:
+:LOGBOOK:
+- State "DONE"       from              [2016-09-05 Mon 19:03]
+:END:
 
-** Allow configuration via ENV vars
+** DONE Allow configuration via ENV vars
 :PROPERTIES:
 :ID:       45311ce8-5104-486b-89a3-21c2eb584971
 :ADDED:    [2016-08-05 Fri 14:46]
 :END:
-** Allow configuration via list of Files ordered by precedence (most important last)
+:LOGBOOK:
+- State "DONE"       from              [2016-09-05 Mon 19:03]
+:END:
+** DONE Allow configuration via list of Files ordered by precedence (most important last)
 :PROPERTIES:
 :ID:       ce9a6a7f-829c-4ccb-a432-662cf557a62c
 :ADDED:    [2016-08-05 Fri 14:47]
 :END:
-** Allow easy integration with optparse-applicative
+:LOGBOOK:
+- State "DONE"       from              [2016-09-05 Mon 19:03]
+:END:
+** DONE Allow easy integration with optparse-applicative
 :PROPERTIES:
 :ID:       eeff1ebc-31ea-4e93-bca0-614896522f2f
 :ADDED:    [2016-08-05 Fri 14:47]
 :END:
-** Have a way to get metadata from the configuration (where did the value came from)
+:LOGBOOK:
+- State "DONE"       from              [2016-09-05 Mon 19:03]
+:END:
+** DONE Have a way to get metadata from the configuration (where did the value came from)
 :PROPERTIES:
 :ID:       8304bfdd-b48d-4731-bb77-34fc68cff002
 :ADDED:    [2016-08-05 Fri 14:49]
+:END:
+:LOGBOOK:
+- State "DONE"       from              [2016-09-05 Mon 19:04]
 :END:
 ** Types prototype (Before investigation)
 :PROPERTIES:
