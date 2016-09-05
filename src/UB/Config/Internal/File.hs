@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Config.Internal.Plain where
+module UB.Config.Internal.File where
 
 import Control.Lens hiding ((<|), (|>))
 import Control.Monad.Catch (MonadThrow(..))

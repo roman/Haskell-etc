@@ -21,7 +21,7 @@ library
                        , UB.Config.Internal.Spec
                        , UB.Config.Internal.Resolver.EnvVar
                        , UB.Config.Internal.Resolver.OptParse
-                       , UB.Config.Internal.Plain
+                       , UB.Config.Internal.File
                        , UB.Config.Internal.Printer
   build-depends:       base >= 4.7 && < 5
                        , bytestring

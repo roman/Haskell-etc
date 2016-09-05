@@ -5,7 +5,7 @@ module UB.Config
 
   , Spec.readConfigSpec
   , Spec.parseConfigSpec
-  , Plain.parseConfig
+  , File.parseConfig
   , Resolver.resolveEnvVars
   , Resolver.configSpecToOptParser
   , getConfigValue
@@ -19,7 +19,7 @@ module UB.Config
   , readConfigFromAllSources
   , readConfigFromEnv
   , readConfigFromOptParse
-  , Plain.readConfigFromFiles
+  , File.readConfigFromFiles
   ) where
 
 
@@ -38,7 +38,7 @@ import UB.Config.Internal.Types
 import qualified UB.Config.Internal.Spec as Spec
 import qualified UB.Config.Internal.Resolver.EnvVar as Resolver
 import qualified UB.Config.Internal.Resolver.OptParse as Resolver
-import qualified UB.Config.Internal.Plain as Plain
+import qualified UB.Config.Internal.File as File
 import qualified UB.Config.Internal.Printer as Printer
 
 --------------------------------------------------------------------------------
@@ -194,7 +194,7 @@ readConfigFromAllSources specPath filepaths programFlags = do
 
   optConfig  <- Opt.execParser programParser
   envConfig  <- Resolver.resolveEnvVars spec
-  fileConfig <- Plain.readConfigFromFiles filepaths
+  fileConfig <- File.readConfigFromFiles filepaths
 
   return (optConfig <> envConfig <> fileConfig)
 
