@@ -2,18 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Config.Internal.Resolver where
+module UB.Config.Internal.Resolver.EnvVar where
 
-import Control.Lens ((&), (.~), (%~))
-import Control.Monad.Catch (MonadThrow(..))
-import Data.Maybe (fromMaybe)
-import Data.HashMap.Strict (HashMap)
-import Data.Ord (comparing)
-import Data.Set (Set)
+import Control.Lens ((&), (%~))
 import Data.Vector (Vector)
-import System.Environment (getEnv, lookupEnv)
+import System.Environment (lookupEnv)
 import qualified Control.Lens as L
-import qualified Data.ByteString.Lazy.Char8 as B8
 import qualified Data.Aeson as JSON
 import qualified Data.Set as Set
 import qualified Data.Text as Text
@@ -31,8 +25,8 @@ resolveEnvVarSource
   -> IO (Maybe ConfigSource)
 resolveEnvVarSource specSources =
   let
-    toEnvVarSource varname value =
-      value
+    toEnvVarSource varname envValue =
+      envValue
       |> Text.pack
       |> JSON.String
       |> EnvVar varname
@@ -43,24 +37,37 @@ resolveEnvVarSource specSources =
         fmap (fmap <| toEnvVarSource varname)
              (lookupEnv <| Text.unpack varname)
 
+      Just _ ->
+        return Nothing
+
       Nothing ->
         return Nothing
 
-envVarConfigResolver sources configLens config = do
-  mEnvVarSource <- resolveEnvVarSource sources
+envVarConfigResolver
+  :: Maybe JSON.Value
+  -> Spec.ConfigSources
+  -> L.ASetter Config Config (Set ConfigSource) (Set ConfigSource)
+  -> Config
+  -> IO Config
+envVarConfigResolver defaultValue configSpecSources configLens config = do
+  mEnvVarSource <- resolveEnvVarSource configSpecSources
 
   let
     sources =
-      [ mEnvVarSource ]
+      [ mEnvVarSource, fmap Default defaultValue ]
       |> catMaybes
       |> Set.fromList
 
   return <| config & configLens %~ (Set.union sources)
 
-buildEnvVarResolver_ configLens unresolvedConfigValue =
+buildEnvVarResolver_
+  :: L.ASetter Config Config ConfigValue ConfigValue
+  -> Spec.ConfigValue
+  -> Vector (Config -> IO Config)
+buildEnvVarResolver_ configLens configSpecValue =
   let
-    configEntryReducer configKey unresolvedConfigVal acc =
-      case unresolvedConfigVal of
+    configEntryReducer configKey configSpecVal acc =
+      case configSpecVal of
         Spec.ConfigValue mdefaultVal sources ->
           let
             subConfigLens =
@@ -72,7 +79,8 @@ buildEnvVarResolver_ configLens unresolvedConfigValue =
 
             resolver =
               Vector.singleton <|
-                envVarConfigResolver sources
+                envVarConfigResolver mdefaultVal
+                                     sources
                                      subConfigLens
 
           in
@@ -88,11 +96,11 @@ buildEnvVarResolver_ configLens unresolvedConfigValue =
 
             resolver =
               buildEnvVarResolver_ subConfigLens
-                                   unresolvedConfigVal
+                                   configSpecVal
           in
             Vector.concat [ acc, resolver ]
   in
-    case unresolvedConfigValue of
+    case configSpecValue of
       Spec.SubConfig configm ->
         if HashMap.null configm then
           Vector.empty
@@ -108,8 +116,9 @@ buildEnvVarResolver
 buildEnvVarResolver (Spec.ConfigSpec configValue) =
   buildEnvVarResolver_ _Config configValue
 
-resolveEnvVars :: Spec.ConfigSpec -> IO Config
-resolveEnvVars specConfig =
+resolveEnvVars :: Spec.ConfigSpec -> Config -> IO Config
+resolveEnvVars specConfig config =
   specConfig
   |> buildEnvVarResolver
   |> foldM (|>) (Config (SubConfig HashMap.empty))
+  |> ((config <>) <$>)

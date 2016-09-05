@@ -5,7 +5,7 @@
 module UB.Config.Internal.Spec where
 
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson ((.:), (.:?))
+import Data.Aeson ((.:?))
 import Data.HashMap.Strict (HashMap)
 
 import qualified Data.ByteString.Lazy.Char8 as LB8
@@ -62,7 +62,7 @@ instance JSON.FromJSON ConfigValue where
           -- config spec value object
           Just (JSON.Object spec) ->
             ConfigValue
-              <$> spec .: "default"
+              <$> spec .:? "default"
               <*> (ConfigSources <$> ((EnvVar <$>) <$> spec .:? "env")
                                  <*> ((OptParse <$>) <$> spec .:? "optcli"))
 

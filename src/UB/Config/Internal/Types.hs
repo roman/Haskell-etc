@@ -35,11 +35,15 @@ data ConfigSource
              , value :: JSON.Value }
   | OptParse { option :: Text
              , value :: JSON.Value }
+  | Default  { value :: JSON.Value }
   deriving (Show, Eq)
 
 instance Ord ConfigSource where
   compare a b =
     case (a, b) of
+      (Default {}, _) ->
+        LT
+
       (OptParse {}, _) ->
         GT
 
@@ -54,6 +58,9 @@ instance Ord ConfigSource where
 
       (File {}, File {}) ->
         comparing configIndex a b
+
+      (File {}, _) ->
+        GT
 
 data ConfigValue
   = ConfigValue { configSource :: Set ConfigSource }
@@ -74,8 +81,8 @@ deepMerge left right =
                     HashMap.insert key rightv result)
             leftm
             rightm
-    (ConfigValue lefts, ConfigValue rights) ->
-      ConfigValue <| Set.union lefts rights
+    (ConfigValue leftSources, ConfigValue rightSources) ->
+      ConfigValue <| Set.union leftSources rightSources
     _ ->
       right
 

@@ -4,11 +4,9 @@ module UB.Config.Internal.Plain where
 
 import Control.Lens hiding ((<|), (|>))
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Ord (comparing)
 import Data.List (foldl1')
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Internal as JSON (iparse, IResult(..))
-import qualified Data.Aeson.Parser as Parser
 import qualified Data.ByteString.Lazy.Char8 as LB8
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set as Set
@@ -25,20 +23,20 @@ parseConfigValue
   -> Text
   -> JSON.Value
   -> m ConfigValue
-parseConfigValue index filepath json =
+parseConfigValue fileIndex filepath' json =
   case json of
     JSON.Object object ->
       SubConfig
         <$> foldM
-              (\acc (key, value) -> do
-                  value1 <- parseConfigValue index filepath value
+              (\acc (key, subconfigValue) -> do
+                  value1 <- parseConfigValue fileIndex filepath' subconfigValue
                   return <| HashMap.insert key value1 acc)
               HashMap.empty
               (HashMap.toList object)
 
     _ ->
       return <|
-        ConfigValue (Set.singleton <| File index filepath json)
+        ConfigValue (Set.singleton <| File fileIndex filepath' json)
 
 
 parseConfig
@@ -47,13 +45,13 @@ parseConfig
   -> Text
   -> LB8.ByteString
   -> m Config
-parseConfig index filepath contents =
+parseConfig fileIndex filepath' contents =
   case JSON.eitherDecode contents of
     Left err ->
       throwM <| InvalidConfiguration (Text.pack err)
 
     Right json ->
-      case JSON.iparse (parseConfigValue index filepath) json of
+      case JSON.iparse (parseConfigValue fileIndex filepath') json of
         JSON.IError _ err ->
           throwM <| InvalidConfiguration (Text.pack err)
 
@@ -64,7 +62,7 @@ parseConfig index filepath contents =
 readConfigFromFiles :: [Text] -> IO Config
 readConfigFromFiles files =
   files
-  |> imapM (\index filepath -> do
-               contents <- LB8.readFile <| Text.unpack filepath
-               parseConfig index filepath contents)
+  |> imapM (\fileIndex filepath' -> do
+               contents <- LB8.readFile <| Text.unpack filepath'
+               parseConfig fileIndex filepath' contents)
   |> ((foldl1' (<>)) <$>)

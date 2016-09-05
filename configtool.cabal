@@ -18,7 +18,7 @@ library
   exposed-modules:     UB.Config
                        , UB.Prelude
   other-modules:       UB.Config.Internal.Types
-                       , UB.Config.Internal.Unresolved
+                       , UB.Config.Internal.Resolver.EnvVar
                        , UB.Config.Internal.Spec
                        , UB.Config.Internal.Plain
   build-depends:       base >= 4.7 && < 5

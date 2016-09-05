@@ -1,0 +1,14 @@
+{
+    "user": {
+        "config/spec": {
+            "env": "USER"
+        }
+    },
+
+    "password": {
+        "config/spec": {
+            "env": "NON_EXISTING_PASSWORD",
+            "default": "abc123"
+        }
+    }
+}
