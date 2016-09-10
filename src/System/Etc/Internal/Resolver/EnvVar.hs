@@ -113,7 +113,7 @@ buildEnvVarResolver_ configLens configSpecValue =
 buildEnvVarResolver
   :: Spec.ConfigSpec
   -> Vector (Config -> IO Config)
-buildEnvVarResolver (Spec.ConfigSpec configValue) =
+buildEnvVarResolver (Spec.ConfigSpec _ _ configValue) =
   buildEnvVarResolver_ _Config configValue
 
 resolveEnvVars :: Spec.ConfigSpec -> IO Config

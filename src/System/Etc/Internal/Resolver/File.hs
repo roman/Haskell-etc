@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module System.Etc.Internal.File where
+module System.Etc.Internal.Resolver.File where
 
 import Control.Lens hiding ((<|), (|>))
 import Control.Monad.Catch (MonadThrow(..))
@@ -16,6 +16,7 @@ import qualified Data.Text as Text
 
 import UB.Prelude
 import System.Etc.Internal.Types
+import qualified System.Etc.Internal.Spec as Spec
 
 --------------------------------------------------------------------------------
 
@@ -76,3 +77,8 @@ readConfigFromFiles files =
                    return Nothing)
   |> (catMaybes <$>)
   |> ((foldl1' (<>)) <$>)
+
+resolveFiles :: Spec.ConfigSpec -> IO Config
+resolveFiles =
+  Spec.configFilepaths
+  >> readConfigFromFiles

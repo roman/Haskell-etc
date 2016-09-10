@@ -20,7 +20,7 @@ library
                        , System.Etc.Internal.Spec
                        , System.Etc.Internal.Resolver.EnvVar
                        , System.Etc.Internal.Resolver.OptParse
-                       , System.Etc.Internal.File
+                       , System.Etc.Internal.Resolver.File
                        , System.Etc.Internal.Printer
   build-depends:       base >= 4.7 && < 5
                        , bytestring
@@ -54,6 +54,7 @@ test-suite etc-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             TestSuite.hs
+  other-modules:       System.EtcTest
   build-depends:       base
                      , ub-prelude
                      , bytestring

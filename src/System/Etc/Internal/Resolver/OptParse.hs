@@ -1,9 +1,9 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 module System.Etc.Internal.Resolver.OptParse where
 
-import Control.Lens hiding ((<|))
+import Control.Lens hiding ((<|), (|>))
 import qualified Data.Aeson as JSON
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set as Set
@@ -14,35 +14,35 @@ import UB.Prelude hiding ((&))
 import System.Etc.Internal.Types
 import qualified System.Etc.Internal.Spec as Spec
 
-optParseSpecToOptSwitchFieldMod optParseSpec =
-  maybe Opt.idm (Text.unpack >> Opt.long) (Spec.optParseLong optParseSpec)
-  `mappend` maybe Opt.idm (Text.head >> Opt.short) (Spec.optParseShort optParseSpec)
-  `mappend` maybe Opt.idm (Text.unpack >> Opt.help) (Spec.optParseHelp optParseSpec)
+optParseSpecToOptSwitchFieldMod optParseOptionSpec =
+  maybe Opt.idm (Text.unpack >> Opt.long) (Spec.optParseLong optParseOptionSpec)
+  `mappend` maybe Opt.idm (Text.head >> Opt.short) (Spec.optParseShort optParseOptionSpec)
+  `mappend` maybe Opt.idm (Text.unpack >> Opt.help) (Spec.optParseHelp optParseOptionSpec)
 
-optParseSpecToOptVarFieldMod optParseSpec =
-  optParseSpecToOptSwitchFieldMod optParseSpec
-  `mappend` maybe Opt.idm (Text.unpack >> Opt.metavar) (Spec.optParseMetavar optParseSpec)
+optParseSpecToOptVarFieldMod optParseOptionSpec =
+  optParseSpecToOptSwitchFieldMod optParseOptionSpec
+  `mappend` maybe Opt.idm (Text.unpack >> Opt.metavar) (Spec.optParseMetavar optParseOptionSpec)
 
 optParseSpecToJSONParser
-  :: Spec.OptParseSpec
+  :: Spec.OptParseOptionSpec
   -> Opt.Parser (Maybe JSON.Value)
-optParseSpecToJSONParser optParseSpec =
+optParseSpecToJSONParser optParseOptionSpec =
   let
     optParseField =
-      case Spec.optParseType optParseSpec of
+      case Spec.optParseType optParseOptionSpec of
         Spec.OptParseString ->
           (Text.pack >> JSON.String)
-          <$> Opt.strOption (optParseSpecToOptVarFieldMod optParseSpec)
+          <$> Opt.strOption (optParseSpecToOptVarFieldMod optParseOptionSpec)
 
         Spec.OptParseNumber ->
           (fromInteger >> JSON.Number)
-          <$> Opt.option Opt.auto (optParseSpecToOptVarFieldMod optParseSpec)
+          <$> Opt.option Opt.auto (optParseSpecToOptVarFieldMod optParseOptionSpec)
 
         Spec.OptParseSwitch ->
           JSON.Bool
-          <$> Opt.switch (optParseSpecToOptSwitchFieldMod optParseSpec)
+          <$> Opt.switch (optParseSpecToOptSwitchFieldMod optParseOptionSpec)
   in
-    if Spec.optParseRequired optParseSpec then
+    if Spec.optParseRequired optParseOptionSpec then
       Just <$> optParseField
     else
       Opt.optional optParseField
@@ -59,7 +59,7 @@ configSpecToConfigValueOptParser key specConfigValue parentConfigValueParser =
         Nothing ->
           parentConfigValueParser
 
-        Just (Spec.OptParse optParseSpec) ->
+        Just (Spec.OptParse optParseOptionSpec) ->
           let
             jsonToConfigValue mValue =
               ConfigValue
@@ -76,7 +76,7 @@ configSpecToConfigValueOptParser key specConfigValue parentConfigValueParser =
 
             configValueOptParser =
               fmap jsonToConfigValue
-                   (optParseSpecToJSONParser optParseSpec)
+                   (optParseSpecToJSONParser optParseOptionSpec)
           in
             (\configValue parentConfigValue ->
                parentConfigValue
@@ -105,7 +105,7 @@ configSpecToConfigValueOptParser key specConfigValue parentConfigValueParser =
 
 
 configSpecToOptParser :: Spec.ConfigSpec -> Opt.Parser Config
-configSpecToOptParser (Spec.ConfigSpec specConfigValue) =
+configSpecToOptParser (Spec.ConfigSpec _ _ specConfigValue) =
   case specConfigValue of
     Spec.ConfigValue {} ->
       error "invalid spec creation"
@@ -116,3 +116,30 @@ configSpecToOptParser (Spec.ConfigSpec specConfigValue) =
             configSpecToConfigValueOptParser
             (pure <| SubConfig HashMap.empty)
             configSpec
+
+resolveOptParser :: Spec.ConfigSpec -> IO Config
+resolveOptParser configSpec =
+  let
+    configParser =
+      configSpecToOptParser configSpec
+
+    programModFlags =
+      case Spec.optParseProgramSpec configSpec of
+           Just programSpec ->
+             Opt.fullDesc
+              `mappend` (programSpec
+                        |> Spec.optParseProgramDesc
+                        |> Text.unpack
+                        |> Opt.progDesc)
+              `mappend` (programSpec
+                        |> Spec.optParseProgramHeader
+                        |> Text.unpack
+                        |> Opt.header)
+           Nothing ->
+             mempty
+
+    programParser =
+      Opt.info (Opt.helper <*> configParser)
+               programModFlags
+  in
+    Opt.execParser programParser

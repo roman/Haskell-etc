@@ -96,6 +96,10 @@ newtype Config
   = Config { fromConfig :: ConfigValue }
   deriving (Show, Semigroup)
 
+instance Monoid Config where
+  mempty = Config <| SubConfig HashMap.empty
+  mappend (Config a) (Config b) = Config (a <> b)
+
 $(makePrisms ''ConfigValue)
 $(makePrisms ''Config)
 

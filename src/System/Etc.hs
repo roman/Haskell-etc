@@ -5,9 +5,11 @@ module System.Etc
 
   , Spec.readConfigSpec
   , Spec.parseConfigSpec
-  , File.parseConfig
+
   , Resolver.resolveEnvVars
-  , Resolver.configSpecToOptParser
+  , Resolver.resolveOptParser
+  , Resolver.resolveFiles
+
   , getConfigValue
   , getConfigValueWith
   , getSelectedConfigSource
@@ -15,15 +17,8 @@ module System.Etc
   , Printer.renderConfig
   , Printer.printPrettyConfig
   , Printer.hPrintPrettyConfig
-
-  , readConfigFromAllSources
-  , readConfigFromEnv
-  , readConfigFromOptParse
-  , File.readConfigFromFiles
   ) where
 
-
-import Text.PrettyPrint.ANSI.Leijen (putDoc, hPutDoc)
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Set (Set)
 import qualified Data.Aeson as JSON
@@ -31,14 +26,13 @@ import qualified Data.Aeson.Internal as JSON (iparse, formatError, IResult(..))
 import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
-import qualified Options.Applicative as Opt
 
 import UB.Prelude
 import System.Etc.Internal.Types
 import qualified System.Etc.Internal.Spec as Spec
 import qualified System.Etc.Internal.Resolver.EnvVar as Resolver
 import qualified System.Etc.Internal.Resolver.OptParse as Resolver
-import qualified System.Etc.Internal.File as File
+import qualified System.Etc.Internal.Resolver.File as Resolver
 import qualified System.Etc.Internal.Printer as Printer
 
 --------------------------------------------------------------------------------
@@ -173,50 +167,3 @@ getConfigValue
   -> m result
 getConfigValue =
   getConfigValueWith JSON.parseJSON
-
-
-readConfigFromAllSources
-  :: Text
-  -> [Text]
-  -> Opt.InfoMod Config
-  -> IO Config
-readConfigFromAllSources specPath filepaths programFlags = do
-  spec <- Spec.readConfigSpec specPath
-
-  let
-    optConfigParser =
-      Resolver.configSpecToOptParser spec
-
-    programParser =
-      Opt.info
-        (Opt.helper <*> optConfigParser)
-        programFlags
-
-  optConfig  <- Opt.execParser programParser
-  envConfig  <- Resolver.resolveEnvVars spec
-  fileConfig <- File.readConfigFromFiles filepaths
-
-  return (optConfig <> envConfig <> fileConfig)
-
-readConfigFromEnv :: Text -> IO Config
-readConfigFromEnv specPath = do
-  spec <- Spec.readConfigSpec specPath
-  Resolver.resolveEnvVars spec
-
-readConfigFromOptParse
-  :: Text
-  -> Opt.InfoMod Config
-  -> IO Config
-readConfigFromOptParse specPath programFlags = do
-  spec <- Spec.readConfigSpec specPath
-
-  let
-    optConfigParser =
-      Resolver.configSpecToOptParser spec
-
-    programParser =
-      Opt.info
-        (Opt.helper <*> optConfigParser)
-        programFlags
-
-  Opt.execParser programParser

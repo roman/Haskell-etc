@@ -8,7 +8,7 @@ module System.Etc.Internal.Spec where
 import Prelude (fail)
 import Control.Lens (makePrisms)
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson ((.:?))
+import Data.Aeson ((.:), (.:?))
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromMaybe, isNothing)
 
@@ -24,25 +24,43 @@ import System.Etc.Internal.Types (ConfigurationError(..))
 --------------------------------------------------------------------------------
 -- Types
 
-data OptParseType
+data OptParseOptionType
   = OptParseString
   | OptParseNumber
   | OptParseSwitch
   deriving (Show, Eq)
 
-data OptParseSpec =
-  OptParseSpec { optParseLong     :: Maybe Text
-               , optParseShort    :: Maybe Text
-               , optParseMetavar  :: Maybe Text
-               , optParseHelp     :: Maybe Text
-               , optParseRequired :: Bool
-               , optParseType     :: OptParseType
-               }
+data OptParseOptionSpec
+  = OptParseOptionSpec {
+    optParseLong     :: Maybe Text
+  , optParseShort    :: Maybe Text
+  , optParseMetavar  :: Maybe Text
+  , optParseHelp     :: Maybe Text
+  , optParseRequired :: Bool
+  , optParseType     :: OptParseOptionType
+  }
   deriving (Show, Eq)
+
+data OptParseProgramSpec
+  = OptParseProgramSpec {
+    optParseProgramDesc   :: Text
+  , optParseProgramHeader :: Text
+  }
+  deriving (Show, Eq)
+
+instance JSON.FromJSON OptParseProgramSpec where
+  parseJSON json =
+    case json of
+      JSON.Object object ->
+        OptParseProgramSpec
+        <$> object .: "desc"
+        <*> object .: "header"
+      _ ->
+        JSON.typeMismatch "OptParseProgramSpec" json
 
 data ConfigSource
   = EnvVar   { varname :: Text }
-  | OptParse { option  :: OptParseSpec }
+  | OptParse { option  :: OptParseOptionSpec }
   deriving (Show, Eq)
 
 data ConfigSources
@@ -60,14 +78,18 @@ data ConfigValue
 
 $(makePrisms ''ConfigValue)
 
-newtype ConfigSpec
-  = ConfigSpec ConfigValue
-  deriving (Show, Eq, JSON.FromJSON)
+data ConfigSpec
+  = ConfigSpec {
+     configFilepaths     :: [Text]
+   , optParseProgramSpec :: Maybe OptParseProgramSpec
+   , configValue         :: ConfigValue
+   }
+  deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
 -- Parser
 
-instance JSON.FromJSON OptParseSpec where
+instance JSON.FromJSON OptParseOptionSpec where
   parseJSON json =
     let
       typeParser object = do
@@ -81,10 +103,10 @@ instance JSON.FromJSON OptParseSpec where
             else if typeName == "switch" then
               return OptParseSwitch
             else
-              JSON.typeMismatch "OptParseType (string, number, switch)" value
+              JSON.typeMismatch "OptParseOptionType (string, number, switch)" value
 
           Just value ->
-            JSON.typeMismatch "OptParseType" value
+            JSON.typeMismatch "OptParseOptionType" value
 
           Nothing ->
             fail "OptParse type is required"
@@ -95,10 +117,10 @@ instance JSON.FromJSON OptParseSpec where
           short <- object .:? "short"
           if isNothing long && isNothing short then
             JSON.typeMismatch
-              "OptParseSpec (require either long or short)"
+              "OptParseOptionSpec (require either long or short)"
               json
           else
-            OptParseSpec
+            OptParseOptionSpec
               <$> pure long
               <*> pure short
               <*> (object .:? "metavar")
@@ -107,13 +129,13 @@ instance JSON.FromJSON OptParseSpec where
               <*> typeParser object
 
         _ ->
-          JSON.typeMismatch "OptParseSpec" json
+          JSON.typeMismatch "OptParseOptionSpec" json
 
 instance JSON.FromJSON ConfigValue where
   parseJSON json  =
     case json of
       JSON.Object object ->
-        case HashMap.lookup "config/spec" object of
+        case HashMap.lookup "etc/spec" object of
           -- normal object
           Nothing ->
             SubConfig
@@ -124,7 +146,7 @@ instance JSON.FromJSON ConfigValue where
                   HashMap.empty
                   (HashMap.toList object)
 
-          -- config spec value object
+          -- etc spec value object
           Just (JSON.Object spec) ->
             ConfigValue
               <$> spec .:? "default"
@@ -139,6 +161,18 @@ instance JSON.FromJSON ConfigValue where
       _ ->
         return <|
           ConfigValue (Just json) (ConfigSources Nothing Nothing)
+
+
+instance JSON.FromJSON ConfigSpec where
+  parseJSON json  =
+    case json of
+      JSON.Object object ->
+        ConfigSpec
+        <$> (object .:  "etc/filepaths")
+        <*> (object .:? "etc/optparse")
+        <*> (object .: "etc/entries")
+      _ ->
+        JSON.typeMismatch "ConfigSpec" json
 
 --------------------------------------------------------------------------------
 

@@ -17,16 +17,17 @@ data TestDbConfig
   deriving (Eq, Show)
 
 
-readConfigFromFilesTests :: TestTree
-readConfigFromFilesTests =
-  testGroup "readConfigFromFiles"
+resolveFilesTests :: TestTree
+resolveFilesTests =
+  testGroup "resolveFiles"
     [ testCase "ignores files that do not exist" <| do
-        _config <- SUT.readConfigFromFiles [ "test/fixtures/not_found.json" ]
+        configSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+        _config <- SUT.resolveFiles configSpec
         assertBool "" True
 
     , testCase "gives higher precedence to latter config files" <| do
-        config <- SUT.readConfigFromFiles [ "test/fixtures/one.json"
-                                          , "test/fixtures/two.json" ]
+        configSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+        config <- SUT.resolveFiles configSpec
 
         -- config sources for the user key must be 2
         maybe
@@ -53,11 +54,9 @@ resolveEnvVarsTests :: TestTree
 resolveEnvVarsTests =
   testGroup "resolveEnvVars"
     [ testCase "gives higher precedence to env var values" <| do
-        spec <- SUT.readConfigSpec "test/fixtures/spec.json"
-        config0 <- SUT.readConfigFromFiles [ "test/fixtures/one.json"
-                                           , "test/fixtures/two.json" ]
-
-        config1 <- SUT.resolveEnvVars spec
+        configSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+        config0 <- SUT.resolveFiles configSpec
+        config1 <- SUT.resolveEnvVars configSpec
 
         let
           config =
@@ -86,11 +85,9 @@ resolveEnvVarsTests =
               <> show source
 
     , testCase "uses default value in case env var is not defined" <| do
-        spec <- SUT.readConfigSpec "test/fixtures/spec.json"
-        config0 <- SUT.readConfigFromFiles [ "test/fixtures/one.json"
-                                           , "test/fixtures/two.json" ]
-
-        config1 <- SUT.resolveEnvVars spec
+        configSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+        config0 <- SUT.resolveFiles configSpec
+        config1 <- SUT.resolveEnvVars configSpec
 
         let
           config =
@@ -126,11 +123,9 @@ getConfigValueTests =
   in
     testGroup "getConfigValueWith"
       [ testCase "allows to fetch sub-maps and decode them" <| do
-          spec <- SUT.readConfigSpec "test/fixtures/spec.json"
-          config0 <- SUT.readConfigFromFiles [ "test/fixtures/one.json"
-                                             , "test/fixtures/two.json" ]
-
-          config1 <- SUT.resolveEnvVars spec
+          configSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+          config0 <- SUT.resolveFiles configSpec
+          config1 <- SUT.resolveEnvVars configSpec
 
           let
             config =
@@ -149,8 +144,8 @@ getConfigValueTests =
 
 tests :: TestTree
 tests =
-  testGroup "UB.Config"
-    [ readConfigFromFilesTests
+  testGroup "System.Etc"
+    [ resolveFilesTests
     , resolveEnvVarsTests
     , getConfigValueTests
     ]
