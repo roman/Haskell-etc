@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Config.Internal.Printer where
+module System.Etc.Internal.Printer where
 
 import Text.PrettyPrint.ANSI.Leijen
 import qualified Data.Aeson as JSON
@@ -9,7 +9,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 
 import UB.Prelude hiding ((<>), (<$>))
-import UB.Config.Internal.Types
+import System.Etc.Internal.Types
 
 renderJsonValue :: JSON.Value -> (Doc, Int)
 renderJsonValue value' =

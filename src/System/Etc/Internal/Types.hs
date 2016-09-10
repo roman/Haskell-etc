@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Config.Internal.Types where
+module System.Etc.Internal.Types where
 
 import Control.Lens hiding ((<|))
 import Data.HashMap.Strict (HashMap)

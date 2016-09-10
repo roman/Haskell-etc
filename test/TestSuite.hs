@@ -4,7 +4,7 @@ module Main where
 
 import UB.Prelude
 import Test.Tasty (defaultMain)
-import qualified UB.ConfigTest
+import qualified System.EtcTest
 
 main :: IO ()
-main = defaultMain UB.ConfigTest.tests
+main = defaultMain System.EtcTest.tests

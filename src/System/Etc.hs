@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Config
+module System.Etc
   ( Spec.ConfigSpec
   , ConfigSource (..)
 
@@ -34,12 +34,12 @@ import qualified Data.Text as Text
 import qualified Options.Applicative as Opt
 
 import UB.Prelude
-import UB.Config.Internal.Types
-import qualified UB.Config.Internal.Spec as Spec
-import qualified UB.Config.Internal.Resolver.EnvVar as Resolver
-import qualified UB.Config.Internal.Resolver.OptParse as Resolver
-import qualified UB.Config.Internal.File as File
-import qualified UB.Config.Internal.Printer as Printer
+import System.Etc.Internal.Types
+import qualified System.Etc.Internal.Spec as Spec
+import qualified System.Etc.Internal.Resolver.EnvVar as Resolver
+import qualified System.Etc.Internal.Resolver.OptParse as Resolver
+import qualified System.Etc.Internal.File as File
+import qualified System.Etc.Internal.Printer as Printer
 
 --------------------------------------------------------------------------------
 

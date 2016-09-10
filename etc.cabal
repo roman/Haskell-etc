@@ -1,32 +1,31 @@
-name:                configtool
-version:             0.1.0.0
-synopsis:            Initial project template from stack
+name:                etc
+version:             0.0.0.0
+synopsis:            Configuration library for Haskell
 description:         Please see README.md
-homepage:            https://github.com/githubuser/configtool#readme
+homepage:            https://github.com/roman/Haskell-etc
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2016 Author name here
-category:            Web
+author:              Roman Gonzalez
+maintainer:          romanandreg@gmail.com
+copyright:           2016 Roman Gonzalez
+category:            Configuration, System
 build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     UB.Config
-                       , UB.Prelude
-  other-modules:       UB.Config.Internal.Types
-                       , UB.Config.Internal.Spec
-                       , UB.Config.Internal.Resolver.EnvVar
-                       , UB.Config.Internal.Resolver.OptParse
-                       , UB.Config.Internal.File
-                       , UB.Config.Internal.Printer
+  exposed-modules:     System.Etc
+  other-modules:       System.Etc.Internal.Types
+                       , System.Etc.Internal.Spec
+                       , System.Etc.Internal.Resolver.EnvVar
+                       , System.Etc.Internal.Resolver.OptParse
+                       , System.Etc.Internal.File
+                       , System.Etc.Internal.Printer
   build-depends:       base >= 4.7 && < 5
                        , bytestring
                        , containers
-                       , protolude
+                       , ub-prelude
                        , exceptions
                        , directory
                        , ansi-wl-pprint
@@ -37,28 +36,30 @@ library
                        , text
                        , lens
 
+  ghc-options:         -Wall
   default-language:    Haskell2010
 
-executable configtool-example
+executable etc-example
   hs-source-dirs:      example
   main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:       base
-                     , configtool
+                     , ub-prelude
+                     , etc
                      , optparse-applicative
                      , directory
   default-language:    Haskell2010
 
-test-suite configtool-test
+test-suite etc-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             TestSuite.hs
   build-depends:       base
-                     , protolude
+                     , ub-prelude
                      , bytestring
                      , aeson
                      , text
-                     , configtool
+                     , etc
                      , containers
                      , tasty
                      , tasty-hunit
@@ -67,4 +68,4 @@ test-suite configtool-test
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/configtool
+  location: https://github.com/roman/Haskell-etc

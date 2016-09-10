@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Config.Internal.Resolver.OptParse where
+module System.Etc.Internal.Resolver.OptParse where
 
 import Control.Lens hiding ((<|))
 import qualified Data.Aeson as JSON
@@ -11,8 +11,8 @@ import qualified Data.Text as Text
 import qualified Options.Applicative as Opt
 
 import UB.Prelude hiding ((&))
-import UB.Config.Internal.Types
-import qualified UB.Config.Internal.Spec as Spec
+import System.Etc.Internal.Types
+import qualified System.Etc.Internal.Spec as Spec
 
 optParseSpecToOptSwitchFieldMod optParseSpec =
   maybe Opt.idm (Text.unpack >> Opt.long) (Spec.optParseLong optParseSpec)

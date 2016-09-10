@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Config.Internal.Spec where
+module System.Etc.Internal.Spec where
 
 import Prelude (fail)
 import Control.Lens (makePrisms)
@@ -19,7 +19,7 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
 
 import UB.Prelude
-import UB.Config.Internal.Types (ConfigurationError(..))
+import System.Etc.Internal.Types (ConfigurationError(..))
 
 --------------------------------------------------------------------------------
 -- Types

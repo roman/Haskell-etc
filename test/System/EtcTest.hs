@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.ConfigTest (tests) where
+module System.EtcTest (tests) where
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -10,7 +10,7 @@ import qualified Data.Aeson.Types as JSON (typeMismatch)
 import qualified Data.Set as Set
 
 import UB.Prelude
-import qualified UB.Config as SUT
+import qualified System.Etc as SUT
 
 data TestDbConfig
   = TestDbConfig Text Int Text Text Text

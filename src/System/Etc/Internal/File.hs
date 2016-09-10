@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Config.Internal.File where
+module System.Etc.Internal.File where
 
 import Control.Lens hiding ((<|), (|>))
 import Control.Monad.Catch (MonadThrow(..))
@@ -15,7 +15,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 
 import UB.Prelude
-import UB.Config.Internal.Types
+import System.Etc.Internal.Types
 
 --------------------------------------------------------------------------------
 

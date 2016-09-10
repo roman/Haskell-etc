@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module UB.Config.Internal.Resolver.EnvVar where
+module System.Etc.Internal.Resolver.EnvVar where
 
 import Control.Lens ((&), (%~))
 import Data.Vector (Vector)
@@ -15,8 +15,8 @@ import qualified Data.Vector as Vector
 import qualified Data.HashMap.Strict as HashMap
 
 import UB.Prelude hiding ((&))
-import UB.Config.Internal.Types
-import qualified UB.Config.Internal.Spec as Spec
+import System.Etc.Internal.Types
+import qualified System.Etc.Internal.Spec as Spec
 
 --------------------------------------------------------------------------------
 

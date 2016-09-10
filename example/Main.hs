@@ -3,7 +3,7 @@
 module Main where
 
 import qualified Options.Applicative as Opt
-import qualified UB.Config as Config
+import qualified System.Etc as Config
 
 import UB.Prelude
 
