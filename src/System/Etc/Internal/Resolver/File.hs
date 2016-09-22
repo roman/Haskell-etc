@@ -80,5 +80,5 @@ readConfigFromFiles files =
 
 resolveFiles :: Spec.ConfigSpec -> IO Config
 resolveFiles =
-  Spec.configFilepaths
+  Spec.specConfigFilepaths
   >> readConfigFromFiles

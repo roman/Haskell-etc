@@ -14,7 +14,7 @@ import Data.Maybe (fromMaybe, isNothing)
 
 import qualified Data.ByteString.Lazy.Char8 as LB8
 import qualified Data.Aeson as JSON
-import qualified Data.Aeson.Types as JSON (typeMismatch)
+import qualified Data.Aeson.Types as JSON (Parser, typeMismatch)
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
 
@@ -24,20 +24,47 @@ import System.Etc.Internal.Types (ConfigurationError(..))
 --------------------------------------------------------------------------------
 -- Types
 
-data OptParseOptionType
-  = OptParseString
-  | OptParseNumber
-  | OptParseSwitch
+data OptParseOptionValueType
+  = OptParseOptionString
+  | OptParseOptionNumber
+  | OptParseOptionSwitch
   deriving (Show, Eq)
 
-data OptParseOptionSpec
-  = OptParseOptionSpec {
-    optParseLong     :: Maybe Text
-  , optParseShort    :: Maybe Text
-  , optParseMetavar  :: Maybe Text
-  , optParseHelp     :: Maybe Text
-  , optParseRequired :: Bool
-  , optParseType     :: OptParseOptionType
+data OptParseArgValueType
+  = OptParseArgString
+  | OptParseArgNumber
+  deriving (Show, Eq)
+
+data OptParseEntrySpec
+  = CmdEntry {
+      optParseEntrySpecCmdValue :: JSON.Value
+    , optParseEntrySpecArgs     :: OptParseEntrySpecSettings
+    }
+  | PlainEntry {
+      optParseEntrySpecArgs :: OptParseEntrySpecSettings
+    }
+  deriving (Show, Eq)
+
+data OptParseEntrySpecSettings
+  = Option {
+    optParseLong            :: Maybe Text
+  , optParseShort           :: Maybe Text
+  , optParseMetavar         :: Maybe Text
+  , optParseHelp            :: Maybe Text
+  , optParseRequired        :: Bool
+  , optParseOptionValueType :: OptParseOptionValueType
+  }
+  | Argument {
+    optParseMetavar      :: Maybe Text
+  , optParseRequired     :: Bool
+  , optParseArgValueType :: OptParseArgValueType
+  }
+  deriving (Show, Eq)
+
+data OptParseCommandSpec
+  = OptParseCommandSpec {
+    optParseCommandDesc   :: Text
+  , optParseCommandHeader :: Text
   }
   deriving (Show, Eq)
 
@@ -45,27 +72,13 @@ data OptParseProgramSpec
   = OptParseProgramSpec {
     optParseProgramDesc   :: Text
   , optParseProgramHeader :: Text
+  , optParseCommands      :: Maybe (HashMap Text OptParseCommandSpec)
   }
   deriving (Show, Eq)
 
-instance JSON.FromJSON OptParseProgramSpec where
-  parseJSON json =
-    case json of
-      JSON.Object object ->
-        OptParseProgramSpec
-        <$> object .: "desc"
-        <*> object .: "header"
-      _ ->
-        JSON.typeMismatch "OptParseProgramSpec" json
-
-data ConfigSource
-  = EnvVar   { varname :: Text }
-  | OptParse { option  :: OptParseOptionSpec }
-  deriving (Show, Eq)
-
 data ConfigSources
-  = ConfigSources { envVar   :: Maybe ConfigSource
-                  , optParse :: Maybe ConfigSource
+  = ConfigSources { envVar   :: Maybe Text
+                  , optParse :: Maybe OptParseEntrySpec
                   }
   deriving (Show, Eq)
 
@@ -80,56 +93,123 @@ $(makePrisms ''ConfigValue)
 
 data ConfigSpec
   = ConfigSpec {
-     configFilepaths     :: [Text]
-   , optParseProgramSpec :: Maybe OptParseProgramSpec
-   , configValue         :: ConfigValue
+     specConfigFilepaths     :: [Text]
+   , specOptParseProgramSpec :: Maybe OptParseProgramSpec
+   , specConfigValue         :: ConfigValue
    }
   deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
 -- Parser
 
-instance JSON.FromJSON OptParseOptionSpec where
+instance JSON.FromJSON OptParseCommandSpec where
   parseJSON json =
-    let
-      typeParser object = do
-        mvalue <- object .:? "type"
-        case mvalue of
-          Just value@(JSON.String typeName) ->
-            if typeName == "string" then
-              return OptParseString
-            else if typeName == "number" then
-              return OptParseNumber
-            else if typeName == "switch" then
-              return OptParseSwitch
-            else
-              JSON.typeMismatch "OptParseOptionType (string, number, switch)" value
+    case json of
+      JSON.Object object ->
+        OptParseCommandSpec
+        <$> object .: "desc"
+        <*> object .: "header"
+      _ ->
+        JSON.typeMismatch "OptParseCommandSpec" json
 
-          Just value ->
-            JSON.typeMismatch "OptParseOptionType" value
+instance JSON.FromJSON OptParseProgramSpec where
+  parseJSON json =
+    case json of
+      JSON.Object object ->
+        OptParseProgramSpec
+        <$> object .: "desc"
+        <*> object .: "header"
+        <*> object .:? "commands"
+      _ ->
+        JSON.typeMismatch "OptParseProgramSpec" json
 
-          Nothing ->
-            fail "OptParse type is required"
-    in
+argValueTypeParser
+  :: JSON.Object
+    -> JSON.Parser OptParseArgValueType
+argValueTypeParser object = do
+  value <- object .: "type"
+  case value of
+    JSON.String typeName ->
+      if typeName == "string" then
+        return OptParseArgString
+      else if typeName == "number" then
+        return OptParseArgNumber
+      else
+        JSON.typeMismatch "OptParseArgValueType (string, number)" value
+    _ ->
+      JSON.typeMismatch "OptParseArgValueType (string, number)" value
+
+argumentInputOptParser
+  :: JSON.Object
+    -> JSON.Parser OptParseEntrySpecSettings
+argumentInputOptParser object =
+  Argument
+    <$> (object .:? "metavar")
+    <*> (fromMaybe True <$> (object .:? "required"))
+    <*> (argValueTypeParser object)
+
+optionValueTypeParser
+  :: JSON.Object
+    -> JSON.Parser OptParseOptionValueType
+optionValueTypeParser object = do
+  mvalue <- object .:? "type"
+  case mvalue of
+    Just value@(JSON.String typeName) ->
+      if typeName == "string" then
+        return OptParseOptionString
+      else if typeName == "number" then
+        return OptParseOptionNumber
+      else if typeName == "switch" then
+        return OptParseOptionSwitch
+      else
+        JSON.typeMismatch "OptParseOptionValueType (string, number, switch)" value
+
+    Just value ->
+      JSON.typeMismatch "OptParseOptionValueType" value
+
+    Nothing ->
+      fail "OptParse type is required"
+
+optionInputOptParser
+  :: JSON.Object
+    -> JSON.Parser OptParseEntrySpecSettings
+optionInputOptParser object = do
+  long  <- object .:? "long"
+  short <- object .:? "short"
+  if isNothing long && isNothing short then
+    fail "Option requires either long or short options"
+  else
+    Option
+      <$> (pure long)
+      <*> (pure short)
+      <*> (object .:? "metavar")
+      <*> (object .:? "help")
+      <*> (fromMaybe True <$> (object .:? "required"))
+      <*> (optionValueTypeParser object)
+
+instance JSON.FromJSON OptParseEntrySpec where
+  parseJSON json =
       case json of
         JSON.Object object -> do
-          long  <- object .:? "long"
-          short <- object .:? "short"
-          if isNothing long && isNothing short then
-            JSON.typeMismatch
-              "OptParseOptionSpec (require either long or short)"
-              json
-          else
-            OptParseOptionSpec
-              <$> pure long
-              <*> pure short
-              <*> (object .:? "metavar")
-              <*> (object .:? "help")
-              <*> (fromMaybe True <$> (object .:? "required"))
-              <*> typeParser object
+          cmdValue   <- object .:? "command"
+          value <- object .: "input"
 
+          let
+            optParseEntryCtor =
+              maybe PlainEntry CmdEntry cmdValue
+
+          case value of
+            JSON.String inputName ->
+              if inputName == "option" then
+                optParseEntryCtor <$> optionInputOptParser object
+              else if inputName == "argument" then
+                optParseEntryCtor <$> argumentInputOptParser object
+              else
+                JSON.typeMismatch "OptParseEntrySpec (invalid input)" value
+            _ ->
+              JSON.typeMismatch "OptParseEntrySpec (invalid input)" value
         _ ->
-          JSON.typeMismatch "OptParseOptionSpec" json
+          JSON.typeMismatch "OptParseEntrySpec" json
 
 instance JSON.FromJSON ConfigValue where
   parseJSON json  =
@@ -150,8 +230,8 @@ instance JSON.FromJSON ConfigValue where
           Just (JSON.Object spec) ->
             ConfigValue
               <$> spec .:? "default"
-              <*> (ConfigSources <$> ((EnvVar <$>) <$> spec .:? "env")
-                                 <*> ((OptParse <$>) <$> spec .:? "optparse"))
+              <*> (ConfigSources <$> (spec .:? "env")
+                                 <*> (spec .:? "optparse"))
 
           -- any other JSON value
           Just innerJson ->

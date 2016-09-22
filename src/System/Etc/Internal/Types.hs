@@ -1,3 +1,4 @@
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -35,6 +36,7 @@ data ConfigSource
              , value :: JSON.Value }
   | OptParse { value :: JSON.Value }
   | Default  { value :: JSON.Value }
+  | None
   deriving (Show, Eq)
 
 instance Ord ConfigSource where
@@ -43,6 +45,12 @@ instance Ord ConfigSource where
       EQ
     else
       case (a, b) of
+        (None, _) ->
+          LT
+
+        (_, None) ->
+          GT
+
         (Default {}, _) ->
           LT
 
@@ -66,8 +74,8 @@ instance Ord ConfigSource where
 
 
 data ConfigValue
-  = ConfigValue { configSource :: Set ConfigSource }
-  | SubConfig { subConfig :: HashMap Text ConfigValue }
+  = ConfigValue { configSource :: Set ConfigSource         }
+  | SubConfig   { configMap    :: HashMap Text ConfigValue }
   deriving (Show)
 
 deepMerge :: ConfigValue -> ConfigValue -> ConfigValue
@@ -103,15 +111,23 @@ instance Monoid Config where
 $(makePrisms ''ConfigValue)
 $(makePrisms ''Config)
 
+-- _JustDefault :: Prism (Maybe a) (Maybe b) a b
+_JustDefault
+  :: forall a b (p :: * -> * -> *) (f :: * -> *). (Choice p, Applicative f)
+    => a
+    -> p a (f b)
+    -> p (Maybe a) (f (Maybe b))
+_JustDefault a =
+  prism Just <| maybe (Right <| a) Right
+
+_JustSubConfig :: Prism (Maybe ConfigValue) (Maybe ConfigValue) ConfigValue ConfigValue
+_JustSubConfig =
+  _JustDefault (SubConfig HashMap.empty)
+
 -- Works like the _Just prism, but instead of not doing anything on Nothing, it
 -- creates a ConfigValue record
 _JustConfigValue
   :: Set ConfigSource
     -> Prism (Maybe ConfigValue) (Maybe ConfigValue) ConfigValue ConfigValue
 _JustConfigValue source =
-  prism Just <| maybe (Right <| ConfigValue source) Right
-
-
-_JustSubConfig :: Prism (Maybe ConfigValue) (Maybe ConfigValue) ConfigValue ConfigValue
-_JustSubConfig =
-  prism Just <| maybe (Right <| SubConfig HashMap.empty) Right
+  _JustDefault (ConfigValue source)

@@ -33,12 +33,9 @@ resolveEnvVarSource specSources =
 
   in
     case Spec.envVar specSources of
-      Just (Spec.EnvVar varname) ->
+      Just varname ->
         fmap (fmap <| toEnvVarSource varname)
              (lookupEnv <| Text.unpack varname)
-
-      Just _ ->
-        return Nothing
 
       Nothing ->
         return Nothing

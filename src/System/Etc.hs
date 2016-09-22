@@ -1,6 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module System.Etc
   ( Spec.ConfigSpec
+  , Config
   , ConfigSource (..)
 
   , Spec.readConfigSpec
@@ -70,6 +71,9 @@ getConfigValueWith parser keys0 (Config configValue0) =
         ([], ConfigValue sources) ->
           case Set.maxView sources of
             Nothing ->
+              throwM <| InvalidConfigKeyPath keys0
+
+            Just (None, _) ->
               throwM <| InvalidConfigKeyPath keys0
 
             Just (source, _) ->
