@@ -177,7 +177,7 @@ optionInputOptParser object = do
   long  <- object .:? "long"
   short <- object .:? "short"
   if isNothing long && isNothing short then
-    fail "Option requires either long or short options"
+    fail "'option' field input requires either 'long' or 'short' settings"
   else
     Option
       <$> (pure long)
