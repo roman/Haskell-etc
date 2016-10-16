@@ -35,9 +35,9 @@ data OptParseArgValueType
   | OptParseArgNumber
   deriving (Show, Eq)
 
-data OptParseEntrySpec
+data OptParseEntrySpec cmd
   = CmdEntry {
-      optParseEntrySpecCmdValue :: JSON.Value
+      optParseEntrySpecCmdValue :: cmd
     , optParseEntrySpecArgs     :: OptParseEntrySpecSettings
     }
   | PlainEntry {
@@ -76,28 +76,30 @@ data OptParseProgramSpec
   }
   deriving (Show, Eq)
 
-data ConfigSources
+data ConfigSources cmd
   = ConfigSources { envVar   :: Maybe Text
-                  , optParse :: Maybe OptParseEntrySpec
+                  , optParse :: Maybe (OptParseEntrySpec cmd)
                   }
   deriving (Show, Eq)
 
-data ConfigValue
+data ConfigValue cmd
   = ConfigValue { defaultValue  :: Maybe JSON.Value
-                , configSources :: ConfigSources
+                , configSources :: ConfigSources cmd
                 }
-  | SubConfig { subConfig :: HashMap Text ConfigValue }
+  | SubConfig { subConfig :: HashMap Text (ConfigValue cmd) }
   deriving (Show, Eq)
 
 $(makePrisms ''ConfigValue)
 
-data ConfigSpec
+data ConfigSpec' cmd
   = ConfigSpec {
      specConfigFilepaths     :: [Text]
    , specOptParseProgramSpec :: Maybe OptParseProgramSpec
-   , specConfigValues        :: HashMap Text ConfigValue
+   , specConfigValues        :: HashMap Text (ConfigValue cmd)
    }
   deriving (Show, Eq)
+
+type ConfigSpec = ConfigSpec' Text
 
 --------------------------------------------------------------------------------
 -- Parser
@@ -187,7 +189,7 @@ optionInputOptParser object = do
       <*> (fromMaybe True <$> (object .:? "required"))
       <*> (optionValueTypeParser object)
 
-instance JSON.FromJSON OptParseEntrySpec where
+instance JSON.FromJSON cmd => JSON.FromJSON (OptParseEntrySpec cmd) where
   parseJSON json =
       case json of
         JSON.Object object -> do
@@ -211,7 +213,7 @@ instance JSON.FromJSON OptParseEntrySpec where
         _ ->
           JSON.typeMismatch "OptParseEntrySpec" json
 
-instance JSON.FromJSON ConfigValue where
+instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
   parseJSON json  =
     case json of
       JSON.Object object ->
@@ -243,7 +245,7 @@ instance JSON.FromJSON ConfigValue where
           ConfigValue (Just json) (ConfigSources Nothing Nothing)
 
 
-instance JSON.FromJSON ConfigSpec where
+instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec' cmd) where
   parseJSON json  =
     case json of
       JSON.Object object ->

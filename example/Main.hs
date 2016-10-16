@@ -2,20 +2,20 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Main where
 
-import Data.List (foldl1')
 import qualified System.Etc as Config
 
 import UB.Prelude
 
 main :: IO ()
 main = do
-  configSpec <- Config.readConfigSpec "test/fixtures/spec.json"
+  configSpec <- Config.readConfigSpec "example/resources/spec.json"
 
-  config <-
-    [ Config.resolveEnvVars
-    , Config.resolveOptParser
-    , Config.resolveFiles ]
-    |> mapM (<| configSpec)
-    |> fmap (foldl1' (<>))
+  configFiles     <- Config.resolveFiles configSpec
+  configEnv       <- Config.resolveEnvVars configSpec
+  configOptParser <- Config.resolveOptParser configSpec
+
+  let
+    config =
+      configFiles <> configEnv <> configOptParser
 
   Config.printPrettyConfig config
