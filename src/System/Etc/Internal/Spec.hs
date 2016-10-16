@@ -95,7 +95,7 @@ data ConfigSpec
   = ConfigSpec {
      specConfigFilepaths     :: [Text]
    , specOptParseProgramSpec :: Maybe OptParseProgramSpec
-   , specConfigValue         :: ConfigValue
+   , specConfigValues        :: HashMap Text ConfigValue
    }
   deriving (Show, Eq)
 
@@ -250,7 +250,7 @@ instance JSON.FromJSON ConfigSpec where
         ConfigSpec
         <$> (object .:  "etc/filepaths")
         <*> (object .:? "etc/optparse")
-        <*> (object .: "etc/entries")
+        <*> (object .:  "etc/entries")
       _ ->
         JSON.typeMismatch "ConfigSpec" json
 

@@ -23,8 +23,6 @@ import qualified System.Etc.Internal.Spec as Spec
 data OptParseConfigError
   = InvalidOptParseCommandKey Text
   -- ^ The type of the Command Key is invalid
-  | InvalidConfigSpec Spec.ConfigSpec
-  -- ^ The ConfigSpec was not built correctly
   | CommandsKeyNotDefined
   -- ^ Trying to use command for an entry without setting commands section
   | UnknownCommandKey Text
@@ -132,12 +130,10 @@ entrySpecToConfigValueOptParser entrySpec =
         <| OptionParser (settingsToJsonOptParser specSettings)
 
 jsonToConfigValue
-  :: Show a
-    => Maybe JSON.Value
-    -> a
+  :: Maybe JSON.Value
     -> Maybe JSON.Value
     -> ConfigValue
-jsonToConfigValue specEntryDefVal sources mJsonValue =
+jsonToConfigValue specEntryDefVal mJsonValue =
   ConfigValue
     <| Set.fromList
     <| case (mJsonValue, specEntryDefVal) of
@@ -150,8 +146,8 @@ jsonToConfigValue specEntryDefVal sources mJsonValue =
       (_, Just defValue) ->
         [Default defValue]
 
-      (Nothing, Nothing) ->
-        error <| "invalid spec creation" <> show sources
+      _ ->
+        crash "invalid spec creation"
 
 configValueSpecToOptParser
   :: MonadThrow m
@@ -180,7 +176,7 @@ configValueSpecToOptParser specEntryKey specEntryDefVal sources acc =
           CommandParser command jsonOptParser -> do
             let
               configValueParser =
-                jsonToConfigValue specEntryDefVal sources <$> jsonOptParser
+                jsonToConfigValue specEntryDefVal <$> jsonOptParser
 
             accCmdParsers <-
                 case acc of
@@ -204,7 +200,7 @@ configValueSpecToOptParser specEntryKey specEntryDefVal sources acc =
           OptionParser jsonOptParser ->
             let
               configValueParser =
-                jsonToConfigValue specEntryDefVal sources <$> jsonOptParser
+                jsonToConfigValue specEntryDefVal <$> jsonOptParser
             in
               case acc of
                 CommandOptParsers {} ->
@@ -332,28 +328,23 @@ specToConfigOptParser
   :: MonadThrow m
     => Spec.ConfigSpec
     -> m (Opt.Parser Config)
-specToConfigOptParser spec =
-  case Spec.specConfigValue spec of
-    Spec.ConfigValue {} ->
-      throwM <| InvalidConfigSpec spec
+specToConfigOptParser spec = do
+  parseResult <-
+    ifoldrMOf itraversed
+              specToConfigValueOptParser
+              (configValueOptParserAccInit spec)
+              (Spec.specConfigValues spec)
+  case parseResult of
+    CommandOptParsers parsers ->
+      parsers
+      |> HashMap.map (Config <$>)
+      |> joinCommandParsers
+      |> return
 
-    Spec.SubConfig configSpec -> do
-      parseResult <-
-        ifoldrMOf itraversed
-                  specToConfigValueOptParser
-                  (configValueOptParserAccInit spec)
-                  configSpec
-      case parseResult of
-        CommandOptParsers parsers ->
-          parsers
-          |> HashMap.map (Config <$>)
-          |> joinCommandParsers
-          |> return
-
-        SingleOptParser parser ->
-          parser
-          |> (Config <$>)
-          |> return
+    SingleOptParser parser ->
+      parser
+      |> (Config <$>)
+      |> return
 
 resolveOptParser :: Spec.ConfigSpec -> IO Config
 resolveOptParser configSpec = do

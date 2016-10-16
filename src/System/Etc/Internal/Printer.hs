@@ -29,7 +29,7 @@ renderJsonValue value' =
       else
         (text "false", 5)
     _ ->
-      error <| "invalid config value creation" `mappend` (show value')
+      crash <| "invalid config value creation" `mappend` (show value')
 
 renderConfig :: Config -> Doc
 renderConfig (Config configValue0) =
@@ -58,6 +58,9 @@ renderConfig (Config configValue0) =
           ( renderJsonValue value'
           , brackets' (fill 10 (text "OptParse"))
           )
+
+        None ->
+          ( (mempty, 0), mempty )
 
     renderSources :: [ConfigSource] -> Doc
     renderSources sources0 =

@@ -111,7 +111,7 @@ buildEnvVarResolver
   :: Spec.ConfigSpec
   -> Vector (Config -> IO Config)
 buildEnvVarResolver (Spec.ConfigSpec _ _ configValue) =
-  buildEnvVarResolver_ _Config configValue
+  buildEnvVarResolver_ _Config (Spec.SubConfig configValue)
 
 resolveEnvVars :: Spec.ConfigSpec -> IO Config
 resolveEnvVars specConfig =
