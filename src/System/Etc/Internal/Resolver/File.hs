@@ -4,7 +4,7 @@ module System.Etc.Internal.Resolver.File where
 
 import Control.Lens hiding ((<|), (|>))
 import Control.Monad.Catch (MonadThrow(..))
-import Data.List (foldl1')
+import Data.List (foldl')
 import Data.Maybe (catMaybes)
 import System.Directory (doesFileExist)
 import qualified Data.Aeson as JSON
@@ -76,7 +76,7 @@ readConfigFromFiles files =
                  else
                    return Nothing)
   |> (catMaybes <$>)
-  |> ((foldl1' (<>)) <$>)
+  |> ((foldl' (<>) mempty) <$>)
 
 resolveFiles :: Spec.ConfigSpec -> IO Config
 resolveFiles =
