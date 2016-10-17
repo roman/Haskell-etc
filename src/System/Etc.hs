@@ -9,6 +9,7 @@ module System.Etc
 
   , Resolver.resolveEnvVars
   , Resolver.resolveOptParser
+  , Resolver.resolveCommandOptParser
   , Resolver.resolveFiles
 
   , getConfigValue

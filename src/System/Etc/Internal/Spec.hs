@@ -259,9 +259,9 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec' cmd) where
 --------------------------------------------------------------------------------
 
 parseConfigSpec
-  :: MonadThrow m
+  :: (MonadThrow m, JSON.FromJSON cmd)
     => LB8.ByteString
-    -> m ConfigSpec
+    -> m (ConfigSpec' cmd)
 parseConfigSpec input =
   case JSON.eitherDecode input of
     Left err ->
@@ -270,7 +270,7 @@ parseConfigSpec input =
     Right result ->
       return result
 
-readConfigSpec :: Text -> IO ConfigSpec
+readConfigSpec :: JSON.FromJSON cmd => Text -> IO (ConfigSpec' cmd)
 readConfigSpec filepath = do
   contents <- (LB8.readFile <| Text.unpack filepath)
   parseConfigSpec contents

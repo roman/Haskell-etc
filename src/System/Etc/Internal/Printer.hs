@@ -60,7 +60,9 @@ renderConfig (Config configValue0) =
           )
 
         None ->
-          ( (mempty, 0), mempty )
+          ( (mempty, 0)
+          , mempty
+          )
 
     renderSources :: [ConfigSource] -> Doc
     renderSources sources0 =
@@ -109,8 +111,11 @@ renderConfig (Config configValue0) =
             sources =
               Set.toDescList sources0
           in
-            [ blue (text (Text.unpack configKey))
-             <$$> renderSources sources ]
+            if null sources then
+              []
+            else
+              [ blue (text (Text.unpack configKey))
+               <$$> renderSources sources ]
   in
     loop [] configValue0
     |> intersperse (linebreak <> linebreak)

@@ -21,7 +21,7 @@ import qualified System.Etc.Internal.Spec as Spec
 --------------------------------------------------------------------------------
 
 resolveEnvVarSource
-  :: Spec.ConfigSources
+  :: Spec.ConfigSources cmd
   -> IO (Maybe ConfigSource)
 resolveEnvVarSource specSources =
   let
@@ -42,7 +42,7 @@ resolveEnvVarSource specSources =
 
 envVarConfigResolver
   :: Maybe JSON.Value
-  -> Spec.ConfigSources
+  -> Spec.ConfigSources cmd
   -> L.ASetter Config Config (Set ConfigSource) (Set ConfigSource)
   -> Config
   -> IO Config
@@ -59,7 +59,7 @@ envVarConfigResolver defaultValue configSpecSources configLens config = do
 
 buildEnvVarResolver_
   :: L.ASetter Config Config ConfigValue ConfigValue
-  -> Spec.ConfigValue
+  -> Spec.ConfigValue cmd
   -> Vector (Config -> IO Config)
 buildEnvVarResolver_ configLens configSpecValue =
   let
@@ -108,12 +108,12 @@ buildEnvVarResolver_ configLens configSpecValue =
         Vector.empty
 
 buildEnvVarResolver
-  :: Spec.ConfigSpec
+  :: Spec.ConfigSpec' cmd
   -> Vector (Config -> IO Config)
 buildEnvVarResolver (Spec.ConfigSpec _ _ configValue) =
   buildEnvVarResolver_ _Config (Spec.SubConfig configValue)
 
-resolveEnvVars :: Spec.ConfigSpec -> IO Config
+resolveEnvVars :: Spec.ConfigSpec' cmd -> IO Config
 resolveEnvVars specConfig =
   specConfig
   |> buildEnvVarResolver
