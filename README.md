@@ -78,7 +78,7 @@ parser.
 
 ### Example
 
-NOTE: This example uses the `spec.json` given in the intro section
+NOTE: This example uses the `spec.json` given in the intro section.
 
 ```haskell
 import Control.Applicative ((<$>), (<*>))

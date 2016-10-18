@@ -3,11 +3,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Main where
 
-
 import GHC.Generics (Generic)
 import Data.Hashable (Hashable)
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
+import qualified Data.Text as Text
 import qualified System.Etc as Config
 
 import UB.Prelude
@@ -31,7 +31,7 @@ instance JSON.FromJSON Cmd where
         else if cmdName == "run" then
           return RunMain
         else
-          JSON.typeMismatch "Cmd" json
+          JSON.typeMismatch ("Cmd (" <> Text.unpack cmdName <> ")") json
       _ ->
         JSON.typeMismatch "Cmd" json
 

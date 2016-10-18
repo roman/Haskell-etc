@@ -37,12 +37,12 @@ data OptParseArgValueType
 
 data OptParseEntrySpec cmd
   = CmdEntry {
-      optParseEntrySpecCmdValue :: cmd
-    , optParseEntrySpecArgs     :: OptParseEntrySpecSettings
-    }
+    optParseEntrySpecCmdValue :: cmd
+  , optParseEntrySpecArgs     :: OptParseEntrySpecSettings
+  }
   | PlainEntry {
-      optParseEntrySpecArgs :: OptParseEntrySpecSettings
-    }
+    optParseEntrySpecArgs :: OptParseEntrySpecSettings
+  }
   deriving (Show, Eq)
 
 data OptParseEntrySpecSettings
@@ -102,7 +102,7 @@ data ConfigSpec' cmd
 type ConfigSpec = ConfigSpec' Text
 
 --------------------------------------------------------------------------------
--- Parser
+-- JSON Parsers
 
 instance JSON.FromJSON OptParseCommandSpec where
   parseJSON json =

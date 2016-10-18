@@ -21,14 +21,16 @@ import qualified System.Etc.Internal.Spec as Spec
 
 --------------------------------------------------------------------------------
 
-entrySpecToConfigValueOptParser
+entrySpecToJsonOptParser
   :: (MonadThrow m)
     => Spec.OptParseEntrySpec cmd
     -> m (cmd, Opt.Parser (Maybe JSON.Value))
-entrySpecToConfigValueOptParser entrySpec =
+entrySpecToJsonOptParser entrySpec =
   case entrySpec of
     Spec.CmdEntry commandJsonValue specSettings ->
-      return (commandJsonValue, settingsToJsonOptParser specSettings)
+      return ( commandJsonValue
+             , settingsToJsonOptParser specSettings
+             )
 
     Spec.PlainEntry {} ->
       throwM CommandKeyMissing
@@ -55,7 +57,8 @@ configValueSpecToOptParser specEntryKey specEntryDefVal sources acc =
         return acc
 
       Just entrySpec -> do
-        (command, jsonOptParser) <- entrySpecToConfigValueOptParser entrySpec
+        (command, jsonOptParser) <-
+          entrySpecToJsonOptParser entrySpec
 
         let
           configValueParser =
@@ -93,7 +96,7 @@ subConfigSpecToOptParser specEntryKey subConfigSpec acc =
            case mAccOptParser of
              Nothing -> do
                commandText <- commandToKey command
-               throwM <| UnknownCommandKey commandText
+               throwM <| UnknownCommandKey (Text.intercalate ", " commandText)
 
              Just accOptParser ->
                Just
@@ -173,10 +176,19 @@ joinCommandParsers parserPerCommand =
           fmap (\subConfig -> (command, Config subConfig))
                subConfigParser
       in do
-        commandText <- commandToKey command
-        return <|
-          acc `mappend` Opt.command (Text.unpack commandText)
-                                    (Opt.info (Opt.helper <*> parser) Opt.idm)
+        commandTexts <- commandToKey command
+
+        let
+          commandParsers =
+            map (\commandText ->
+                    Opt.command (Text.unpack commandText)
+                    (Opt.info (Opt.helper <*> parser) Opt.idm))
+                commandTexts
+
+        [acc]
+          |> (++ commandParsers)
+          |> mconcat
+          |> return
   in do
     mergedParsers <- ifoldrMOf itraversed joinParser Opt.idm parserPerCommand
     return (Opt.subparser mergedParsers)

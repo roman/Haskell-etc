@@ -43,7 +43,7 @@
             "help": "Password of user",
             "type": "string",
             "required": true,
-            "command": "run"
+            "command": ["run", "config"]
           }
         }
       }

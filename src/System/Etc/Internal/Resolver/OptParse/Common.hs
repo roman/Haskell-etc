@@ -9,6 +9,7 @@ import qualified Data.Aeson.Internal as JSON (iparse, IResult(..))
 import qualified Data.ByteString.Lazy.Char8 as BL (unpack)
 import qualified Data.Text as Text
 import qualified Data.Set as Set
+import qualified Data.Vector as Vector
 import qualified Options.Applicative as Opt
 
 import UB.Prelude hiding ((&))
@@ -52,11 +53,16 @@ specToOptParserVarFieldMod specSettings =
                   (Spec.optParseMetavar specSettings)
 
 
-commandToKey :: (MonadThrow m, JSON.ToJSON cmd) => cmd -> m Text
+commandToKey :: (MonadThrow m, JSON.ToJSON cmd) => cmd -> m [Text]
 commandToKey cmd =
   case JSON.toJSON cmd of
     JSON.String commandStr ->
-      return commandStr
+      return [commandStr]
+    JSON.Array jsonList ->
+      jsonList
+        |> Vector.toList
+        |> mapM commandToKey
+        |> (concat <$>)
     _ ->
       cmd
         |> JSON.encode
