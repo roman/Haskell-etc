@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Main where
 
-import UB.Prelude
+import Protolude
 import Test.Tasty (defaultMain)
 import qualified System.EtcTest
 

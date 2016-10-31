@@ -12,7 +12,7 @@ import qualified Data.Set as Set
 import qualified Data.Vector as Vector
 import qualified Options.Applicative as Opt
 
-import UB.Prelude hiding ((&))
+import System.Etc.Internal.Prelude hiding ((&))
 import System.Etc.Internal.Types
 import qualified System.Etc.Internal.Spec as Spec
 

@@ -18,7 +18,7 @@ import qualified Data.Aeson.Types as JSON (Parser, typeMismatch)
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
 
-import UB.Prelude
+import System.Etc.Internal.Prelude
 import System.Etc.Internal.Types (ConfigurationError(..))
 
 --------------------------------------------------------------------------------

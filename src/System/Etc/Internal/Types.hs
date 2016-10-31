@@ -13,7 +13,7 @@ import qualified Data.Aeson as JSON
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set as Set
 
-import UB.Prelude
+import System.Etc.Internal.Prelude
 
 --------------------
 -- Error Types

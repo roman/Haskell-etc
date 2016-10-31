@@ -8,7 +8,7 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 
-import UB.Prelude hiding ((<>), (<$>))
+import System.Etc.Internal.Prelude hiding ((<>), (<$>))
 import System.Etc.Internal.Types
 
 renderJsonValue :: JSON.Value -> (Doc, Int)
@@ -30,6 +30,7 @@ renderJsonValue value' =
         (text "false", 5)
     _ ->
       crash <| "invalid config value creation" `mappend` (show value')
+
 
 renderConfig :: Config -> Doc
 renderConfig (Config configValue0) =

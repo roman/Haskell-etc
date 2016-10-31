@@ -10,7 +10,7 @@ import qualified Data.Aeson.Types as JSON (typeMismatch)
 import qualified Data.Text as Text
 import qualified System.Etc as Config
 
-import UB.Prelude
+import Protolude
 
 --------------------------------------------------------------------------------
 -- We specify the support commands for our program

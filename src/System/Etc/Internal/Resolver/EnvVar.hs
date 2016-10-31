@@ -14,7 +14,7 @@ import qualified Data.Text as Text
 import qualified Data.Vector as Vector
 import qualified Data.HashMap.Strict as HashMap
 
-import UB.Prelude hiding ((&))
+import System.Etc.Internal.Prelude hiding ((&))
 import System.Etc.Internal.Types
 import qualified System.Etc.Internal.Spec as Spec
 

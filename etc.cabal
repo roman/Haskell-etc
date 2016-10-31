@@ -24,6 +24,7 @@ library
                        , System.Etc.Internal.Resolver.OptParse.Command
                        , System.Etc.Internal.Resolver.OptParse.Plain
                        , System.Etc.Internal.Resolver.File
+                       , System.Etc.Internal.Prelude
                        , System.Etc.Internal.Printer
   build-depends:       aeson
                      , ansi-wl-pprint
@@ -32,11 +33,11 @@ library
                      , containers
                      , directory
                      , exceptions
-                     , hashable >= 1.2.4.0
+                     , hashable
                      , lens
                      , optparse-applicative
                      , text
-                     , ub-prelude
+                     , protolude
                      , unordered-containers
                      , vector
 
@@ -48,9 +49,10 @@ executable etc-example
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:       base
-                     , ub-prelude
+                     , protolude
                      , aeson
                      , directory
+                     , text
                      , etc
                      , hashable
                      , optparse-applicative
@@ -62,7 +64,7 @@ test-suite etc-test
   main-is:             TestSuite.hs
   other-modules:       System.EtcTest
   build-depends:       base
-                     , ub-prelude
+                     , protolude
                      , bytestring
                      , aeson
                      , text

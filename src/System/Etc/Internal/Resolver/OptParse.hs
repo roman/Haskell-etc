@@ -5,7 +5,7 @@ module System.Etc.Internal.Resolver.OptParse
   , resolveCommandOptParser
   ) where
 
-import UB.Prelude
+import System.Etc.Internal.Prelude
 import System.Etc.Internal.Types
 import System.Etc.Internal.Resolver.OptParse.Command (resolveCommandOptParser)
 import System.Etc.Internal.Resolver.OptParse.Plain (resolvePlainOptParser)

@@ -14,7 +14,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Options.Applicative as Opt
 
-import UB.Prelude hiding ((&))
+import System.Etc.Internal.Prelude hiding ((&))
 import System.Etc.Internal.Types
 import System.Etc.Internal.Resolver.OptParse.Common
 import qualified System.Etc.Internal.Spec as Spec

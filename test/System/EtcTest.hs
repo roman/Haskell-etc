@@ -1,5 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
 module System.EtcTest (tests) where
 
 import Test.Tasty
@@ -9,7 +10,7 @@ import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
 import qualified Data.Set as Set
 
-import UB.Prelude
+import Protolude
 import qualified System.Etc as SUT
 
 data TestDbConfig
@@ -20,21 +21,21 @@ data TestDbConfig
 resolveFilesTests :: TestTree
 resolveFilesTests =
   testGroup "resolveFiles"
-    [ testCase "ignores files that do not exist" <| do
-        configSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+    [ testCase "ignores files that do not exist" $ do
+        configSpec :: SUT.ConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
         _config <- SUT.resolveFiles configSpec
         assertBool "" True
 
-    , testCase "gives higher precedence to latter config files" <| do
-        configSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+    , testCase "gives higher precedence to latter config files" $ do
+        configSpec :: SUT.ConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
         config <- SUT.resolveFiles configSpec
 
         -- config sources for the user key must be 2
         maybe
           (assertFailure "expected config entry user not present")
-          (Set.size
-           >> assertEqual "unexpected number of config source entries"
-                          2)
+          (assertEqual "unexpected number of config source entries"
+                       2
+          . Set.size)
           (SUT.getConfigSources ["user"] config)
 
         case SUT.getSelectedConfigSource ["user"] config of
@@ -47,14 +48,14 @@ resolveFilesTests =
             assertEqual "unexpected config value" value (JSON.String "two")
 
           Just source ->
-            assertFailure <| "Invalid config source returned " <> show source
+            assertFailure $ "Invalid config source returned " <> show source
         ]
 
 resolveEnvVarsTests :: TestTree
 resolveEnvVarsTests =
   testGroup "resolveEnvVars"
-    [ testCase "gives higher precedence to env var values" <| do
-        configSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+    [ testCase "gives higher precedence to env var values" $ do
+        configSpec :: SUT.ConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
         config0 <- SUT.resolveFiles configSpec
         config1 <- SUT.resolveEnvVars configSpec
 
@@ -80,12 +81,12 @@ resolveEnvVarsTests =
             assertEqual "unexpected config env varname" "USER" varname
 
           Just source ->
-            assertFailure <|
+            assertFailure $
               "Invalid config source returned (expecting EnvVar)"
               <> show source
 
-    , testCase "uses default value in case env var is not defined" <| do
-        configSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+    , testCase "uses default value in case env var is not defined" $ do
+        configSpec  :: SUT.ConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
         config0 <- SUT.resolveFiles configSpec
         config1 <- SUT.resolveEnvVars configSpec
 
@@ -101,7 +102,7 @@ resolveEnvVarsTests =
             assertEqual "unexpected config value default" (JSON.String "abc123") value
 
           Just source ->
-            assertFailure <|
+            assertFailure $
               "Invalid config source returned (expecting EnvVar)"
               <> show source
     ]
@@ -122,10 +123,10 @@ getConfigValueTests =
           JSON.typeMismatch "TestDbConfig" json
   in
     testGroup "getConfigValueWith"
-      [ testCase "allows to fetch sub-maps and decode them" <| do
-          configSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
-          config0 <- SUT.resolveFiles configSpec
-          config1 <- SUT.resolveEnvVars configSpec
+      [ testCase "allows to fetch sub-maps and decode them" $ do
+          configSpec  :: SUT.ConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+          config0    <- SUT.resolveFiles configSpec
+          config1    <- SUT.resolveEnvVars configSpec
 
           let
             config =

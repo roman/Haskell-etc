@@ -29,7 +29,7 @@ import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
 
-import UB.Prelude
+import System.Etc.Internal.Prelude
 import System.Etc.Internal.Types
 import qualified System.Etc.Internal.Spec as Spec
 import qualified System.Etc.Internal.Resolver.EnvVar as Resolver
