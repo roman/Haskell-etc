@@ -1,0 +1,40 @@
+{
+  "etc/filepaths": ["./resources/app.json",
+                     "/etc/app/config.json"],
+  "etc/optparse": {
+    "desc": "Description of the program that reads this configuration spec",
+    "header": "example-app - A program that has declarative configuration input"
+  },
+
+  "etc/entries": {
+    "credentials": {
+      "username": {
+        "etc/spec": {
+          "default": "root",
+          "env": "MY_APP_USERNAME",
+          "optparse": {
+            "input": "option",
+            "short": "u",
+            "metavar": "USERNAME",
+            "help": "Username of the system",
+            "type": "string",
+            "required": false
+          }
+        }
+      },
+      "password": {
+        "etc/spec": {
+          "env": "MY_APP_PASSWORD",
+          "optparse": {
+            "input": "option",
+            "short": "p",
+            "metavar": "PASSWORD",
+            "help": "Password of user",
+            "type": "string",
+            "required": true
+          }
+        }
+      }
+    }
+  }
+}

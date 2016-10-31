@@ -45,7 +45,21 @@ library
   default-language:    Haskell2010
 
 executable etc-example
-  hs-source-dirs:      example
+  hs-source-dirs:      examples/simple
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
+  build-depends:       base
+                     , protolude
+                     , aeson
+                     , directory
+                     , text
+                     , etc
+                     , hashable
+                     , optparse-applicative
+  default-language:    Haskell2010
+
+executable etc-commands-example
+  hs-source-dirs:      examples/opt-commands
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:       base

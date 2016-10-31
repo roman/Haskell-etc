@@ -29,7 +29,7 @@
             "help": "Username of the system",
             "type": "string",
             "required": false,
-            "command": "run"
+            "commands": ["run"]
           }
         }
       },
@@ -43,7 +43,7 @@
             "help": "Password of user",
             "type": "string",
             "required": true,
-            "command": ["run", "config"]
+            "commands": ["run", "config"]
           }
         }
       }

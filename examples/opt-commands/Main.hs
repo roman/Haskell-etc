@@ -47,7 +47,7 @@ instance JSON.ToJSON Cmd where
 
 main :: IO ()
 main = do
-  configSpec <- Config.readConfigSpec "example/resources/spec.json"
+  configSpec <- Config.readConfigSpec "./examples/opt-commands/resources/spec.json"
 
   configFiles <- Config.resolveFiles configSpec
   configEnv   <- Config.resolveEnvVars configSpec
