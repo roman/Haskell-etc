@@ -11,6 +11,7 @@ import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson ((.:), (.:?))
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromMaybe, isNothing)
+import Data.Vector (Vector)
 
 import qualified Data.ByteString.Lazy.Char8 as LB8
 import qualified Data.Aeson as JSON
@@ -37,7 +38,7 @@ data OptParseArgValueType
 
 data OptParseEntrySpec cmd
   = CmdEntry {
-    optParseEntrySpecCmdValue :: cmd
+    optParseEntrySpecCmdValue :: Vector cmd
   , optParseEntrySpecArgs     :: OptParseEntrySpecSettings
   }
   | PlainEntry {
@@ -193,7 +194,7 @@ instance JSON.FromJSON cmd => JSON.FromJSON (OptParseEntrySpec cmd) where
   parseJSON json =
       case json of
         JSON.Object object -> do
-          cmdValue   <- object .:? "command"
+          cmdValue   <- object .:? "commands"
           value <- object .: "input"
 
           let

@@ -7,6 +7,7 @@ import Control.Lens hiding ((<|), (|>))
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromMaybe)
+import Data.Vector (Vector)
 import Control.Monad.Catch (MonadThrow, throwM)
 import qualified Data.Aeson as JSON
 import qualified Data.HashMap.Strict as HashMap
@@ -24,7 +25,7 @@ import qualified System.Etc.Internal.Spec as Spec
 entrySpecToJsonOptParser
   :: (MonadThrow m)
     => Spec.OptParseEntrySpec cmd
-    -> m (cmd, Opt.Parser (Maybe JSON.Value))
+    -> m (Vector cmd, Opt.Parser (Maybe JSON.Value))
 entrySpecToJsonOptParser entrySpec =
   case entrySpec of
     Spec.CmdEntry commandJsonValue specSettings ->
@@ -42,7 +43,7 @@ configValueSpecToOptParser
     -> Spec.ConfigSources cmd
     -> HashMap cmd (Opt.Parser ConfigValue)
     -> m (HashMap cmd (Opt.Parser ConfigValue))
-configValueSpecToOptParser specEntryKey specEntryDefVal sources acc =
+configValueSpecToOptParser specEntryKey specEntryDefVal sources acc0 =
   let
     updateAccConfigOptParser configValueParser accOptParser =
       (\configValue accSubConfig ->
@@ -54,25 +55,28 @@ configValueSpecToOptParser specEntryKey specEntryDefVal sources acc =
   in
     case Spec.optParse sources of
       Nothing ->
-        return acc
+        return acc0
 
       Just entrySpec -> do
-        (command, jsonOptParser) <-
+        (commands, jsonOptParser) <-
           entrySpecToJsonOptParser entrySpec
 
         let
           configValueParser =
             jsonToConfigValue specEntryDefVal <$> jsonOptParser
 
-        acc
-          |> HashMap.alter
-                (\mAccParser ->
-                  mAccParser
-                    |> fromMaybe (pure <| SubConfig HashMap.empty)
-                    |> updateAccConfigOptParser configValueParser
-                    |> Just)
-                command
-          |> return
+        foldM (\acc command ->
+                 acc
+                   |> HashMap.alter
+                        (\mAccParser ->
+                          mAccParser
+                            |> fromMaybe (pure <| SubConfig HashMap.empty)
+                            |> updateAccConfigOptParser configValueParser
+                            |> Just)
+                        command
+                   |> return)
+              acc0
+              commands
 
 subConfigSpecToOptParser
   :: (MonadThrow m, JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
