@@ -8,6 +8,7 @@
 
   "etc/entries": {
     "credentials": {
+
       "username": {
         "etc/spec": {
           "default": "root",
@@ -22,6 +23,7 @@
           }
         }
       },
+
       "password": {
         "etc/spec": {
           "env": "MY_APP_PASSWORD",
@@ -35,6 +37,7 @@
           }
         }
       }
+
     }
   }
 }

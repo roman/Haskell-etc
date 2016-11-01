@@ -44,8 +44,8 @@ library
   ghc-options:         -Wall
   default-language:    Haskell2010
 
-executable etc-example
-  hs-source-dirs:      examples/simple
+executable etc-plain-example
+  hs-source-dirs:      examples/plain
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:       base
@@ -58,8 +58,8 @@ executable etc-example
                      , optparse-applicative
   default-language:    Haskell2010
 
-executable etc-commands-example
-  hs-source-dirs:      examples/opt-commands
+executable etc-command-example
+  hs-source-dirs:      examples/command
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:       base
