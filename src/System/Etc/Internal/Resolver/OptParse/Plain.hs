@@ -83,10 +83,10 @@ subConfigSpecToOptParser specEntryKey subConfigSpec acc =
         <*> accOptParser
   in do
     configOptParser <-
-        specToConfigValueOptParser
-          specEntryKey
-          (Spec.SubConfig subConfigSpec)
-          acc
+       ifoldrMOf itraversed
+                 specToConfigValueOptParser
+                 (pure <| SubConfig HashMap.empty)
+                 subConfigSpec
 
     return
       <| updateAccConfigOptParser configOptParser acc
