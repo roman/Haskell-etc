@@ -144,7 +144,7 @@ specToConfigValueOptParser specEntryKey specConfigValue acc =
 
 configValueOptParserAccInit
   :: (MonadThrow m, JSON.FromJSON cmd, Eq cmd, Hashable cmd)
-    => Spec.ConfigSpec' cmd
+    => Spec.ConfigSpec cmd
     -> m (HashMap cmd (Opt.Parser ConfigValue))
 configValueOptParserAccInit spec =
   let
@@ -199,7 +199,7 @@ joinCommandParsers parserPerCommand =
 
 specToConfigOptParser
   :: (MonadThrow m, JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
-    => Spec.ConfigSpec' cmd
+    => Spec.ConfigSpec cmd
     -> m (Opt.Parser (cmd, Config))
 specToConfigOptParser spec = do
   acc <- configValueOptParserAccInit spec
@@ -211,11 +211,12 @@ specToConfigOptParser spec = do
 
   joinCommandParsers parsers
 
-resolveCommandOptParser
+resolveCommandOptParserPure
   :: (JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
-    => Spec.ConfigSpec' cmd
+    => Spec.ConfigSpec cmd
+    -> [Text]
     -> IO (cmd, Config)
-resolveCommandOptParser configSpec = do
+resolveCommandOptParserPure configSpec args = do
   configParser <- specToConfigOptParser configSpec
 
   let
@@ -238,4 +239,17 @@ resolveCommandOptParser configSpec = do
       Opt.info (Opt.helper <*> configParser)
                programModFlags
 
-  Opt.execParser programParser
+  args
+    |> map Text.unpack
+    |> Opt.execParserPure Opt.defaultPrefs programParser
+    |> Opt.handleParseResult
+
+
+resolveCommandOptParser
+  :: (JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
+    => Spec.ConfigSpec cmd
+    -> IO (cmd, Config)
+resolveCommandOptParser configSpec =
+  getArgs
+  >>= map Text.pack
+  >>  resolveCommandOptParserPure configSpec

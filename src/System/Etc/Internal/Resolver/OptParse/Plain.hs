@@ -4,6 +4,7 @@ module System.Etc.Internal.Resolver.OptParse.Plain where
 
 import Control.Lens hiding ((<|), (|>))
 import Control.Monad.Catch (MonadThrow, throwM)
+import System.Environment (getArgs)
 import qualified Data.Aeson as JSON
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set as Set
@@ -17,9 +18,14 @@ import qualified System.Etc.Internal.Spec as Spec
 
 --------------------------------------------------------------------------------
 
+type PlainConfigSpec =
+  Spec.ConfigSpec ()
+
+--------------------------------------------------------------------------------
+
 entrySpecToConfigValueOptParser
   :: (MonadThrow m)
-    => Spec.OptParseEntrySpec cmd
+    => Spec.OptParseEntrySpec ()
     -> m (Opt.Parser (Maybe JSON.Value))
 entrySpecToConfigValueOptParser entrySpec =
   case entrySpec of
@@ -34,7 +40,7 @@ configValueSpecToOptParser
   :: (MonadThrow m)
     => Text
     -> Maybe JSON.Value
-    -> Spec.ConfigSources cmd
+    -> Spec.ConfigSources ()
     -> Opt.Parser ConfigValue
     -> m (Opt.Parser ConfigValue)
 configValueSpecToOptParser specEntryKey specEntryDefVal sources acc =
@@ -64,7 +70,7 @@ configValueSpecToOptParser specEntryKey specEntryDefVal sources acc =
 subConfigSpecToOptParser
   :: (MonadThrow m)
     => Text
-    -> HashMap.HashMap Text (Spec.ConfigValue cmd)
+    -> HashMap.HashMap Text (Spec.ConfigValue ())
     -> Opt.Parser ConfigValue
     -> m (Opt.Parser ConfigValue)
 subConfigSpecToOptParser specEntryKey subConfigSpec acc =
@@ -89,7 +95,7 @@ subConfigSpecToOptParser specEntryKey subConfigSpec acc =
 specToConfigValueOptParser
   :: (MonadThrow m)
     => Text
-    -> Spec.ConfigValue cmd
+    -> Spec.ConfigValue ()
     -> Opt.Parser ConfigValue
     -> m (Opt.Parser ConfigValue)
 specToConfigValueOptParser specEntryKey specConfigValue acc =
@@ -109,7 +115,7 @@ specToConfigValueOptParser specEntryKey specConfigValue acc =
 
 configValueOptParserAccInit
   :: (MonadThrow m)
-    => Spec.ConfigSpec' cmd
+    => Spec.ConfigSpec ()
     -> m (Opt.Parser ConfigValue)
 configValueOptParserAccInit spec =
   let
@@ -129,7 +135,7 @@ configValueOptParserAccInit spec =
 
 specToConfigOptParser
   :: (MonadThrow m)
-    => Spec.ConfigSpec' cmd
+    => Spec.ConfigSpec ()
     -> m (Opt.Parser Config)
 specToConfigOptParser spec = do
   acc <- configValueOptParserAccInit spec
@@ -143,9 +149,9 @@ specToConfigOptParser spec = do
     |> (Config <$>)
     |> return
 
-resolvePlainOptParser
-  :: Spec.ConfigSpec' cmd -> IO Config
-resolvePlainOptParser configSpec = do
+resolvePlainOptParserPure
+  :: PlainConfigSpec -> [Text] -> IO Config
+resolvePlainOptParserPure configSpec args = do
   configParser <- specToConfigOptParser configSpec
 
   let
@@ -168,4 +174,14 @@ resolvePlainOptParser configSpec = do
       Opt.info (Opt.helper <*> configParser)
                programModFlags
 
-  Opt.execParser programParser
+  args
+    |> map Text.unpack
+    |> Opt.execParserPure Opt.defaultPrefs programParser
+    |> Opt.handleParseResult
+
+resolvePlainOptParser
+  :: PlainConfigSpec -> IO Config
+resolvePlainOptParser configSpec =
+  getArgs
+  >>= map Text.pack
+  >>  resolvePlainOptParserPure configSpec

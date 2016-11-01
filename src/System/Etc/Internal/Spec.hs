@@ -92,15 +92,13 @@ data ConfigValue cmd
 
 $(makePrisms ''ConfigValue)
 
-data ConfigSpec' cmd
+data ConfigSpec cmd
   = ConfigSpec {
      specConfigFilepaths     :: [Text]
    , specOptParseProgramSpec :: Maybe OptParseProgramSpec
    , specConfigValues        :: HashMap Text (ConfigValue cmd)
    }
   deriving (Show, Eq)
-
-type ConfigSpec = ConfigSpec' Text
 
 --------------------------------------------------------------------------------
 -- JSON Parsers
@@ -246,7 +244,7 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
           ConfigValue (Just json) (ConfigSources Nothing Nothing)
 
 
-instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec' cmd) where
+instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec cmd) where
   parseJSON json  =
     case json of
       JSON.Object object ->
@@ -262,7 +260,7 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec' cmd) where
 parseConfigSpec
   :: (MonadThrow m, JSON.FromJSON cmd)
     => LB8.ByteString
-    -> m (ConfigSpec' cmd)
+    -> m (ConfigSpec cmd)
 parseConfigSpec input =
   case JSON.eitherDecode input of
     Left err ->
@@ -271,7 +269,7 @@ parseConfigSpec input =
     Right result ->
       return result
 
-readConfigSpec :: JSON.FromJSON cmd => Text -> IO (ConfigSpec' cmd)
+readConfigSpec :: JSON.FromJSON cmd => Text -> IO (ConfigSpec cmd)
 readConfigSpec filepath = do
   contents <- (LB8.readFile <| Text.unpack filepath)
   parseConfigSpec contents

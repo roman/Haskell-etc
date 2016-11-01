@@ -1,16 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 module System.Etc.Internal.Resolver.OptParse
-  ( resolveOptParser
+  ( PlainConfigSpec
   , resolveCommandOptParser
+  , resolveCommandOptParserPure
+  , resolvePlainOptParser
+  , resolvePlainOptParserPure
   ) where
 
-import System.Etc.Internal.Prelude
-import System.Etc.Internal.Types
-import System.Etc.Internal.Resolver.OptParse.Command (resolveCommandOptParser)
-import System.Etc.Internal.Resolver.OptParse.Plain (resolvePlainOptParser)
-
-import qualified System.Etc.Internal.Spec as Spec
-
-resolveOptParser :: Spec.ConfigSpec -> IO Config
-resolveOptParser = resolvePlainOptParser
+import System.Etc.Internal.Resolver.OptParse.Command (resolveCommandOptParser, resolveCommandOptParserPure)
+import System.Etc.Internal.Resolver.OptParse.Plain (PlainConfigSpec, resolvePlainOptParser, resolvePlainOptParserPure)

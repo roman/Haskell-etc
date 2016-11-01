@@ -1,6 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module System.Etc
   ( Spec.ConfigSpec
+  , Resolver.PlainConfigSpec
   , Config
   , ConfigSource (..)
 
@@ -8,8 +9,10 @@ module System.Etc
   , Spec.parseConfigSpec
 
   , Resolver.resolveEnvVars
-  , Resolver.resolveOptParser
+  , Resolver.resolvePlainOptParser
+  , Resolver.resolvePlainOptParserPure
   , Resolver.resolveCommandOptParser
+  , Resolver.resolveCommandOptParserPure
   , Resolver.resolveFiles
 
   , getConfigValue

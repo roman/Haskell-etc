@@ -78,7 +78,7 @@ readConfigFromFiles files =
   |> (catMaybes <$>)
   |> ((foldl' (<>) mempty) <$>)
 
-resolveFiles :: Spec.ConfigSpec' cmd -> IO Config
+resolveFiles :: Spec.ConfigSpec cmd -> IO Config
 resolveFiles =
   Spec.specConfigFilepaths
   >> readConfigFromFiles
