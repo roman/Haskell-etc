@@ -112,7 +112,7 @@ resolvePlainOptParserTests =
   testGroup "resolvePlainOptParser"
     [ testCase "creates long opt parse options from spec" $ do
         configSpec :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.plain.json"
-        config <- SUT.resolvePlainOptParserPure configSpec ["--password", "pass123"]
+        config <- SUT.resolvePlainOptParserPure configSpec "" ["--password", "pass123"]
 
         case SUT.getSelectedConfigSource ["password"] config of
           Nothing ->
@@ -129,7 +129,7 @@ resolvePlainOptParserTests =
 
     , testCase "creates short opt parse options from spec" $ do
         configSpec :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.plain.json"
-        config <- SUT.resolvePlainOptParserPure configSpec ["-p", "pass123"]
+        config <- SUT.resolvePlainOptParserPure configSpec "" ["-p", "pass123"]
 
         case SUT.getSelectedConfigSource ["password"] config of
           Nothing ->
@@ -146,10 +146,9 @@ resolvePlainOptParserTests =
 
     , testCase "fails if a required opt parse option from spec is not given" $ do
         configSpec :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.plain.json"
-        result <- try $ SUT.resolvePlainOptParserPure configSpec ["-u", "judy"]
 
-        case result of
-          Left (_ :: SomeException) ->
+        case SUT.resolvePlainOptParserPure configSpec "" ["-u", "judy"] of
+          Left _ ->
             assertBool "" True
 
           Right _ ->

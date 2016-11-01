@@ -4,11 +4,12 @@
 module System.Etc.Internal.Resolver.OptParse.Command where
 
 import Control.Lens hiding ((<|), (|>))
+import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromMaybe)
 import Data.Vector (Vector)
-import Control.Monad.Catch (MonadThrow, throwM)
+import System.Environment (getArgs, getProgName)
 import qualified Data.Aeson as JSON
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set as Set
@@ -212,11 +213,12 @@ specToConfigOptParser spec = do
   joinCommandParsers parsers
 
 resolveCommandOptParserPure
-  :: (JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
+  :: (MonadThrow m, JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
     => Spec.ConfigSpec cmd
+    -> Text
     -> [Text]
-    -> IO (cmd, Config)
-resolveCommandOptParserPure configSpec args = do
+    -> m (cmd, Config)
+resolveCommandOptParserPure configSpec progName args = do
   configParser <- specToConfigOptParser configSpec
 
   let
@@ -239,17 +241,21 @@ resolveCommandOptParserPure configSpec args = do
       Opt.info (Opt.helper <*> configParser)
                programModFlags
 
-  args
-    |> map Text.unpack
-    |> Opt.execParserPure Opt.defaultPrefs programParser
-    |> Opt.handleParseResult
+    programResult =
+      args
+        |> map Text.unpack
+        |> Opt.execParserPure Opt.defaultPrefs programParser
+
+  programResultToResolverResult progName programResult
 
 
 resolveCommandOptParser
   :: (JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
     => Spec.ConfigSpec cmd
     -> IO (cmd, Config)
-resolveCommandOptParser configSpec =
-  getArgs
-  >>= map Text.pack
-  >>  resolveCommandOptParserPure configSpec
+resolveCommandOptParser configSpec = do
+  progName <- Text.pack <$> getProgName
+  args     <- map Text.pack <$> getArgs
+
+  handleOptParseResult
+    <| resolveCommandOptParserPure configSpec progName args

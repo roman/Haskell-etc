@@ -3,20 +3,29 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module System.Etc.Internal.Resolver.OptParse.Common where
 
+import System.Etc.Internal.Prelude hiding ((&))
+import qualified Prelude as P
+
 import Control.Monad.Catch (MonadThrow, throwM)
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Internal as JSON (iparse, IResult(..))
 import qualified Data.ByteString.Lazy.Char8 as BL (unpack)
 import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
 import qualified Data.Set as Set
 import qualified Data.Vector as Vector
 import qualified Options.Applicative as Opt
 
-import System.Etc.Internal.Prelude hiding ((&))
 import System.Etc.Internal.Types
 import qualified System.Etc.Internal.Spec as Spec
 
 --------------------------------------------------------------------------------
+
+newtype GetMessage
+  = GetMessage (IO Text)
+
+instance Show GetMessage where
+  show _ = "<<message>>"
 
 data OptParseConfigError
   = InvalidOptParseCommandKey Text
@@ -29,6 +38,7 @@ data OptParseConfigError
   -- ^ The command setting is missing on a Command OptParser
   | CommandKeyOnPlainParser
   -- ^ There is a command setting on a plain OptParser
+  | OptParseEvalExited ExitCode GetMessage
   deriving (Show)
 
 instance Exception OptParseConfigError
@@ -143,3 +153,49 @@ jsonToConfigValue specEntryDefVal mJsonValue =
 
       _ ->
         crash "invalid spec creation"
+
+handleOptParseResult
+  :: Either SomeException a -> IO a
+handleOptParseResult result =
+  case result of
+    Right config ->
+      return config
+
+    Left err ->
+      case fromException err of
+        Just (OptParseEvalExited ExitSuccess (GetMessage getMsg)) -> do
+          getMsg >>= putStrLn
+          exitSuccess
+
+        Just (OptParseEvalExited exitCode (GetMessage getMsg)) -> do
+          getMsg >>= Text.hPutStrLn stderr
+          exitWith exitCode
+
+        _ ->
+          throwIO err
+
+programResultToResolverResult
+  :: MonadThrow m
+    => Text
+    -> Opt.ParserResult a
+    -> m a
+programResultToResolverResult progName programResult =
+  case programResult of
+    Opt.Success result ->
+      return result
+
+    Opt.Failure failure ->
+      let
+        (outputMsg, exitCode) =
+          Opt.renderFailure failure <| Text.unpack progName
+      in
+        throwM
+        <| OptParseEvalExited exitCode (GetMessage <| return (Text.pack outputMsg))
+
+    Opt.CompletionInvoked compl ->
+      let
+        getMsg =
+          Text.pack <$> (Opt.execCompletion compl <| Text.unpack progName)
+      in
+        throwM
+        <| OptParseEvalExited ExitSuccess (GetMessage getMsg)

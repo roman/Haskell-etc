@@ -4,7 +4,7 @@ module System.Etc.Internal.Resolver.OptParse.Plain where
 
 import Control.Lens hiding ((<|), (|>))
 import Control.Monad.Catch (MonadThrow, throwM)
-import System.Environment (getArgs)
+import System.Environment (getArgs, getProgName)
 import qualified Data.Aeson as JSON
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set as Set
@@ -65,7 +65,6 @@ configValueSpecToOptParser specEntryKey specEntryDefVal sources acc =
             jsonToConfigValue specEntryDefVal <$> jsonOptParser
 
         return <| updateAccConfigOptParser configValueParser acc
-
 
 subConfigSpecToOptParser
   :: (MonadThrow m)
@@ -150,8 +149,8 @@ specToConfigOptParser spec = do
     |> return
 
 resolvePlainOptParserPure
-  :: PlainConfigSpec -> [Text] -> IO Config
-resolvePlainOptParserPure configSpec args = do
+  :: MonadThrow m => PlainConfigSpec -> Text -> [Text] -> m Config
+resolvePlainOptParserPure configSpec progName args = do
   configParser <- specToConfigOptParser configSpec
 
   let
@@ -174,14 +173,19 @@ resolvePlainOptParserPure configSpec args = do
       Opt.info (Opt.helper <*> configParser)
                programModFlags
 
-  args
-    |> map Text.unpack
-    |> Opt.execParserPure Opt.defaultPrefs programParser
-    |> Opt.handleParseResult
+    programResult =
+      args
+        |> map Text.unpack
+        |> Opt.execParserPure Opt.defaultPrefs programParser
+
+  programResultToResolverResult progName programResult
+
 
 resolvePlainOptParser
   :: PlainConfigSpec -> IO Config
-resolvePlainOptParser configSpec =
-  getArgs
-  >>= map Text.pack
-  >>  resolvePlainOptParserPure configSpec
+resolvePlainOptParser configSpec = do
+  progName <- Text.pack <$> getProgName
+  args     <- map Text.pack <$> getArgs
+
+  handleOptParseResult
+    <| resolvePlainOptParserPure configSpec progName args
