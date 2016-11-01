@@ -1,0 +1,43 @@
+{
+
+    "etc/filepaths": ["test/fixtures/one.json",
+                      "test/fixtures/two.json"],
+
+    "etc/optparse": {
+        "desc": "An Example of all configuration sources",
+        "header": "etc-example - a way to test all configuration sources"
+    },
+
+    "etc/entries": {
+
+        "user": {
+            "etc/spec": {
+                "default": "roman",
+                "env": "USER",
+                "optparse": {
+                    "input": "argument",
+                    "metavar": "USER",
+                    "help": "User of the system",
+                    "type": "string",
+                    "required": false
+                }
+            }
+        },
+
+        "password": {
+            "etc/spec": {
+                "env": "NON_EXISTING_PASSWORD",
+                "default": "abc123",
+                "optparse": {
+                    "input": "option",
+                    "long": "password",
+                    "short": "p",
+                    "metavar": "PASSWORD",
+                    "help": "Password of the system's User",
+                    "type": "string",
+                    "required": true
+                }
+            }
+        }
+    }
+}

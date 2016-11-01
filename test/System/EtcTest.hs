@@ -22,12 +22,12 @@ resolveFilesTests :: TestTree
 resolveFilesTests =
   testGroup "resolveFiles"
     [ testCase "ignores files that do not exist" $ do
-        configSpec :: SUT.ConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+        configSpec :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
         _config <- SUT.resolveFiles configSpec
         assertBool "" True
 
     , testCase "gives higher precedence to latter config files" $ do
-        configSpec :: SUT.ConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+        configSpec :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
         config <- SUT.resolveFiles configSpec
 
         -- config sources for the user key must be 2
@@ -55,7 +55,7 @@ resolveEnvVarsTests :: TestTree
 resolveEnvVarsTests =
   testGroup "resolveEnvVars"
     [ testCase "gives higher precedence to env var values" $ do
-        configSpec :: SUT.ConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+        configSpec :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
         config0 <- SUT.resolveFiles configSpec
         config1 <- SUT.resolveEnvVars configSpec
 
@@ -86,7 +86,7 @@ resolveEnvVarsTests =
               <> show source
 
     , testCase "uses default value in case env var is not defined" $ do
-        configSpec  :: SUT.ConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+        configSpec  :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
         config0 <- SUT.resolveFiles configSpec
         config1 <- SUT.resolveEnvVars configSpec
 
@@ -94,17 +94,66 @@ resolveEnvVarsTests =
           config =
             config0 <> config1
 
-        case SUT.getSelectedConfigSource ["password"] config of
+        case SUT.getSelectedConfigSource ["host"] config of
           Nothing ->
-            assertFailure "expected config entry password not present"
+            assertFailure "expected config entry user not present"
 
           Just (SUT.Default value) -> do
-            assertEqual "unexpected config value default" (JSON.String "abc123") value
+            assertEqual "unexpected config value default" (JSON.String "zootopia") value
 
           Just source ->
             assertFailure $
               "Invalid config source returned (expecting EnvVar)"
               <> show source
+    ]
+
+resolvePlainOptParserTests :: TestTree
+resolvePlainOptParserTests =
+  testGroup "resolvePlainOptParser"
+    [ testCase "creates long opt parse options from spec" $ do
+        configSpec :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.plain.json"
+        config <- SUT.resolvePlainOptParserPure configSpec ["--password", "pass123"]
+
+        case SUT.getSelectedConfigSource ["password"] config of
+          Nothing ->
+            assertFailure "expected config entry password not present"
+
+          Just (SUT.OptParse value) ->
+            assertEqual "expected password value to come from optparser but wasn't"
+                        (JSON.String "pass123")
+                        value
+
+          value ->
+            assertFailure $
+              "expected config entry to come from OptParse but didn't: " <> show value
+
+    , testCase "creates short opt parse options from spec" $ do
+        configSpec :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.plain.json"
+        config <- SUT.resolvePlainOptParserPure configSpec ["-p", "pass123"]
+
+        case SUT.getSelectedConfigSource ["password"] config of
+          Nothing ->
+            assertFailure "expected config entry password not present"
+
+          Just (SUT.OptParse value) ->
+            assertEqual "expected password value to come from optparser but wasn't"
+                        (JSON.String "pass123")
+                        value
+
+          value ->
+            assertFailure $
+              "expected config entry to come from OptParse but didn't: " <> show value
+
+    , testCase "fails if a required opt parse option from spec is not given" $ do
+        configSpec :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.plain.json"
+        result <- try $ SUT.resolvePlainOptParserPure configSpec ["-u", "judy"]
+
+        case result of
+          Left (_ :: SomeException) ->
+            assertBool "" True
+
+          Right _ ->
+            assertFailure "expected to fail from required argument, but didn't"
     ]
 
 getConfigValueTests :: TestTree
@@ -124,7 +173,7 @@ getConfigValueTests =
   in
     testGroup "getConfigValueWith"
       [ testCase "allows to fetch sub-maps and decode them" $ do
-          configSpec  :: SUT.ConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
+          configSpec  :: SUT.PlainConfigSpec <- SUT.readConfigSpec "test/fixtures/spec.json"
           config0    <- SUT.resolveFiles configSpec
           config1    <- SUT.resolveEnvVars configSpec
 
@@ -148,5 +197,6 @@ tests =
   testGroup "System.Etc"
     [ resolveFilesTests
     , resolveEnvVarsTests
+    , resolvePlainOptParserTests
     , getConfigValueTests
     ]
