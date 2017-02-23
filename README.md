@@ -6,7 +6,7 @@ configuration file.
 
 To get started you'll need a JSON file where this configuration values are
 declared, say for example you have a file on your project called
-`resources/spec.json`:
+`resources/spec.json`, following is an example of how that file would look like.
 
 ```json
 {
@@ -59,6 +59,14 @@ declared, say for example you have a file on your project called
 }
 ```
 
+We will go through some of the details on the next sections, the important
+section to notice on is the `"etc/entries"` which specifies how your config map
+is going to look like. Also the `"etc/filepaths"` will tell etc where to look
+for files to gather the configuration of your app, it could be multiple of them
+because you may want to have a default for development, and then override it
+with some configurations for production/integration, The values of the latter
+filepaths in this array will have a higher precedence.
+
 ## Reading Configuration in Haskell Code
 
 To read configuration values, there is 2 functions that can be used:
@@ -104,10 +112,11 @@ main = do
   configSpec <- Etc.readConfigSpec "resources/spec.json"
   config     <- Etc.resolveFiles configSpec
 
-  -- Get individual entries (Uses Aeson.FromJSON)
+  -- Get individual entries (Uses instance of Text type for the Aeson.FromJSON
+  -- typeclass)
   username <- Etc.getConfigValue ["credentials", "username"]
 
-  -- Get the values with a JSON parser
+  -- Get the values with a supplied JSON parser
   creds <- Etc.getConfigValueWith parseCredentials ["credentials"]
 
   print (username :: Text)
@@ -145,9 +154,14 @@ Example:
 import qualified System.Etc as Etc
 module Main where
   -- ...
-  configSpec <- Etc.readConfigSpec "resources/spec.json"
-  config     <- Etc.resolveFiles configSpec
-  config     <- Etc.resolveEnvVars configSpec
+  configSpec  <- Etc.readConfigSpec "resources/spec.json"
+  configFiles <- Config.resolveFiles configSpec
+  configEnv   <- Config.resolveEnvVars configSpec
+
+  let
+    config =
+      configFiles
+      <> configEnv
   -- ...
 ```
 
