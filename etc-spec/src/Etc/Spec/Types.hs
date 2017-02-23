@@ -193,6 +193,12 @@ cliOptParser object = do
       <*> (fromMaybe True <$> (object .:? "required"))
       <*> (cliOptTypeParser object)
 
+cliArgKeys :: [Text]
+cliArgKeys = ["input", "commands", "metavar", "required", "type"]
+
+cliOptKeys :: [Text]
+cliOptKeys = ["short", "long", "help"] ++ cliArgKeys
+
 instance JSON.FromJSON cmd => JSON.FromJSON (CliEntrySpec cmd) where
   parseJSON json =
       case json of
@@ -206,10 +212,20 @@ instance JSON.FromJSON cmd => JSON.FromJSON (CliEntrySpec cmd) where
 
           case value of
             JSON.String inputName ->
-              if inputName == "option" then
+              if inputName == "option" then do
+                forM_ (HashMap.keys object) $ \key ->
+                  when (not (key `elem` cliOptKeys))
+                    (fail $ "cli option contains invalid key " ++ show key)
+
                 optParseEntryCtor <$> cliOptParser object
-              else if inputName == "argument" then
+
+              else if inputName == "argument" then do
+                forM_ (HashMap.keys object) $ \key ->
+                  when (not (key `elem` cliArgKeys))
+                    (fail $ "cli option contains invalid key " ++ show key)
+
                 optParseEntryCtor <$> cliArgParser object
+
               else
                 JSON.typeMismatch "CliEntryMetadata (invalid input)" value
             _ ->
@@ -239,15 +255,17 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
 
           -- etc spec value object
           Just (JSON.Object spec) ->
-            ConfigValue
-              <$> spec .:? "default"
-              <*> (ConfigSources <$> (spec .:? "env")
-                                 <*> (spec .:? "cli"))
+            if HashMap.size object == 1 then
+              ConfigValue
+                <$> spec .:? "default"
+                <*> (ConfigSources <$> (spec .:? "env")
+                                   <*> (spec .:? "cli"))
+            else
+              fail "etc/spec object can only contain one key"
 
           -- any other JSON value
-          Just innerJson ->
-            return $
-              ConfigValue (Just innerJson) (ConfigSources Nothing Nothing)
+          Just _ ->
+            fail "etc/spec value must be a JSON object"
 
       _ ->
         return $
