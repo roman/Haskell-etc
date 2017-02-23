@@ -59,15 +59,21 @@ declared, say for example you have a file on your project called
 }
 ```
 
-We will go through some of the details on the next sections, the important
-section to notice on is the `"etc/entries"` which specifies how your config map
-is going to look like. Also the `"etc/filepaths"` will tell etc where to look
-for files to gather the configuration of your app, it could be multiple of them
-because you may want to have a default for development, and then override it
-with some configurations for production/integration, The values of the latter
-filepaths in this array will have a higher precedence.
+The important JSON keys to notice on the previous example:
 
-## Reading Configuration in Haskell Code
+- `"etc/entries"` which specifies how your config map is going to look lik
+
+- `"etc/filepaths"` which tells etc where to look for files to gather the
+configuration of your app, it could be more than one file because you may want
+to have a default file for development, and then override it with some
+configurations for production/integration, The further the filepath is the
+higher precedence its values is going to have.
+
+- `"etc/spec"` which gives etc metadata around a configuration entry, what is
+its default value, if it can be found via an [ENV Var](#env-vars), or if it may
+be specified as an [OptParse CLI](#optparser) input.
+
+## Reading Configuration map in Haskell Code
 
 To read configuration values, there is 2 functions that can be used:
 
