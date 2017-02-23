@@ -134,4 +134,63 @@ the development values.
 
 ### ENV Vars
 
+If you specify an `"env"` key with a word in uppercase on any of the entries
+of your `spec.json`, etc will consider environment variables with that name as
+long as you call the `resolveEnvVars` function with a configuration spec as an
+argument.
+
+Example:
+
+```haskell
+import qualified System.Etc as Etc
+module Main where
+  -- ...
+  configSpec <- Etc.readConfigSpec "resources/spec.json"
+  config     <- Etc.resolveFiles configSpec
+  config     <- Etc.resolveEnvVars configSpec
+  -- ...
+```
+
 ### OptParser
+
+If you specify an `"optparse"` key with a configuration map on any of the
+entries of your `spec.json`, etc will create CLI Optparser options or
+arguments for you dynamically as long as you call the `resolvePlainOptParser` or
+`resolveCommandOptParser` functions with a configuration spec as an argument.
+
+The `"optpare"` configuration map can have:
+
+- required: specifies if the entry is required on the CLI
+
+- input: specifies how you want to receive the value, via a CLI positional
+  argument or an --option
+
+- type: the type of the value, it may be `"string"` or, `"number"` for an
+  `"argument"` input, the `"option"` input also accepts before mentioned values
+  plus `"switch"` which maps to a boolean
+
+- metavar: the name of the input argument on the example/documentation string of
+  the CLI help
+
+- long (only for option): the name of the option in long form (e.g. --name)
+
+- short (only for option): the name of the option in short form (.e.g -n)
+
+#### Plain cli input
+
+This is used when there is no sub-commands on your application, this is more
+than likely what you would use for simple CLI applications.
+
+An example can be found in the `examples/plain` folder
+
+#### Command cli input
+
+This is used when you want to have multiple commands on your application, you
+can make entries on your configuration map spec be parameters of this CLI
+sub-commands by specifying the `"commands"` key on the `"optparse"` key of your
+entry spec.
+
+You may have a custom Aeson JSON decoder for key values to do pattern matching
+on the possible commands.
+
+An example can be found in the `examples/command` folder
