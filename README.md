@@ -95,7 +95,7 @@ data Credentials
 parseCredentials json =
   case json of
     JSON.Object object ->
-      Credentilas
+      Credentials
         <$> object .: "user"
         <*> object .: "password"
 
