@@ -2,8 +2,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Etc.Spec.JSON where
 
-import           Control.Monad.Catch        (MonadThrow (..))
 import           Protolude
+
+import           Control.Monad.Catch        (MonadThrow (..))
 
 import qualified Data.Aeson                 as JSON
 import qualified Data.ByteString.Lazy.Char8 as LB8

@@ -1,3 +1,4 @@
+:seti -XOverloadedStrings
 :def rt const $ return $ unlines [":r", ":main --rerun-update"]
 :def rtfe const $ return $ unlines [":r", ":main --rerun-update --rerun-filter failures,exceptions"]
 :def rtn const $ return $ unlines [":r", ":main --rerun-update --rerun-filter new"]

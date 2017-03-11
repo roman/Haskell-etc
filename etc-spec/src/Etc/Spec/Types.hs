@@ -278,6 +278,6 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec cmd) where
         ConfigSpec
         <$> (fromMaybe [] <$> (object .:?  "etc/filepaths"))
         <*> (object .:? "etc/cli")
-        <*> (object .:  "etc/entries")
+        <*> (fromMaybe HashMap.empty <$> (object .:? "etc/entries"))
       _ ->
         JSON.typeMismatch "ConfigSpec" json
