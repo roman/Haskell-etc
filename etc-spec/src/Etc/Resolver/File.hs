@@ -6,7 +6,6 @@ module Etc.Resolver.File (resolveFiles) where
 import Protolude
 
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Maybe (catMaybes)
 import System.Directory (doesFileExist)
 
 #ifdef WITH_YAML
@@ -26,8 +25,8 @@ import Etc.Types hiding (filepath)
 --------------------------------------------------------------------------------
 
 data ConfigFile
-  = JsonFile LB8.ByteString
-  | YamlFile LB8.ByteString
+  = JsonFile Text LB8.ByteString
+  | YamlFile Text LB8.ByteString
   deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
@@ -58,17 +57,17 @@ eitherDecode :: ConfigFile -> Either [Char] JSON.Value
 #ifdef WITH_YAML
 eitherDecode contents0 =
   case contents0 of
-    JsonFile contents ->
+    JsonFile _ contents ->
       JSON.eitherDecode contents
-    YamlFile contents ->
-      YAML.eitherDecode contents
+    YamlFile _ contents ->
+      YAML.decodeEither (LB8.toStrict contents)
 #else
 eitherDecode contents0 =
   case contents0 of
-    JsonFile contents ->
+    JsonFile _ contents ->
       JSON.eitherDecode contents
-    YamlFile _ ->
-      Left "Unsupported yaml file"
+    YamlFile filepath _ ->
+      Left ("Unsupported yaml file: " <> Text.unpack filepath)
 #endif
 
 
@@ -91,36 +90,41 @@ parseConfig fileIndex filepath contents =
         JSON.ISuccess result ->
           return (Config result)
 
-readConfigFile :: Text -> IO (Maybe ConfigFile)
+readConfigFile :: MonadThrow m => Text -> IO (m ConfigFile)
 readConfigFile filepath =
   let
     filepathStr = Text.unpack filepath
   in do
     fileExists <- doesFileExist filepathStr
-    putStrLn $ show filepath <> (" exists? " :: Text.Text) <> show fileExists
     if fileExists then do
       contents <- LB8.readFile filepathStr
       if ".json" `Text.isSuffixOf` filepath then
-        return $ Just (JsonFile contents)
+        return $ return (JsonFile filepath contents)
       else if ".yaml" `Text.isSuffixOf` filepath then
-        return $ Just (YamlFile contents)
+        return $ return (YamlFile filepath contents)
       else if ".yml" `Text.isSuffixOf` filepath then
-        return $ Just (YamlFile contents)
+        return $ return (YamlFile filepath contents)
       else
-        return Nothing
+        return (throwM $ InvalidConfiguration "Unsupported file extension")
     else
-      return Nothing
+      return $ throwM $ ConfigurationFileNotFound filepath
 
-readConfigFromFiles :: [Text] -> IO Config
+readConfigFromFiles :: [Text] -> IO (Config, [SomeException])
 readConfigFromFiles files =
   files
   & zip [1..]
   & mapM (\(fileIndex, filepath) -> do
                  mContents <- readConfigFile filepath
                  return (mContents >>= parseConfig fileIndex filepath))
-  & (catMaybes <$>)
-  & (mconcat <$>)
+  & (foldl' (\(result, errs) eCurrent ->
+               case eCurrent of
+                 Left err ->
+                   (result, err:errs)
+                 Right current ->
+                   (result <> current, errs))
+             (mempty, [])
+             <$>)
 
-resolveFiles :: Spec.ConfigSpec cmd -> IO Config
+resolveFiles :: Spec.ConfigSpec cmd -> IO (Config, [SomeException])
 resolveFiles =
   readConfigFromFiles . Spec.specConfigFilepaths

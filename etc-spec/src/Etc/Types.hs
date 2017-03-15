@@ -81,7 +81,7 @@ data ConfigValue
   | SubConfig {
       configMap :: HashMap Text ConfigValue
     }
-  deriving (Show)
+  deriving (Eq, Show)
 
 deepMerge :: ConfigValue -> ConfigValue -> ConfigValue
 deepMerge left right =
@@ -107,7 +107,7 @@ instance Semigroup ConfigValue where
 
 newtype Config
   = Config { fromConfig :: ConfigValue }
-  deriving (Show, Semigroup)
+  deriving (Eq, Show, Semigroup)
 
 instance Monoid Config where
   mempty = Config $ SubConfig HashMap.empty

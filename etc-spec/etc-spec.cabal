@@ -67,6 +67,10 @@ test-suite etc-spec-testsuite
   other-modules:       Paths_etc_spec,
                        Etc.SpecTest,
                        Etc.Resolver.FileTest
+
+  if flag(yaml)
+    build-depends:     yaml
+
   ghc-options:         -Wall
   default-language:    Haskell2010
 

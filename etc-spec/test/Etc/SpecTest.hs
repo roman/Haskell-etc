@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -14,12 +15,14 @@ import           Data.HashMap.Strict (HashMap)
 
 import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Yaml           as YAML
-
-import           Paths_etc_spec      (getDataFileName)
 
 import           Etc.Spec.JSON       (parseConfigSpec)
 import           Etc.Spec.Types
+
+#ifdef WITH_YAML
+import           Paths_etc_spec      (getDataFileName)
+import qualified Data.Yaml           as YAML
+#endif
 
 
 getConfigValue :: [Text] -> HashMap Text (ConfigValue cmd) -> Maybe (ConfigValue cmd)
@@ -103,7 +106,7 @@ general_tests =
                       (Just (JSON.String "hello"))
                       (defaultValue value)
 
-  , testCase "spec map can not be empty object" $ do
+  , testCase "spec map cannot be empty object" $ do
       let
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{}}}"
 
@@ -113,7 +116,7 @@ general_tests =
         Nothing ->
           assertBool "" True
 
-  , testCase "spec map can not be a JSON array" $ do
+  , testCase "spec map cannot be a JSON array" $ do
       let
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":[]}}"
 
@@ -123,7 +126,7 @@ general_tests =
         Nothing ->
           assertBool "" True
 
-  , testCase "spec map can not be a JSON bool" $ do
+  , testCase "spec map cannot be a JSON bool" $ do
       let
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":true}}"
 
@@ -133,7 +136,7 @@ general_tests =
         Nothing ->
           assertBool "" True
 
-  , testCase "spec map can not be a JSON string" $ do
+  , testCase "spec map cannot be a JSON string" $ do
       let
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":\"hello\"}}}"
 
@@ -143,7 +146,7 @@ general_tests =
         Nothing ->
           assertBool "" True
 
-  , testCase "spec map can not be a JSON number" $ do
+  , testCase "spec map cannot be a JSON number" $ do
       let
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":123}}}"
 
@@ -153,7 +156,7 @@ general_tests =
         Nothing ->
           assertBool "" True
 
-  , testCase "spec map can not any other key that is not etc/spec" $ do
+  , testCase "spec map cannot have any other key that is not etc/spec" $ do
       let
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":\"hello\"},\"foobar\":123}}}"
 
@@ -288,6 +291,7 @@ envvar_tests =
                       (configSources value)
   ]
 
+#ifdef WITH_YAML
 yaml_tests :: TestTree
 yaml_tests =
   testGroup "yaml parser"
@@ -312,7 +316,16 @@ yaml_tests =
                           (ConfigSources (Just "GREETING") Nothing)
                           (configSources value)
   ]
+#endif
 
 tests :: TestTree
 tests =
-  testGroup "spec" [general_tests, envvar_tests, cli_tests, yaml_tests]
+  testGroup "spec"
+  [
+    general_tests
+#ifdef WITH_YAML
+  , yaml_tests
+#endif
+  , envvar_tests
+  , cli_tests
+  ]

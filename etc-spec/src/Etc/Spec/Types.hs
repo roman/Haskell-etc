@@ -22,6 +22,7 @@ import qualified Data.HashMap.Strict as HashMap
 data ConfigurationError
   = InvalidConfiguration Text
   | InvalidConfigKeyPath [Text]
+  | ConfigurationFileNotFound Text
   deriving (Show)
 
 instance Exception ConfigurationError
