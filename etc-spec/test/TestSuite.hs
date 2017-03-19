@@ -12,10 +12,12 @@ import           Test.Tasty.Runners           (consoleTestReporter,
 
 import qualified Etc.SpecTest
 import qualified Etc.Resolver.FileTest
+import qualified Etc.Resolver.EnvTest
 
 main :: IO ()
 main =
   defaultMainWithIngredients
     [ rerunningTests [listingTests, consoleTestReporter] ]
     (testGroup "etc" [ Etc.SpecTest.tests
-                     , Etc.Resolver.FileTest.tests ])
+                     , Etc.Resolver.FileTest.tests
+                     , Etc.Resolver.EnvTest.tests ])
