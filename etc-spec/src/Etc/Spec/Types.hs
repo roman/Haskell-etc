@@ -51,7 +51,7 @@ data CliEntryMetadata
   }
   | Arg {
     argMetavar   :: Maybe Text
-  , argRequired  :: Bool
+  , optRequired  :: Bool
   , argValueType :: CliArgValueType
   }
   deriving (Show, Eq)

@@ -27,26 +27,18 @@ tests =
   testGroup "env"
   [
     testCase "env entry is present when env var is defined" $ do
-      jsonFilepath <- getDataFileName "test/fixtures/config.json"
       let
         input =
           mconcat
             [
-              "{\"etc/filepaths\": ["
-            , "\"" <> LB8.pack jsonFilepath <> "\""
-            , "],"
-            , " \"etc/entries\": {"
+              "{\"etc/entries\": {"
             , " \"greeting\": { \"etc/spec\": { \"env\": \"GREETING\" }}}}"
             ]
       (spec :: ConfigSpec ()) <- parseConfigSpec input
-      (configFile, _) <- resolveFiles spec
 
       let
-        configEnv =
-          resolveEnvPure spec [("GREETING", "hello env")]
-
         config =
-            configEnv <> configFile
+            resolveEnvPure spec [("GREETING", "hello env")]
 
       case getConfigSources ["greeting"] config of
         Nothing ->
