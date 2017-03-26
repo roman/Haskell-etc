@@ -4,7 +4,6 @@
 {-# LANGUAGE OverloadedStrings          #-}
 module Etc.Spec.Types where
 
-
 import           Prelude             (fail)
 import           Protolude
 

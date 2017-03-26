@@ -29,14 +29,14 @@ data ConfigSource
     , value       :: JSON.Value
     }
   | Env {
-        envVar :: Text
-      , value  :: JSON.Value
-      }
+      envVar :: Text
+    , value  :: JSON.Value
+    }
   | Cli {
       value :: JSON.Value
     }
   | Default {
-    value :: JSON.Value
+      value :: JSON.Value
     }
   | None
   deriving (Show, Eq)

@@ -20,4 +20,7 @@ import Text.Show.Pretty (pPrint)
 -- custom flag setting
 
 :def yaml const $ return $ unlines [":set -DWITH_YAML", ":set -package yaml"]
-:def noyaml const $ return $ unlines [":set -UWITH_YAML", ":set -package yaml"]
+:def noyaml const $ return $ unlines [":set -UWITH_YAML", ":set -hide-package yaml"]
+
+:def cli const $ return $ unlines [":set -DWITH_CLI", ":set -package optparse-applicative"]
+:def nocli const $ return $ unlines [":set -UWITH_CLI", ":set -hide-package optparse-applicative"]

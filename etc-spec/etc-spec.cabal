@@ -1,101 +1,119 @@
-name:                etc-spec
-version:             0.0.0.0
-synopsis:            Configuration library for Haskell
-description:         Please see README.md
-homepage:            https://gitlab.com/romanandreg/Haskell-etc
-license:             BSD3
-license-file:        LICENSE
-author:              Roman Gonzalez
-maintainer:          romanandreg@gmail.com
-copyright:           2017 Roman Gonzalez
-category:            Configuration, System
-build-type:          Simple
--- extra-source-files:
-data-files:          test/fixtures/config.spec.yaml
-cabal-version:       >=1.10
+-- This file has been generated from package.yaml by hpack version 0.17.0.
+--
+-- see: https://github.com/sol/hpack
 
-Flag Cli
-  Description: Include support for cli arguments
-  Default: False
+name:           etc-spec
+version:        0.0.0.0
+synopsis:       Configuration library for Haskell
+description:    Please see README.md
+category:       Configuration, System
+homepage:       https://gitlab.com/romanandreg/Haskell-etc
+author:         Roman Gonzalez
+maintainer:     romanandreg@gmail.com
+copyright:      2017 Roman Gonzalez
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
 
-Flag Yaml
-  Description: Include support to parse YAML files
-  Default: False
-
-library
-  hs-source-dirs:      src
-  exposed-modules:     Etc.Spec.JSON
-                     , Etc.Spec.Types
-                     , Etc
-                     , Etc.Types
-                     , Etc.Resolver.File
-                     , Etc.Resolver.Env
-
-  build-depends:       base >= 4.7 && < 5
-                     , aeson
-                     , bytestring
-                     , containers
-                     , directory
-                     , exceptions
-                     , hashable
-                     , text
-                     , protolude
-                     , unordered-containers
-                     , vector
-
-  ghc-options:         -Wall
-  default-language:    Haskell2010
-
-  if flag(cli)
-    exposed-modules:   Etc.Resolver.Cli
-                     , Etc.Resolver.Cli.Common
-                     , Etc.Resolver.Cli.Plain
-
-    build-depends:     optparse-applicative
-    CPP-Options:       -DWITH_CLI
-
-  if flag(yaml)
-    exposed-modules:   Etc.Spec.YAML
-    build-depends:     yaml
-    CPP-Options:       -DWITH_YAML
-
-test-suite etc-spec-testsuite
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             TestSuite.hs
-  build-depends:       base >= 4.7 && <5
-                     , protolude
-                     , aeson
-                     , bytestring
-                     , text
-                     , containers
-                     , yaml
-                     , unordered-containers
-
-                     , tasty
-                     , tasty-hunit
-                     , tasty-rerun
-
-                     , etc-spec
-
-  other-modules:       Paths_etc_spec
-                     , Etc.SpecTest
-                     , Etc.Resolver.FileTest
-                     , Etc.Resolver.EnvTest
-                     , Etc.Resolver.CliTest
-                     , Etc.Resolver.Cli.PlainTest
-
-  if flag(cli)
-    build-depends:     optparse-applicative
-    CPP-Options:       -DWITH_CLI
-
-  if flag(yaml)
-    build-depends:     yaml
-    CPP-Options:       -DWITH_YAML
-
-  ghc-options:         -Wall
-  default-language:    Haskell2010
+data-files:
+    test/fixtures/config.foo
+    test/fixtures/config.json
+    test/fixtures/config.spec.yaml
+    test/fixtures/config.yaml
+    test/fixtures/config.yml
 
 source-repository head
-  type:     git
+  type: git
   location: https://gitlab.com/romanandreg/Haskell-etc
+
+flag cli
+  description: Include support for cli arguments
+  manual: False
+  default: False
+
+flag yaml
+  description: Include support to parse YAML files
+  manual: False
+  default: False
+
+library
+  hs-source-dirs: src
+  ghc-options: -Wall
+  build-depends:
+      base >=4.7 && <5
+    , aeson
+    , bytestring
+    , containers
+    , text
+    , protolude
+    , unordered-containers
+    , directory
+    , exceptions
+    , hashable
+    , vector
+
+  exposed-modules:
+      Etc
+      Etc.Spec.JSON
+      Etc.Spec.Types
+      Etc.Types
+      Etc.Resolver.Default
+      Etc.Resolver.File
+      Etc.Resolver.Env
+
+  other-modules:
+      Paths_etc_spec
+
+  default-language: Haskell2010
+
+  if flag(cli)
+    cpp-options: -DWITH_CLI
+    build-depends:
+        optparse-applicative
+    exposed-modules:
+      Etc.Resolver.Cli
+      Etc.Resolver.Cli.Common
+      Etc.Resolver.Cli.Plain
+
+  if flag(yaml)
+    cpp-options: -DWITH_YAML
+    build-depends:
+        yaml
+    exposed-modules:
+      Etc.Spec.YAML
+
+test-suite etc-spec-testsuite
+  type: exitcode-stdio-1.0
+  main-is: TestSuite.hs
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      base >=4.7 && <5
+    , aeson
+    , bytestring
+    , containers
+    , text
+    , protolude
+    , unordered-containers
+    , tasty
+    , tasty-hunit
+    , tasty-rerun
+    , etc-spec
+
+  if flag(cli)
+    cpp-options: -DWITH_CLI
+    build-depends:
+        optparse-applicative
+  if flag(yaml)
+    cpp-options: -DWITH_YAML
+    build-depends:
+        yaml
+  other-modules:
+      Paths_etc_spec
+      Etc.Resolver.Cli.PlainTest
+      Etc.Resolver.EnvTest
+      Etc.Resolver.FileTest
+      Etc.SpecTest
+  default-language: Haskell2010
