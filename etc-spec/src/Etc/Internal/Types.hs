@@ -3,9 +3,9 @@
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE TemplateHaskell            #-}
-module Etc.Types
-  ( module Etc.Types
-  , module Etc.Spec.Types
+module Etc.Internal.Types
+  ( module Etc.Internal.Types
+  , module Etc.Internal.Spec.Types
   ) where
 
 import           Protolude
@@ -17,7 +17,7 @@ import           Data.Ord            (comparing)
 import           Data.Set            (Set)
 import qualified Data.Set            as Set
 
-import Etc.Spec.Types (ConfigurationError(..))
+import Etc.Internal.Spec.Types (ConfigurationError(..))
 
 --------------------
 -- Configuration Types

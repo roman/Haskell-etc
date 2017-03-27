@@ -11,12 +11,7 @@ import           Test.Tasty.HUnit           (assertBool, assertFailure, testCase
 
 import qualified Data.Set as Set
 
-import           Etc                        (getConfigSources)
-import           Etc.Spec.JSON              (parseConfigSpec)
-import           Etc.Resolver.Default       (resolveDefault)
-import           Etc.Spec.Types             (ConfigSpec)
-import           Etc.Types
-
+import Etc
 
 tests :: TestTree
 tests =
@@ -36,7 +31,7 @@ tests =
         config =
             resolveDefault spec
 
-      case getConfigSources ["greeting"] config of
+      case getAllConfigSources ["greeting"] config of
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
@@ -58,7 +53,7 @@ tests =
         config =
             resolveDefault spec
 
-      case getConfigSources ["greeting"] config of
+      case getAllConfigSources ["greeting"] config of
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)

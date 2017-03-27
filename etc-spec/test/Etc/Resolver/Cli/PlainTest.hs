@@ -10,12 +10,7 @@ import           Test.Tasty.HUnit           (assertBool, assertFailure, testCase
 
 import qualified Data.Set as Set
 
-import           Etc                        (getConfigSources, getConfigValue)
-import           Etc.Spec.JSON              (parseConfigSpec)
-import           Etc.Resolver.Cli.Common    (CliConfigError(..))
-import           Etc.Resolver.Cli.Plain     (resolvePlainCliPure)
-import           Etc.Spec.Types             (ConfigSpec)
-import           Etc.Types
+import           Etc
 
 option_tests :: TestTree
 option_tests =
@@ -39,7 +34,7 @@ option_tests =
       (spec :: ConfigSpec ()) <- parseConfigSpec input
       config <- resolvePlainCliPure spec "program" ["-g", "hello cli"]
 
-      case getConfigSources ["greeting"] config of
+      case getAllConfigSources ["greeting"] config of
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
@@ -65,7 +60,7 @@ option_tests =
       (spec :: ConfigSpec ()) <- parseConfigSpec input
       config <- resolvePlainCliPure spec "program" ["--greeting", "hello cli"]
 
-      case getConfigSources ["greeting"] config of
+      case getAllConfigSources ["greeting"] config of
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)

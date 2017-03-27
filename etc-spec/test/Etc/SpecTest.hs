@@ -16,8 +16,8 @@ import           Data.HashMap.Strict (HashMap)
 import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
 
-import           Etc.Spec.JSON       (parseConfigSpec)
-import           Etc.Spec.Types
+import           Etc.Spec
+import           Etc.Internal.Spec.Types
 
 #ifdef WITH_YAML
 import           Paths_etc_spec      (getDataFileName)

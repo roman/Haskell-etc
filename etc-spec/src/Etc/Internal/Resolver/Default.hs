@@ -1,14 +1,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Resolver.Default (resolveDefault) where
+module Etc.Internal.Resolver.Default (resolveDefault) where
 
 import Protolude
 
 import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as HashMap
 
-import Etc.Types
-import qualified Etc.Spec.Types as Spec
+import Etc.Internal.Types
+import qualified Etc.Internal.Spec.Types as Spec
 
 emptySubConfig :: ConfigValue
 emptySubConfig =

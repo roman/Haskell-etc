@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module Etc.Resolver.File (resolveFiles) where
+module Etc.Internal.Resolver.File (resolveFiles) where
 
 import Protolude
 
@@ -19,8 +19,8 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 
-import qualified Etc.Spec.Types as Spec
-import Etc.Types hiding (filepath)
+import qualified Etc.Internal.Spec.Types as Spec
+import Etc.Internal.Types hiding (filepath)
 
 --------------------------------------------------------------------------------
 

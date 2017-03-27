@@ -1,151 +1,62 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc where
+module Etc (
+    module Types
 
-import           Protolude
+  , resolveDefault
+  , resolveFiles
+  , resolveEnvPure
+  , resolveEnv
 
-import           Control.Monad.Catch (MonadThrow (..))
+#ifdef WITH_CLI
+  , getErrorMessage
+  , CliConfigError(..)
+  , resolvePlainCliPure
+  , resolveCommandCliPure
+  , resolvePlainCli
+  , resolveCommandCli
+#endif
 
-import qualified Data.Aeson          as JSON
-import qualified Data.Aeson.Internal as JSON (IResult (..), formatError, iparse)
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set            as Set
-import qualified Data.Text           as Text
+#ifdef WITH_PRINTER
+  , renderConfig
+  , printPrettyConfig
+  , hPrintPrettyConfig
+#endif
 
-import           Etc.Types
+  , getConfigValue
+  , getConfigValueWith
+  , getSelectedConfigSource
+  , getAllConfigSources
+  ) where
 
---------------------------------------------------------------------------------
+import Etc.Spec as Types (
+    ConfigurationError(..)
+  , ConfigSpec
+  , parseConfigSpec
+  , readConfigSpec
+  )
+import Etc.Internal.Types as Types (
+    ConfigSource(..)
+  , ConfigValue
+  , Config
+  )
+import Etc.Internal.Resolver.Default (resolveDefault)
 
-configValueToJsonObject :: ConfigValue -> JSON.Value
-configValueToJsonObject configValue =
-  case configValue of
-    ConfigValue sources ->
-      case Set.maxView sources of
-        Nothing ->
-          undefined
+#ifdef WITH_CLI
+import Etc.Internal.Resolver.Cli.Common (getErrorMessage, CliConfigError(..))
+import Etc.Internal.Resolver.Cli.Plain (resolvePlainCliPure, resolvePlainCli)
+import Etc.Internal.Resolver.Cli.Command (resolveCommandCliPure, resolveCommandCli)
+#endif
 
-        Just (source, _) ->
-          value source
+#ifdef WITH_PRINTER
+import Etc.Internal.Printer (
+    renderConfig
+  , printPrettyConfig
+  , hPrintPrettyConfig
+  )
+#endif
 
-    SubConfig configm ->
-      configm
-      & HashMap.foldrWithKey
-          (\key innerConfigValue acc ->
-              HashMap.insert key (configValueToJsonObject innerConfigValue) acc)
-          HashMap.empty
-      & JSON.Object
-
--- Can't add signature given JSON.Parser is not exposed ¯\_(ツ)_/¯
--- getConfigValueWith
---   :: MonadThrow m
---   => (JSON.Value -> JSON.Parser value)
---   -> [Text]
---   -> Config
---   -> m value
-getConfigValueWith parser keys0 (Config configValue0) =
-  let
-    loop keys configValue =
-      case (keys, configValue) of
-        ([], ConfigValue sources) ->
-          case Set.maxView sources of
-            Nothing ->
-              throwM $ InvalidConfigKeyPath keys0
-
-            Just (None, _) ->
-              throwM $ InvalidConfigKeyPath keys0
-
-            Just (source, _) ->
-              case JSON.iparse parser (value source) of
-                JSON.IError path err ->
-                  JSON.formatError path err
-                  & Text.pack
-                  & InvalidConfiguration
-                  & throwM
-
-                JSON.ISuccess result ->
-                  return result
-
-        ([], innerConfigValue) ->
-          case JSON.iparse parser (configValueToJsonObject innerConfigValue) of
-            JSON.IError path err ->
-              JSON.formatError path err
-              & Text.pack
-              & InvalidConfiguration
-              & throwM
-
-            JSON.ISuccess result ->
-              return result
-
-        (k:keys1, SubConfig configm) ->
-          case HashMap.lookup k configm of
-            Nothing ->
-              throwM $ InvalidConfigKeyPath keys0
-            Just configValue1 ->
-              loop keys1 configValue1
-
-        _ ->
-          throwM $ InvalidConfigKeyPath keys0
-  in
-    loop keys0 configValue0
-
-getSelectedConfigSource
-  :: (MonadThrow m)
-  => [Text]
-  -> Config
-  -> m ConfigSource
-getSelectedConfigSource keys0 (Config configValue0) =
-  let
-    loop keys configValue =
-      case (keys, configValue) of
-        ([], ConfigValue sources) ->
-          case Set.maxView sources of
-            Nothing ->
-              throwM $ InvalidConfigKeyPath keys0
-
-            Just (source, _) ->
-              return source
-
-        (k:keys1, SubConfig configm) ->
-          case HashMap.lookup k configm of
-            Nothing ->
-              throwM $ InvalidConfigKeyPath keys0
-            Just configValue1 ->
-              loop keys1 configValue1
-
-        _ ->
-          throwM $ InvalidConfigKeyPath keys0
-  in
-    loop keys0 configValue0
-
-
-getConfigSources
-  :: (MonadThrow m)
-  => [Text]
-  -> Config
-  -> m (Set ConfigSource)
-getConfigSources keys0 (Config configValue0) =
-  let
-    loop keys configValue =
-      case (keys, configValue) of
-        ([], ConfigValue sources) ->
-          return sources
-
-        (k:keys1, SubConfig configm) ->
-          case HashMap.lookup k configm of
-            Nothing ->
-              throwM $ InvalidConfigKeyPath keys0
-            Just configValue1 ->
-              loop keys1 configValue1
-
-        _ ->
-          throwM $ InvalidConfigKeyPath keys0
-  in
-    loop keys0 configValue0
-
-getConfigValue
-  :: (MonadThrow m, JSON.FromJSON result)
-  => [Text]
-  -> Config
-  -> m result
-getConfigValue =
-  getConfigValueWith JSON.parseJSON
+import Etc.Internal.Resolver.Env (resolveEnvPure, resolveEnv)
+import Etc.Internal.Resolver.File (resolveFiles)
+import Etc.Internal.Config (getConfigValueWith, getSelectedConfigSource, getAllConfigSources, getConfigValue)

@@ -10,12 +10,7 @@ import           Test.Tasty.HUnit           (assertEqual, assertBool, assertFail
 
 import qualified Data.Set as Set
 
-import           Etc                        (getConfigSources, getConfigValue)
-import           Etc.Spec.JSON              (parseConfigSpec)
-import           Etc.Resolver.Cli.Common    (CliConfigError(..))
-import           Etc.Resolver.Cli.Command   (resolveCommandCliPure)
-import           Etc.Spec.Types             (ConfigSpec)
-import           Etc.Types
+import           Etc
 
 with_command_option_tests :: TestTree
 with_command_option_tests =
@@ -47,7 +42,7 @@ with_command_option_tests =
 
       assertEqual "invalid command output" "test" cmd
 
-      case getConfigSources ["greeting"] config of
+      case getAllConfigSources ["greeting"] config of
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
@@ -82,7 +77,7 @@ with_command_option_tests =
 
       assertEqual "invalid command output" "test" cmd
 
-      case getConfigSources ["greeting"] config of
+      case getAllConfigSources ["greeting"] config of
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)

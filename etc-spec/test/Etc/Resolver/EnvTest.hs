@@ -9,17 +9,12 @@ import           Test.Tasty                 (TestTree, testGroup)
 import           Test.Tasty.HUnit           (assertBool, assertEqual, assertFailure, testCase)
 
 
-import qualified Data.ByteString.Lazy.Char8 as LB8
+import qualified Data.Text as Text
 import qualified Data.Set as Set
 
 import           Paths_etc_spec             (getDataFileName)
 
-import           Etc                        (getConfigSources, getConfigValue)
-import           Etc.Spec.JSON              (parseConfigSpec)
-import           Etc.Resolver.File          (resolveFiles)
-import           Etc.Resolver.Env           (resolveEnvPure)
-import           Etc.Spec.Types             (ConfigSpec)
-import           Etc.Types
+import           Etc
 
 
 tests :: TestTree
@@ -40,7 +35,7 @@ tests =
         config =
             resolveEnvPure spec [("GREETING", "hello env")]
 
-      case getConfigSources ["greeting"] config of
+      case getAllConfigSources ["greeting"] config of
         Nothing ->
           assertFailure ("expecting to get entries for greeting (check fixtures)\n"
                          <> show config)
@@ -55,7 +50,7 @@ tests =
           mconcat
             [
               "{\"etc/filepaths\": ["
-            , "\"" <> LB8.pack jsonFilepath <> "\""
+            , "\"" <> Text.pack jsonFilepath <> "\""
             , "],"
             , " \"etc/entries\": {"
             , " \"greeting\": { \"etc/spec\": { \"env\": \"GREETING\" }}}}"

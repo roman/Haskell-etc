@@ -2,7 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE OverloadedStrings          #-}
-module Etc.Spec.Types where
+module Etc.Internal.Spec.Types where
 
 import           Prelude             (fail)
 import           Protolude
