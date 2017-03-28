@@ -38,9 +38,9 @@ option_tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set -> do
+        Just set ->
           assertBool ("expecting to see entry from env; got " <> show set)
-                     (Set.member (Cli "hello cli") set)
+                   (Set.member (Cli "hello cli") set)
 
   , testCase "entry accepts long" $ do
       let
@@ -64,9 +64,9 @@ option_tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set -> do
+        Just set ->
           assertBool ("expecting to see entry from env; got " <> show set)
-                     (Set.member (Cli "hello cli") set)
+                   (Set.member (Cli "hello cli") set)
 
   , testCase "entry gets validated with a type" $ do
       let
@@ -88,7 +88,7 @@ option_tests =
       case resolvePlainCliPure spec "program" ["--greeting", "hello cli"] of
         Left err ->
           case fromException err of
-            Just (CliEvalExited {}) ->
+            Just CliEvalExited {} ->
               return ()
 
             _ ->
@@ -119,9 +119,9 @@ option_tests =
       config <- resolvePlainCliPure spec "program" []
 
       case getConfigValue ["greeting"] config of
-        Just set -> do
+        Just set ->
           assertFailure ("expecting to have no entry for greeting; got\n"
-                         <> show set)
+                       <> show set)
 
         (_ :: Maybe ()) ->
           return ()
@@ -146,7 +146,7 @@ option_tests =
       case resolvePlainCliPure spec "program" [] of
         Left err ->
           case fromException err of
-            Just (CliEvalExited {}) ->
+            Just CliEvalExited {} ->
               return ()
 
             _ ->
@@ -181,7 +181,7 @@ argument_tests =
       case resolvePlainCliPure spec "program" ["hello cli"] of
         Left err ->
           case fromException err of
-            Just (CliEvalExited {}) ->
+            Just CliEvalExited {} ->
               return ()
 
             _ ->
@@ -213,9 +213,9 @@ argument_tests =
         (Nothing :: Maybe ()) ->
           return ()
 
-        Just set -> do
+        Just set ->
           assertFailure ("expecting to have no entry for greeting; got\n"
-                         <> show set)
+                       <> show set)
 
   , testCase "entry with required fails when argument not given" $ do
       let
@@ -236,7 +236,7 @@ argument_tests =
       case resolvePlainCliPure spec "program" [] of
         Left err ->
           case fromException err of
-            Just (CliEvalExited {}) ->
+            Just CliEvalExited {} ->
               return ()
 
             _ ->

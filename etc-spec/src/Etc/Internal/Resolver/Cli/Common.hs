@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -183,7 +184,7 @@ programResultToResolverResult progName programResult =
     Opt.CompletionInvoked compl ->
       let
         getMsg =
-          Text.pack <$> (Opt.execCompletion compl $ Text.unpack progName)
+          Text.pack <$> Opt.execCompletion compl (Text.unpack progName)
       in
         throwM
         $ CliEvalExited ExitSuccess (GetErrorMessage getMsg)

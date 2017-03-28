@@ -51,7 +51,7 @@ tests =
                          <> show config)
         Just set -> do
           assertBool ("expecting to see entry from json config file " <> show set)
-                     (Set.member (File 1 (Text.pack jsonFilepath) "hello json") set)
+                   (Set.member (File 1 (Text.pack jsonFilepath) "hello json") set)
 
 #ifdef WITH_YAML
           assertBool ("expecting to see entry from yaml config file " <> show set)
@@ -108,9 +108,9 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting (check fixtures)\n"
                          <> show config)
-        Just set -> do
+        Just set ->
           assertBool ("expecting to see entry from json config file " <> show set)
-                     (Set.member (File 1 (Text.pack jsonFilepath) "hello json") set)
+                   (Set.member (File 1 (Text.pack jsonFilepath) "hello json") set)
 
       case errs of
         [] ->

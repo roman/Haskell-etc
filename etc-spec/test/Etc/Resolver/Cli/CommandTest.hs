@@ -46,9 +46,9 @@ with_command_option_tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set -> do
+        Just set ->
           assertBool ("expecting to see entry from env; got " <> show set)
-                     (Set.member (Cli "hello cli") set)
+                   (Set.member (Cli "hello cli") set)
 
   , testCase "entry accepts long" $ do
       let
@@ -81,9 +81,9 @@ with_command_option_tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set -> do
+        Just set ->
           assertBool ("expecting to see entry from env; got " <> show set)
-                     (Set.member (Cli "hello cli") set)
+                   (Set.member (Cli "hello cli") set)
 
   , testCase "entry gets validated with a type" $ do
       let
@@ -111,7 +111,7 @@ with_command_option_tests =
       case resolveCommandCliPure spec "program" ["test", "--greeting", "hello cli"] of
         Left err ->
           case fromException err of
-            Just (CliEvalExited {}) ->
+            Just CliEvalExited {} ->
               return ()
 
             _ ->
@@ -150,9 +150,9 @@ with_command_option_tests =
       assertEqual "invalid command output" "test" cmd
 
       case getConfigValue ["greeting"] config of
-        Just set -> do
+        Just set ->
           assertFailure ("expecting to have no entry for greeting; got\n"
-                         <> show set)
+                       <> show set)
 
         (_ :: Maybe ()) ->
           return ()
@@ -183,7 +183,7 @@ with_command_option_tests =
       case resolveCommandCliPure spec "program" ["test"] of
         Left err ->
           case fromException err of
-            Just (CliEvalExited {}) ->
+            Just CliEvalExited {} ->
               return ()
 
             _ ->
@@ -223,7 +223,7 @@ with_command_argument_tests =
       case resolveCommandCliPure spec "program" ["test", "hello cli"] of
         Left err ->
           case fromException err of
-            Just (CliEvalExited {}) ->
+            Just CliEvalExited {} ->
               return ()
 
             _ ->
@@ -263,9 +263,9 @@ with_command_argument_tests =
         (Nothing :: Maybe ()) ->
           return ()
 
-        Just set -> do
+        Just set ->
           assertFailure ("expecting to have no entry for greeting; got\n"
-                         <> show set)
+                       <> show set)
 
   , testCase "entry with required fails when argument not given" $ do
       let
@@ -292,7 +292,7 @@ with_command_argument_tests =
       case resolveCommandCliPure spec "program" ["test"] of
         Left err ->
           case fromException err of
-            Just (CliEvalExited {}) ->
+            Just CliEvalExited {} ->
               return ()
 
             _ ->
@@ -372,7 +372,7 @@ without_command =
     case resolveCommandCliPure spec "program" [] of
       Left err ->
         case fromException err of
-          Just (CliEvalExited {}) ->
+          Just CliEvalExited {} ->
             return ()
 
           _ ->

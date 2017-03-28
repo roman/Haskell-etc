@@ -43,7 +43,7 @@ buildDefaultResolver spec =
                    resolverReducer
                    (Just emptySubConfig)
                    specConfigMap
-          in do
+          in
             writeConfig specKey <$> mSubConfig <*> mConfig
   in
     HashMap.foldrWithKey

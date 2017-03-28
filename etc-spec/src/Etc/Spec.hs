@@ -40,5 +40,5 @@ parseConfigSpec =
 
 readConfigSpec :: JSON.FromJSON cmd => Text -> IO (ConfigSpec cmd)
 readConfigSpec filepath = do
-  contents <- (Text.readFile $ Text.unpack filepath)
+  contents <- Text.readFile $ Text.unpack filepath
   parseConfigSpec contents

@@ -100,11 +100,9 @@ readConfigFile filepath =
       contents <- LB8.readFile filepathStr
       if ".json" `Text.isSuffixOf` filepath then
         return $ return (JsonFile filepath contents)
-      else if ".yaml" `Text.isSuffixOf` filepath then
-        return $ return (YamlFile filepath contents)
-      else if ".yml" `Text.isSuffixOf` filepath then
-        return $ return (YamlFile filepath contents)
-      else
+      else if (".yaml" `Text.isSuffixOf` filepath) ||
+              (".yml" `Text.isSuffixOf` filepath) then
+        return $ return (YamlFile filepath contents) else
         return (throwM $ InvalidConfiguration "Unsupported file extension")
     else
       return $ throwM $ ConfigurationFileNotFound filepath

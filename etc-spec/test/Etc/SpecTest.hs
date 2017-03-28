@@ -52,7 +52,7 @@ general_tests =
 
       case parseConfigSpec input of
         Nothing ->
-          assertFailure $ "should not fail if no etc/entries key is present"
+          assertFailure "should not fail if no etc/entries key is present"
         Just (_ :: ConfigSpec ()) ->
           assertBool "" True
 

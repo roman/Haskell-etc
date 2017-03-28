@@ -39,9 +39,9 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting (check fixtures)\n"
                          <> show config)
-        Just set -> do
+        Just set ->
           assertBool ("expecting to see entry from env; got " <> show set)
-                     (Set.member (Env "GREETING" "hello env") set)
+                   (Set.member (Env "GREETING" "hello env") set)
 
   , testCase "has precedence over default and file values" $ do
       jsonFilepath <- getDataFileName "test/fixtures/config.json"
@@ -69,10 +69,10 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting (check fixtures)\n"
                          <> show config)
-        Just result -> do
+        Just result ->
           assertEqual ("expecting to see entry from env " <> show result)
-                      ("hello env" :: Text)
-                      result
+                    ("hello env" :: Text)
+                    result
 
   , testCase "does not add entries to config if env var is not present" $ do
       let

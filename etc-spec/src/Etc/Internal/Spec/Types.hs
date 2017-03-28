@@ -1,5 +1,4 @@
 {-# LANGUAGE DuplicateRecordFields      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE OverloadedStrings          #-}
 module Etc.Internal.Spec.Types where
@@ -152,7 +151,7 @@ cliArgParser object =
   Arg
     <$> (object .:? "metavar")
     <*> (fromMaybe True <$> (object .:? "required"))
-    <*> (cliArgTypeParser object)
+    <*> cliArgTypeParser object
 
 cliOptTypeParser
   :: JSON.Object
@@ -186,12 +185,12 @@ cliOptParser object = do
     fail "'option' field input requires either 'long' or 'short' settings"
   else
     Opt
-      <$> (pure long)
-      <*> (pure short)
+      <$> pure long
+      <*> pure short
       <*> (object .:? "metavar")
       <*> (object .:? "help")
       <*> (fromMaybe True <$> (object .:? "required"))
-      <*> (cliOptTypeParser object)
+      <*> cliOptTypeParser object
 
 cliArgKeys :: [Text]
 cliArgKeys = ["input", "commands", "metavar", "required", "type"]

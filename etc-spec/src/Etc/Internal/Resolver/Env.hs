@@ -5,6 +5,7 @@ module Etc.Internal.Resolver.Env (resolveEnv, resolveEnvPure) where
 import Protolude
 import System.Environment (getEnvironment)
 
+import Control.Arrow ((***))
 import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text
@@ -57,7 +58,7 @@ buildEnvVarResolver lookupEnv spec =
                    resolverReducer
                    (Just emptySubConfig)
                    specConfigMap
-          in do
+          in
             writeConfig specKey <$> mSubConfig <*> mConfig
   in
     HashMap.foldrWithKey
@@ -83,7 +84,7 @@ resolveEnv :: Spec.ConfigSpec cmd -> IO Config
 resolveEnv spec =
   let
     getEnvironmentTxt =
-      map (\(k, v) -> (Text.pack k, Text.pack v))
+      map (Text.pack *** Text.pack)
         <$> getEnvironment
   in
     resolveEnvPure spec

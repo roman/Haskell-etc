@@ -35,9 +35,9 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set -> do
+        Just set ->
           assertBool ("expecting to see entry from env; got " <> show set)
-                     (Set.member (Default "hello default") set)
+                   (Set.member (Default "hello default") set)
 
   , testCase "default can be raw JSON value on entries spec" $ do
       let
@@ -57,8 +57,8 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set -> do
+        Just set ->
           assertBool ("expecting to see entry from env; got " <> show set)
-                     (Set.member (Default "hello default") set)
+                   (Set.member (Default "hello default") set)
 
   ]
