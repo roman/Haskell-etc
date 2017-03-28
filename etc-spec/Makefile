@@ -1,4 +1,4 @@
-TEST:=stack build --test --haddock --no-haddock-deps --pedantic
+TEST:=stack build --test --haddock --no-haddock-deps --pedantic --flag etc-spec:yaml --flag etc-spec:cli --flag etc-spec:printer
 test:
 	 $(TEST) etc-spec:etc-spec-testsuite
 .PHONY: test
