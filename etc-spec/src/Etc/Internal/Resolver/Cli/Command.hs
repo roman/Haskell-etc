@@ -1,24 +1,26 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Etc.Internal.Resolver.Cli.Command where
 
 import Protolude
 
 import Control.Monad.Catch (MonadThrow, throwM)
-import Data.Hashable (Hashable)
+import Data.Hashable       (Hashable)
 import Data.HashMap.Strict (HashMap)
-import Data.Maybe (fromMaybe)
-import Data.Vector (Vector)
-import System.Environment (getArgs, getProgName)
-import qualified Data.Aeson as JSON
+import Data.Maybe          (fromMaybe)
+import Data.Vector         (Vector)
+import System.Environment  (getArgs, getProgName)
+
+import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as Text
+import qualified Data.Text           as Text
 import qualified Options.Applicative as Opt
 
-import Etc.Internal.Types
-import Etc.Internal.Resolver.Cli.Common
-import qualified Etc.Internal.Spec.Types as Spec
+import           Etc.Internal.Resolver.Cli.Common
+import           Etc.Internal.Types
+
+import qualified Etc.Internal.Spec.Types          as Spec
 
 --------------------------------------------------------------------------------
 

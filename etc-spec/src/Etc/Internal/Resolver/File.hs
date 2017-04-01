@@ -1,26 +1,26 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Etc.Internal.Resolver.File (resolveFiles) where
 
 import Protolude
 
-import Control.Monad.Catch (MonadThrow(..))
-import System.Directory (doesFileExist)
+import Control.Monad.Catch (MonadThrow (..))
+import System.Directory    (doesFileExist)
 
 #ifdef WITH_YAML
 import qualified Data.Yaml as YAML
 #endif
 
-import qualified Data.Aeson as JSON
-import qualified Data.Aeson.Internal as JSON (iparse, IResult(..))
+import qualified Data.Aeson                 as JSON
+import qualified Data.Aeson.Internal        as JSON (IResult (..), iparse)
 import qualified Data.ByteString.Lazy.Char8 as LB8
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set as Set
-import qualified Data.Text as Text
+import qualified Data.HashMap.Strict        as HashMap
+import qualified Data.Set                   as Set
+import qualified Data.Text                  as Text
 
 import qualified Etc.Internal.Spec.Types as Spec
-import Etc.Internal.Types hiding (filepath)
+import           Etc.Internal.Types      hiding (filepath)
 
 --------------------------------------------------------------------------------
 

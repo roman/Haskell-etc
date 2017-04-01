@@ -1,14 +1,14 @@
-{-# LANGUAGE DuplicateRecordFields      #-}
-{-# LANGUAGE NoImplicitPrelude          #-}
-{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE OverloadedStrings     #-}
 module Etc.Internal.Spec.Types where
 
-import           Prelude             (fail)
-import           Protolude
+import Prelude   (fail)
+import Protolude
 
-import           Data.Aeson          ((.:), (.:?))
-import           Data.HashMap.Strict (HashMap)
-import           Data.Vector         (Vector)
+import Data.Aeson          ((.:), (.:?))
+import Data.HashMap.Strict (HashMap)
+import Data.Vector         (Vector)
 
 import qualified Data.Aeson          as JSON
 import qualified Data.Aeson.Types    as JSON (Parser, typeMismatch)

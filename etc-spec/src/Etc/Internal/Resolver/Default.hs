@@ -4,11 +4,11 @@ module Etc.Internal.Resolver.Default (resolveDefault) where
 
 import Protolude
 
-import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Set            as Set
 
-import Etc.Internal.Types
 import qualified Etc.Internal.Spec.Types as Spec
+import           Etc.Internal.Types
 
 emptySubConfig :: ConfigValue
 emptySubConfig =

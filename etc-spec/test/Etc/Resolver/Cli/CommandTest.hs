@@ -1,16 +1,16 @@
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 module Etc.Resolver.Cli.CommandTest where
 
-import           Protolude
+import Protolude
 
-import           Test.Tasty                 (TestTree, testGroup)
-import           Test.Tasty.HUnit           (assertEqual, assertBool, assertFailure, testCase)
+import Test.Tasty       (TestTree, testGroup)
+import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
 import qualified Data.Set as Set
 
-import           Etc
+import Etc
 
 with_command_option_tests :: TestTree
 with_command_option_tests =

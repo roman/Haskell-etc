@@ -5,14 +5,14 @@ module Etc.Internal.Resolver.Env (resolveEnv, resolveEnvPure) where
 import Protolude
 import System.Environment (getEnvironment)
 
-import Control.Arrow ((***))
-import qualified Data.Set as Set
+import           Control.Arrow       ((***))
+import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as Text
-import qualified Data.Aeson as JSON
+import qualified Data.Set            as Set
+import qualified Data.Text           as Text
 
-import Etc.Internal.Types
 import qualified Etc.Internal.Spec.Types as Spec
+import           Etc.Internal.Types
 
 resolveEnvVarSource
   :: (Text -> Maybe Text)

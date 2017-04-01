@@ -7,7 +7,7 @@ module Etc.Internal.Types
   , module Etc.Internal.Spec.Types
   ) where
 
-import           Protolude
+import Protolude
 
 import qualified Data.Aeson          as JSON
 import           Data.HashMap.Strict (HashMap)
@@ -16,7 +16,7 @@ import           Data.Ord            (comparing)
 import           Data.Set            (Set)
 import qualified Data.Set            as Set
 
-import Etc.Internal.Spec.Types (ConfigurationError(..))
+import Etc.Internal.Spec.Types (ConfigurationError (..))
 
 --------------------
 -- Configuration Types

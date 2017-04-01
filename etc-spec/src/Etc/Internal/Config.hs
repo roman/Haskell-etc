@@ -3,9 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Etc.Internal.Config where
 
-import           Protolude
+import Protolude
 
-import           Control.Monad.Catch (MonadThrow (..))
+import Control.Monad.Catch (MonadThrow (..))
 
 import qualified Data.Aeson          as JSON
 import qualified Data.Aeson.Internal as JSON (IResult (..), formatError, iparse)
@@ -13,7 +13,7 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set            as Set
 import qualified Data.Text           as Text
 
-import           Etc.Internal.Types
+import Etc.Internal.Types
 
 --------------------------------------------------------------------------------
 

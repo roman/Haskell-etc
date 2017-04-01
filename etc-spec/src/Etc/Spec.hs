@@ -9,17 +9,13 @@ module Etc.Spec (
 
 import Protolude
 
-import Etc.Internal.Spec.Types as Types (
-    ConfigValue
-  , ConfigurationError(..)
-  , ConfigSpec
-  )
+import Etc.Internal.Spec.Types as Types (ConfigSpec, ConfigValue, ConfigurationError (..))
 
-import           Control.Monad.Catch   (MonadThrow (..))
+import Control.Monad.Catch (MonadThrow (..))
 
-import qualified Data.Aeson            as JSON
-import qualified Data.Text             as Text
-import qualified Data.Text.IO          as Text (readFile)
+import qualified Data.Aeson   as JSON
+import qualified Data.Text    as Text
+import qualified Data.Text.IO as Text (readFile)
 
 import qualified Etc.Internal.Spec.JSON as JSON
 #ifdef WITH_YAML

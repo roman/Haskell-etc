@@ -3,18 +3,18 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Etc.Resolver.EnvTest where
 
-import           Protolude
+import Protolude
 
-import           Test.Tasty                 (TestTree, testGroup)
-import           Test.Tasty.HUnit           (assertBool, assertEqual, assertFailure, testCase)
+import Test.Tasty       (TestTree, testGroup)
+import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
 
+import qualified Data.Set  as Set
 import qualified Data.Text as Text
-import qualified Data.Set as Set
 
-import           Paths_etc_spec             (getDataFileName)
+import Paths_etc_spec (getDataFileName)
 
-import           Etc
+import Etc
 
 
 tests :: TestTree

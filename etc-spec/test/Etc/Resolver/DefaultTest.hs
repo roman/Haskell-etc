@@ -3,10 +3,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Etc.Resolver.DefaultTest (tests) where
 
-import           Protolude
+import Protolude
 
-import           Test.Tasty                 (TestTree, testGroup)
-import           Test.Tasty.HUnit           (assertBool, assertFailure, testCase)
+import Test.Tasty       (TestTree, testGroup)
+import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
 
 import qualified Data.Set as Set

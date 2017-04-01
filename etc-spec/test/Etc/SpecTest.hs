@@ -5,23 +5,22 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Etc.SpecTest (tests) where
 
-import           Protolude
+import Protolude
 
-import           Test.Tasty          (TestTree, testGroup)
-import           Test.Tasty.HUnit    (assertBool, assertEqual, assertFailure,
-                                      testCase)
+import Test.Tasty       (TestTree, testGroup)
+import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
-import           Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict (HashMap)
 
 import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
 
-import           Etc.Spec
-import           Etc.Internal.Spec.Types
+import Etc.Internal.Spec.Types
+import Etc.Spec
 
 #ifdef WITH_YAML
-import           Paths_etc_spec      (getDataFileName)
-import qualified Data.Yaml           as YAML
+import qualified Data.Yaml      as YAML
+import           Paths_etc_spec (getDataFileName)
 #endif
 
 

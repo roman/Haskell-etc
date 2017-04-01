@@ -3,18 +3,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import           Protolude
+import Protolude
 
-import           Test.Tasty                   (defaultMainWithIngredients,
-                                               testGroup)
-import           Test.Tasty.Ingredients.Rerun (rerunningTests)
-import           Test.Tasty.Runners           (consoleTestReporter,
-                                               listingTests)
+import Test.Tasty                   (defaultMainWithIngredients, testGroup)
+import Test.Tasty.Ingredients.Rerun (rerunningTests)
+import Test.Tasty.Runners           (consoleTestReporter, listingTests)
 
-import qualified Etc.SpecTest
 import qualified Etc.Resolver.DefaultTest
-import qualified Etc.Resolver.FileTest
 import qualified Etc.Resolver.EnvTest
+import qualified Etc.Resolver.FileTest
+import qualified Etc.SpecTest
 
 #ifdef WITH_CLI
 import qualified Etc.Resolver.CliTest

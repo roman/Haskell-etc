@@ -1,24 +1,24 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Etc.Internal.Resolver.Cli.Common where
 
-import Protolude
-import qualified Prelude as P
+import qualified Prelude   as P
+import           Protolude
 
-import Control.Monad.Catch (MonadThrow, throwM)
-import qualified Data.Aeson as JSON
-import qualified Data.Aeson.Internal as JSON (iparse, IResult(..))
+import           Control.Monad.Catch        (MonadThrow, throwM)
+import qualified Data.Aeson                 as JSON
+import qualified Data.Aeson.Internal        as JSON (IResult (..), iparse)
 import qualified Data.ByteString.Lazy.Char8 as BL (unpack)
-import qualified Data.Text as Text
-import qualified Data.Text.IO as Text
-import qualified Data.Set as Set
-import qualified Data.Vector as Vector
-import qualified Options.Applicative as Opt
+import qualified Data.Set                   as Set
+import qualified Data.Text                  as Text
+import qualified Data.Text.IO               as Text
+import qualified Data.Vector                as Vector
+import qualified Options.Applicative        as Opt
 
-import Etc.Internal.Types
 import qualified Etc.Internal.Spec.Types as Spec
+import           Etc.Internal.Types
 
 --------------------------------------------------------------------------------
 

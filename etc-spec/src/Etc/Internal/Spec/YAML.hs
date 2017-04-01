@@ -2,17 +2,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Etc.Internal.Spec.YAML where
 
-import           Protolude
+import Protolude
 
-import           Control.Monad.Catch   (MonadThrow (..))
+import Control.Monad.Catch (MonadThrow (..))
 
-import qualified Data.Aeson            as JSON
-import qualified Data.Text             as Text
-import qualified Data.Text.Encoding    as Text (encodeUtf8)
-import qualified Data.Text.IO          as Text (readFile)
-import qualified Data.Yaml             as YAML
+import qualified Data.Aeson         as JSON
+import qualified Data.Text          as Text
+import qualified Data.Text.Encoding as Text (encodeUtf8)
+import qualified Data.Text.IO       as Text (readFile)
+import qualified Data.Yaml          as YAML
 
-import           Etc.Internal.Spec.Types
+import Etc.Internal.Spec.Types
 
 parseConfigSpec
   :: (MonadThrow m, JSON.FromJSON cmd)

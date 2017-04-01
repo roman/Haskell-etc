@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Etc.Internal.Printer (
     renderConfig
   , printPrettyConfig
@@ -9,14 +9,15 @@ module Etc.Internal.Printer (
 
 import Protolude hiding ((<>))
 
-import Text.PrettyPrint.ANSI.Leijen
-import qualified Data.Aeson as JSON
+import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set as Set
-import qualified Data.Text as Text
+import qualified Data.Set            as Set
+import qualified Data.Text           as Text
 
+import Text.PrettyPrint.ANSI.Leijen
+
+import Etc.Internal.Spec.Types (ConfigurationError (..))
 import Etc.Internal.Types
-import Etc.Internal.Spec.Types (ConfigurationError(..))
 
 renderJsonValue :: JSON.Value -> (Doc, Int)
 renderJsonValue value' =

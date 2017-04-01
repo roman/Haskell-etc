@@ -1,19 +1,19 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Etc.Internal.Resolver.Cli.Plain where
 
 import Protolude
 
-import Control.Monad.Catch (MonadThrow, throwM)
-import System.Environment (getArgs, getProgName)
-import qualified Data.Aeson as JSON
+import           Control.Monad.Catch (MonadThrow, throwM)
+import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as Text
+import qualified Data.Text           as Text
 import qualified Options.Applicative as Opt
+import           System.Environment  (getArgs, getProgName)
 
-import Etc.Internal.Types
-import Etc.Internal.Resolver.Cli.Common
-import qualified Etc.Internal.Spec.Types as Spec
+import           Etc.Internal.Resolver.Cli.Common
+import qualified Etc.Internal.Spec.Types          as Spec
+import           Etc.Internal.Types
 
 --------------------------------------------------------------------------------
 
