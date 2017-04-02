@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/roman/Haskell-etc.svg?branch=master)](https://travis-ci.org/roman/Haskell-etc)
+
 # etc
 
 Etc helps gathering configuration values for a system from multiple sources
