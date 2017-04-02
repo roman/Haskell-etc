@@ -2,12 +2,12 @@
 --
 -- see: https://github.com/sol/hpack
 
-name:           etc-spec
+name:           etc
 version:        0.0.0.0
 synopsis:       Configuration library for Haskell
 description:    Please see README.md
 category:       Configuration, System
-homepage:       https://gitlab.com/romanandreg/Haskell-etc
+homepage:       https://github.com/roman/Haskell-etc
 author:         Roman Gonzalez
 maintainer:     romanandreg@gmail.com
 copyright:      2017 Roman Gonzalez
@@ -99,7 +99,7 @@ library
     exposed-modules:
       Etc.Internal.Spec.YAML
 
-test-suite etc-spec-testsuite
+test-suite etc-testsuite
   type: exitcode-stdio-1.0
   main-is: TestSuite.hs
   hs-source-dirs:
@@ -116,7 +116,7 @@ test-suite etc-spec-testsuite
     , tasty
     , tasty-hunit
     , tasty-rerun
-    , etc-spec
+    , etc
 
   if flag(cli)
     cpp-options: -DWITH_CLI

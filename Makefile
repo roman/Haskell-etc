@@ -1,9 +1,13 @@
-TEST:=stack build --test --haddock --no-haddock-deps --pedantic --flag etc-spec:yaml --flag etc-spec:cli --flag etc-spec:printer
-test:
-	 $(TEST) etc-spec:etc-spec-testsuite
+help:	## Display this message
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+.DEFAULT_GOAL := help
+
+TEST:=stack build --test --haddock --no-haddock-deps --pedantic --flag etc:yaml --flag etc:cli --flag etc:printer
+test: ## Execute test suite with all compiler flags
+	 $(TEST) etc:etc-testsuite
 .PHONY: test
 
-sdist:
+sdist: ## Build a release
 	stack sdist
 .PHONY: sdist
 
@@ -24,7 +28,7 @@ stylish_haskell_install:
 .PHONY: stylish_haskell_install
 
 STYLISH=stylish-haskell -i {} \;
-stylish_haskell: stylish_haskell_install
+stylish_haskell: stylish_haskell_install ## Normalize style of source files
 	find src/ test/ -name "*.hs" -exec $(STYLISH) && git diff --exit-code
 .PHONY: stylish_haskell
 
@@ -32,11 +36,11 @@ hlint_install:
 	stack install hlint
 .PHONY: hlint_install
 
-hlint: hlint_install
+hlint: hlint_install ## Execute linter
 	hlint src/ test/
 .PHONY: hlint
 
-hlint_apply_refact: hlint_install
+hlint_apply_refact: hlint_install ## Apply linter recomendations
 	stack install apply-refact
 .PHONY: hlint_apply_refact
 
