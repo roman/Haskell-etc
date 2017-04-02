@@ -1,8 +1,0 @@
-{
-    "user": "two",
-    "sub-system": {
-        "db": {
-            "name": "my_db"
-        }
-    }
-}
