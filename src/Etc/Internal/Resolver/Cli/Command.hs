@@ -17,10 +17,10 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text           as Text
 import qualified Options.Applicative as Opt
 
-import           Etc.Internal.Resolver.Cli.Common
-import           Etc.Internal.Types
+import Etc.Internal.Resolver.Cli.Common
+import Etc.Internal.Types
 
-import qualified Etc.Internal.Spec.Types          as Spec
+import qualified Etc.Internal.Spec.Types as Spec
 
 --------------------------------------------------------------------------------
 
@@ -105,7 +105,7 @@ subConfigSpecToCli specEntryKey subConfigSpec acc =
         <$> subConfigParser
         <*> accOptParser
 
-    addSubParserCommand command subConfigParser accOptParsers =
+    addSubParserCommand command subConfigParser =
       HashMap.alter
         (\mAccOptParser ->
            case mAccOptParser of
@@ -117,7 +117,6 @@ subConfigSpecToCli specEntryKey subConfigSpec acc =
                Just
                $ updateAccConfigOptParser subConfigParser accOptParser)
         command
-        accOptParsers
 
   in do
      parserPerCommand <-

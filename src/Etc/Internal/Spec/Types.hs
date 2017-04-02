@@ -134,12 +134,12 @@ cliArgTypeParser
 cliArgTypeParser object = do
   value <- object .: "type"
   case value of
-    JSON.String typeName ->
-      if typeName == "string" then
+    JSON.String typeName
+      | typeName == "string" ->
         return StringArg
-      else if typeName == "number" then
+      | typeName == "number" ->
         return NumberArg
-      else
+      | otherwise ->
         JSON.typeMismatch "CliArgValueType (string, number)" value
     _ ->
       JSON.typeMismatch "CliArgValueType (string, number)" value
@@ -159,14 +159,14 @@ cliOptTypeParser
 cliOptTypeParser object = do
   mvalue <- object .:? "type"
   case mvalue of
-    Just value@(JSON.String typeName) ->
-      if typeName == "string" then
+    Just value@(JSON.String typeName)
+      | typeName == "string" ->
         return StringOpt
-      else if typeName == "number" then
+      | typeName == "number" ->
         return NumberOpt
-      else if typeName == "switch" then
+      | typeName == "switch" ->
         return SwitchOpt
-      else
+      | otherwise ->
         JSON.typeMismatch "CliOptValueType (string, number, switch)" value
 
     Just value ->
@@ -210,22 +210,22 @@ instance JSON.FromJSON cmd => JSON.FromJSON (CliEntrySpec cmd) where
               maybe PlainEntry CmdEntry cmdValue
 
           case value of
-            JSON.String inputName ->
-              if inputName == "option" then do
+            JSON.String inputName
+              | inputName == "option" -> do
                 forM_ (HashMap.keys object) $ \key ->
                   when (not (key `elem` cliOptKeys))
                     (fail $ "cli option contains invalid key " ++ show key)
 
                 optParseEntryCtor <$> cliOptParser object
 
-              else if inputName == "argument" then do
+              | inputName == "argument" -> do
                 forM_ (HashMap.keys object) $ \key ->
                   when (not (key `elem` cliArgKeys))
                     (fail $ "cli option contains invalid key " ++ show key)
 
                 optParseEntryCtor <$> cliArgParser object
 
-              else
+              | otherwise ->
                 JSON.typeMismatch "CliEntryMetadata (invalid input)" value
             _ ->
               JSON.typeMismatch "CliEntryMetadata (invalid input)" value
