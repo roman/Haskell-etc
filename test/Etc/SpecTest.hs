@@ -20,7 +20,7 @@ import Etc.Spec
 
 #ifdef WITH_YAML
 import qualified Data.Yaml      as YAML
-import           Paths_etc_spec (getDataFileName)
+import           Paths_etc (getDataFileName)
 #endif
 
 

@@ -12,7 +12,7 @@ import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 import qualified Data.Set  as Set
 import qualified Data.Text as Text
 
-import Paths_etc_spec (getDataFileName)
+import Paths_etc (getDataFileName)
 
 import Etc
 

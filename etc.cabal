@@ -71,7 +71,7 @@ library
       Etc.Internal.Resolver.Env
 
   other-modules:
-      Paths_etc_spec
+      Paths_etc
 
   default-language: Haskell2010
 
@@ -127,7 +127,7 @@ test-suite etc-testsuite
     build-depends:
         yaml
   other-modules:
-      Paths_etc_spec
+      Paths_etc
       Etc.Resolver.CliTest
       Etc.Resolver.Cli.CommandTest
       Etc.Resolver.Cli.PlainTest
