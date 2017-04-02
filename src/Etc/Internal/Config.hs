@@ -1,44 +1,19 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module System.Etc
-  ( Spec.ConfigSpec
-  , Resolver.PlainConfigSpec
-  , Config
-  , ConfigSource (..)
+{-# LANGUAGE OverloadedStrings #-}
+module Etc.Internal.Config where
 
-  , Spec.readConfigSpec
-  , Spec.parseConfigSpec
+import Protolude
 
-  , Resolver.resolveEnvVars
-  , Resolver.resolvePlainOptParser
-  , Resolver.resolvePlainOptParserPure
-  , Resolver.resolveCommandOptParser
-  , Resolver.resolveCommandOptParserPure
-  , Resolver.resolveFiles
+import Control.Monad.Catch (MonadThrow (..))
 
-  , getConfigValue
-  , getConfigValueWith
-  , getSelectedConfigSource
-  , getConfigSources
-  , Printer.renderConfig
-  , Printer.printPrettyConfig
-  , Printer.hPrintPrettyConfig
-  ) where
-
-import Control.Monad.Catch (MonadThrow(..))
-import Data.Set (Set)
-import qualified Data.Aeson as JSON
-import qualified Data.Aeson.Internal as JSON (iparse, formatError, IResult(..))
-import qualified Data.Set as Set
+import qualified Data.Aeson          as JSON
+import qualified Data.Aeson.Internal as JSON (IResult (..), formatError, iparse)
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as Text
+import qualified Data.Set            as Set
+import qualified Data.Text           as Text
 
-import System.Etc.Internal.Prelude
-import System.Etc.Internal.Types
-import qualified System.Etc.Internal.Spec as Spec
-import qualified System.Etc.Internal.Resolver.EnvVar as Resolver
-import qualified System.Etc.Internal.Resolver.OptParse as Resolver
-import qualified System.Etc.Internal.Resolver.File as Resolver
-import qualified System.Etc.Internal.Printer as Printer
+import Etc.Internal.Types
 
 --------------------------------------------------------------------------------
 
@@ -55,11 +30,11 @@ configValueToJsonObject configValue =
 
     SubConfig configm ->
       configm
-      |> HashMap.foldrWithKey
+      & HashMap.foldrWithKey
           (\key innerConfigValue acc ->
               HashMap.insert key (configValueToJsonObject innerConfigValue) acc)
           HashMap.empty
-      |> JSON.Object
+      & JSON.Object
 
 -- Can't add signature given JSON.Parser is not exposed ¯\_(ツ)_/¯
 -- getConfigValueWith
@@ -75,18 +50,18 @@ getConfigValueWith parser keys0 (Config configValue0) =
         ([], ConfigValue sources) ->
           case Set.maxView sources of
             Nothing ->
-              throwM <| InvalidConfigKeyPath keys0
+              throwM $ InvalidConfigKeyPath keys0
 
             Just (None, _) ->
-              throwM <| InvalidConfigKeyPath keys0
+              throwM $ InvalidConfigKeyPath keys0
 
             Just (source, _) ->
               case JSON.iparse parser (value source) of
                 JSON.IError path err ->
                   JSON.formatError path err
-                  |> Text.pack
-                  |> InvalidConfiguration
-                  |> throwM
+                  & Text.pack
+                  & InvalidConfiguration
+                  & throwM
 
                 JSON.ISuccess result ->
                   return result
@@ -95,9 +70,9 @@ getConfigValueWith parser keys0 (Config configValue0) =
           case JSON.iparse parser (configValueToJsonObject innerConfigValue) of
             JSON.IError path err ->
               JSON.formatError path err
-              |> Text.pack
-              |> InvalidConfiguration
-              |> throwM
+              & Text.pack
+              & InvalidConfiguration
+              & throwM
 
             JSON.ISuccess result ->
               return result
@@ -105,12 +80,12 @@ getConfigValueWith parser keys0 (Config configValue0) =
         (k:keys1, SubConfig configm) ->
           case HashMap.lookup k configm of
             Nothing ->
-              throwM <| InvalidConfigKeyPath keys0
+              throwM $ InvalidConfigKeyPath keys0
             Just configValue1 ->
               loop keys1 configValue1
 
         _ ->
-          throwM <| InvalidConfigKeyPath keys0
+          throwM $ InvalidConfigKeyPath keys0
   in
     loop keys0 configValue0
 
@@ -126,7 +101,7 @@ getSelectedConfigSource keys0 (Config configValue0) =
         ([], ConfigValue sources) ->
           case Set.maxView sources of
             Nothing ->
-              throwM <| InvalidConfigKeyPath keys0
+              throwM $ InvalidConfigKeyPath keys0
 
             Just (source, _) ->
               return source
@@ -134,22 +109,22 @@ getSelectedConfigSource keys0 (Config configValue0) =
         (k:keys1, SubConfig configm) ->
           case HashMap.lookup k configm of
             Nothing ->
-              throwM <| InvalidConfigKeyPath keys0
+              throwM $ InvalidConfigKeyPath keys0
             Just configValue1 ->
               loop keys1 configValue1
 
         _ ->
-          throwM <| InvalidConfigKeyPath keys0
+          throwM $ InvalidConfigKeyPath keys0
   in
     loop keys0 configValue0
 
 
-getConfigSources
+getAllConfigSources
   :: (MonadThrow m)
   => [Text]
   -> Config
   -> m (Set ConfigSource)
-getConfigSources keys0 (Config configValue0) =
+getAllConfigSources keys0 (Config configValue0) =
   let
     loop keys configValue =
       case (keys, configValue) of
@@ -159,12 +134,12 @@ getConfigSources keys0 (Config configValue0) =
         (k:keys1, SubConfig configm) ->
           case HashMap.lookup k configm of
             Nothing ->
-              throwM <| InvalidConfigKeyPath keys0
+              throwM $ InvalidConfigKeyPath keys0
             Just configValue1 ->
               loop keys1 configValue1
 
         _ ->
-          throwM <| InvalidConfigKeyPath keys0
+          throwM $ InvalidConfigKeyPath keys0
   in
     loop keys0 configValue0
 

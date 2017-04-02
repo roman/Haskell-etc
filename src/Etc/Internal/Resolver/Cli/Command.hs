@@ -1,97 +1,107 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module System.Etc.Internal.Resolver.OptParse.Command where
+{-# LANGUAGE OverloadedStrings #-}
+module Etc.Internal.Resolver.Cli.Command where
 
-import Control.Lens hiding ((<|), (|>))
+import Protolude
+
 import Control.Monad.Catch (MonadThrow, throwM)
-import Data.Hashable (Hashable)
+import Data.Hashable       (Hashable)
 import Data.HashMap.Strict (HashMap)
-import Data.Maybe (fromMaybe)
-import Data.Vector (Vector)
-import System.Environment (getArgs, getProgName)
-import qualified Data.Aeson as JSON
+import Data.Maybe          (fromMaybe)
+import Data.Vector         (Vector)
+import System.Environment  (getArgs, getProgName)
+
+import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set as Set
-import qualified Data.Text as Text
+import qualified Data.Text           as Text
 import qualified Options.Applicative as Opt
 
-import System.Etc.Internal.Prelude hiding ((&))
-import System.Etc.Internal.Types
-import System.Etc.Internal.Resolver.OptParse.Common
-import qualified System.Etc.Internal.Spec as Spec
+import           Etc.Internal.Resolver.Cli.Common
+import           Etc.Internal.Types
+
+import qualified Etc.Internal.Spec.Types          as Spec
 
 --------------------------------------------------------------------------------
 
-entrySpecToJsonOptParser
+entrySpecToJsonCli
   :: (MonadThrow m)
-    => Spec.OptParseEntrySpec cmd
+    => Spec.CliEntrySpec cmd
     -> m (Vector cmd, Opt.Parser (Maybe JSON.Value))
-entrySpecToJsonOptParser entrySpec =
+entrySpecToJsonCli entrySpec =
   case entrySpec of
     Spec.CmdEntry commandJsonValue specSettings ->
       return ( commandJsonValue
-             , settingsToJsonOptParser specSettings
+             , settingsToJsonCli specSettings
              )
 
     Spec.PlainEntry {} ->
       throwM CommandKeyMissing
 
-configValueSpecToOptParser
+configValueSpecToCli
   :: (MonadThrow m, Eq cmd, Hashable cmd)
-    => Text
-    -> Maybe JSON.Value
+    => HashMap cmd (Opt.Parser ConfigValue)
+    -> Text
     -> Spec.ConfigSources cmd
-    -> HashMap cmd (Opt.Parser ConfigValue)
     -> m (HashMap cmd (Opt.Parser ConfigValue))
-configValueSpecToOptParser specEntryKey specEntryDefVal sources acc0 =
+configValueSpecToCli acc0 specEntryKey sources =
   let
     updateAccConfigOptParser configValueParser accOptParser =
       (\configValue accSubConfig ->
-        accSubConfig
-          &  (_SubConfig << at specEntryKey << _JustConfigValue Set.empty)
-          .~ configValue)
+        case accSubConfig of
+          ConfigValue {} ->
+            accSubConfig
+
+          SubConfig subConfigMap ->
+            subConfigMap
+              & HashMap.alter (const $ Just configValue) specEntryKey
+              & SubConfig)
         <$> configValueParser
         <*> accOptParser
   in
-    case Spec.optParse sources of
+    case Spec.cliEntry sources of
       Nothing ->
         return acc0
 
       Just entrySpec -> do
         (commands, jsonOptParser) <-
-          entrySpecToJsonOptParser entrySpec
+          entrySpecToJsonCli entrySpec
 
         let
           configValueParser =
-            jsonToConfigValue specEntryDefVal <$> jsonOptParser
+            jsonToConfigValue <$> jsonOptParser
 
         foldM (\acc command ->
                  acc
-                   |> HashMap.alter
+                   & HashMap.alter
                         (\mAccParser ->
                           mAccParser
-                            |> fromMaybe (pure <| SubConfig HashMap.empty)
-                            |> updateAccConfigOptParser configValueParser
-                            |> Just)
+                            & fromMaybe (pure $ SubConfig HashMap.empty)
+                            & updateAccConfigOptParser configValueParser
+                            & Just)
                         command
-                   |> return)
+                   & return)
               acc0
               commands
 
-subConfigSpecToOptParser
+subConfigSpecToCli
   :: (MonadThrow m, JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
     => Text
     -> HashMap.HashMap Text (Spec.ConfigValue cmd)
     -> HashMap cmd (Opt.Parser ConfigValue)
     -> m (HashMap cmd (Opt.Parser ConfigValue))
-subConfigSpecToOptParser specEntryKey subConfigSpec acc =
+subConfigSpecToCli specEntryKey subConfigSpec acc =
   let
     updateAccConfigOptParser subConfigParser accOptParser =
       (\subConfig accSubConfig ->
-          accSubConfig
-            & (_SubConfig << at specEntryKey << _JustSubConfig)
-            .~ subConfig)
+          case accSubConfig of
+            ConfigValue {} ->
+              accSubConfig
+
+            SubConfig subConfigMap ->
+              subConfigMap
+                & HashMap.alter (const $ Just subConfig) specEntryKey
+                & SubConfig)
         <$> subConfigParser
         <*> accOptParser
 
@@ -101,60 +111,57 @@ subConfigSpecToOptParser specEntryKey subConfigSpec acc =
            case mAccOptParser of
              Nothing -> do
                commandText <- commandToKey command
-               throwM <| UnknownCommandKey (Text.intercalate ", " commandText)
+               throwM $ UnknownCommandKey (Text.intercalate ", " commandText)
 
              Just accOptParser ->
                Just
-               <| updateAccConfigOptParser subConfigParser accOptParser)
+               $ updateAccConfigOptParser subConfigParser accOptParser)
         command
         accOptParsers
 
   in do
      parserPerCommand <-
-       ifoldrMOf itraversed
-                 specToConfigValueOptParser
-                 HashMap.empty
-                 subConfigSpec
+       foldM specToConfigValueCli
+             HashMap.empty
+             (HashMap.toList subConfigSpec)
 
      parserPerCommand
-       |> HashMap.foldrWithKey
+       & HashMap.foldrWithKey
                   addSubParserCommand
                   acc
-       |> return
+       & return
 
-specToConfigValueOptParser
+specToConfigValueCli
   :: (MonadThrow m, JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
-    => Text
-    -> Spec.ConfigValue cmd
-    -> HashMap cmd (Opt.Parser ConfigValue)
+    => HashMap cmd (Opt.Parser ConfigValue)
+    -> ( Text, Spec.ConfigValue cmd )
     -> m (HashMap cmd (Opt.Parser ConfigValue))
-specToConfigValueOptParser specEntryKey specConfigValue acc =
+specToConfigValueCli acc (specEntryKey, specConfigValue) =
   case specConfigValue of
-    Spec.ConfigValue mDefaultValue sources ->
-      configValueSpecToOptParser
-        specEntryKey
-        mDefaultValue
-        sources
+    Spec.ConfigValue _ sources ->
+      configValueSpecToCli
         acc
+        specEntryKey
+        sources
 
     Spec.SubConfig subConfigSpec ->
-      subConfigSpecToOptParser
+      subConfigSpecToCli
         specEntryKey
         subConfigSpec
         acc
 
-configValueOptParserAccInit
+configValueCliAccInit
   :: (MonadThrow m, JSON.FromJSON cmd, Eq cmd, Hashable cmd)
     => Spec.ConfigSpec cmd
     -> m (HashMap cmd (Opt.Parser ConfigValue))
-configValueOptParserAccInit spec =
+configValueCliAccInit spec =
   let
     zeroParser =
-      pure <| SubConfig HashMap.empty
+      pure $ SubConfig HashMap.empty
 
     commandsSpec = do
-      programSpec <- Spec.specOptParseProgramSpec spec
-      Spec.optParseCommands programSpec
+      programSpec <- Spec.specCliProgramSpec spec
+      Spec.cliCommands programSpec
 
   in
     case commandsSpec of
@@ -162,12 +169,11 @@ configValueOptParserAccInit spec =
         throwM CommandsKeyNotDefined
 
       Just commands ->
-       ifoldrMOf itraversed
-                 (\commandVal _ acc -> do
-                   command <- parseCommandJsonValue (JSON.String commandVal)
-                   return <| HashMap.insert command zeroParser acc)
-                 HashMap.empty
-                 commands
+        foldM (\acc (commandVal, _) -> do
+                command <- parseCommandJsonValue (JSON.String commandVal)
+                return $ HashMap.insert command zeroParser acc)
+              HashMap.empty
+              (HashMap.toList commands)
 
 joinCommandParsers
   :: (MonadThrow m, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
@@ -175,7 +181,7 @@ joinCommandParsers
     -> m (Opt.Parser (cmd, Config))
 joinCommandParsers parserPerCommand =
   let
-    joinParser command subConfigParser acc =
+    joinParser acc (command, subConfigParser) =
       let
         parser =
           fmap (\subConfig -> (command, Config subConfig))
@@ -191,49 +197,49 @@ joinCommandParsers parserPerCommand =
                 commandTexts
 
         [acc]
-          |> (++ commandParsers)
-          |> mconcat
-          |> return
+          & (++ commandParsers)
+          & mconcat
+          & return
   in do
-    mergedParsers <- ifoldrMOf itraversed joinParser Opt.idm parserPerCommand
+    mergedParsers <-
+      foldM joinParser Opt.idm (HashMap.toList parserPerCommand)
     return (Opt.subparser mergedParsers)
 
-specToConfigOptParser
+specToConfigCli
   :: (MonadThrow m, JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
     => Spec.ConfigSpec cmd
     -> m (Opt.Parser (cmd, Config))
-specToConfigOptParser spec = do
-  acc <- configValueOptParserAccInit spec
+specToConfigCli spec = do
+  acc <- configValueCliAccInit spec
   parsers <-
-    ifoldrMOf itraversed
-              specToConfigValueOptParser
-              acc
-              (Spec.specConfigValues spec)
+    foldM specToConfigValueCli
+          acc
+          (HashMap.toList $ Spec.specConfigValues spec)
 
   joinCommandParsers parsers
 
-resolveCommandOptParserPure
+resolveCommandCliPure
   :: (MonadThrow m, JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
     => Spec.ConfigSpec cmd
     -> Text
     -> [Text]
     -> m (cmd, Config)
-resolveCommandOptParserPure configSpec progName args = do
-  configParser <- specToConfigOptParser configSpec
+resolveCommandCliPure configSpec progName args = do
+  configParser <- specToConfigCli configSpec
 
   let
     programModFlags =
-      case Spec.specOptParseProgramSpec configSpec of
+      case Spec.specCliProgramSpec configSpec of
            Just programSpec ->
              Opt.fullDesc
               `mappend` (programSpec
-                        |> Spec.optParseProgramDesc
-                        |> Text.unpack
-                        |> Opt.progDesc)
+                        & Spec.cliProgramDesc
+                        & Text.unpack
+                        & Opt.progDesc)
               `mappend` (programSpec
-                        |> Spec.optParseProgramHeader
-                        |> Text.unpack
-                        |> Opt.header)
+                        & Spec.cliProgramHeader
+                        & Text.unpack
+                        & Opt.header)
            Nothing ->
              mempty
 
@@ -243,19 +249,19 @@ resolveCommandOptParserPure configSpec progName args = do
 
     programResult =
       args
-        |> map Text.unpack
-        |> Opt.execParserPure Opt.defaultPrefs programParser
+        & map Text.unpack
+        & Opt.execParserPure Opt.defaultPrefs programParser
 
   programResultToResolverResult progName programResult
 
 
-resolveCommandOptParser
+resolveCommandCli
   :: (JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
     => Spec.ConfigSpec cmd
     -> IO (cmd, Config)
-resolveCommandOptParser configSpec = do
+resolveCommandCli configSpec = do
   progName <- Text.pack <$> getProgName
   args     <- map Text.pack <$> getArgs
 
-  handleOptParseResult
-    <| resolveCommandOptParserPure configSpec progName args
+  handleCliResult
+    $ resolveCommandCliPure configSpec progName args

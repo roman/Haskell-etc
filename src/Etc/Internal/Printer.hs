@@ -1,21 +1,29 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module System.Etc.Internal.Printer where
+{-# LANGUAGE OverloadedStrings #-}
+module Etc.Internal.Printer (
+    renderConfig
+  , printPrettyConfig
+  , hPrintPrettyConfig
+  ) where
+
+import Protolude hiding ((<>))
+
+import qualified Data.Aeson          as JSON
+import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Set            as Set
+import qualified Data.Text           as Text
 
 import Text.PrettyPrint.ANSI.Leijen
-import qualified Data.Aeson as JSON
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set as Set
-import qualified Data.Text as Text
 
-import System.Etc.Internal.Prelude hiding ((<>), (<$>))
-import System.Etc.Internal.Types
+import Etc.Internal.Spec.Types (ConfigurationError (..))
+import Etc.Internal.Types
 
 renderJsonValue :: JSON.Value -> (Doc, Int)
 renderJsonValue value' =
   case value' of
     JSON.String str ->
-      (text <| Text.unpack str, Text.length str)
+      (text $ Text.unpack str, Text.length str)
 
     JSON.Number scientific ->
       let
@@ -29,7 +37,12 @@ renderJsonValue value' =
       else
         (text "false", 5)
     _ ->
-      crash <| "invalid config value creation" `mappend` (show value')
+      value'
+      & show
+      & ("Invalid configuration value creation " `mappend`)
+      & InvalidConfiguration
+      & show
+      & error
 
 
 renderConfig :: Config -> Doc
@@ -50,14 +63,14 @@ renderConfig (Config configValue0) =
           , brackets' (fill 10 (text "File:" <+> text (Text.unpack filepath')))
           )
 
-        EnvVar varname value' ->
+        Env varname value' ->
           ( renderJsonValue value'
           , brackets' (fill 10 (text "Env:" <+> text (Text.unpack varname)))
           )
 
-        OptParse value' ->
+        Cli value' ->
           ( renderJsonValue value'
-          , brackets' (fill 10 (text "OptParse"))
+          , brackets' (fill 10 (text "Cli"))
           )
 
         None ->
@@ -73,12 +86,12 @@ renderConfig (Config configValue0) =
 
         fillingWidth =
           sources
-          |> map (fst >> snd)
-          |> maximum
-          |> max 10
+          & map (snd . fst)
+          & maximum
+          & max 10
 
         selectedValue =
-          [ green <| fill fillingWidth selValueDoc <+> selSourceDoc ]
+          [ green $ fill fillingWidth selValueDoc <+> selSourceDoc ]
 
         otherValues =
           map (\((valueDoc, _), sourceDoc) ->
@@ -86,9 +99,9 @@ renderConfig (Config configValue0) =
               others
       in
         selectedValue
-        |> flip mappend otherValues
-        |> vcat
-        |> indent 2
+        & flip mappend otherValues
+        & vcat
+        & indent 2
 
     configEntryRenderer :: [Text] -> [Doc] -> Text -> ConfigValue -> [Doc]
     configEntryRenderer keys resultDoc configKey configValue =
@@ -106,8 +119,8 @@ renderConfig (Config configValue0) =
           let
             configKey =
               keys
-              |> reverse
-              |> Text.intercalate "."
+              & reverse
+              & Text.intercalate "."
 
             sources =
               Set.toDescList sources0
@@ -119,16 +132,14 @@ renderConfig (Config configValue0) =
                <$$> renderSources sources ]
   in
     loop [] configValue0
-    |> intersperse (linebreak <> linebreak)
-    |> hcat
-    |> (<> linebreak)
+    & intersperse (linebreak <> linebreak)
+    & hcat
+    & (<> linebreak)
 
 printPrettyConfig :: Config -> IO ()
 printPrettyConfig =
-  renderConfig
-  >> putDoc
+  putDoc . renderConfig
 
 hPrintPrettyConfig :: Handle -> Config -> IO ()
 hPrintPrettyConfig handle' =
-  renderConfig
-  >> hPutDoc handle'
+  hPutDoc handle' . renderConfig

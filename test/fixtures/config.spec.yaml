@@ -1,0 +1,4 @@
+etc/entries:
+  greeting:
+    etc/spec:
+      env: "GREETING"
