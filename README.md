@@ -6,6 +6,30 @@
 environment variables, files) using a declarative spec file that defines where
 this values are to be found and located in a configuration map.
 
+## Table Of Contents
+
+* [Rationale](#rationale)
+* [Defining a spec file](#defining-a-spec-file)
+* [Reading a spec file](#reading-a-spec-file)
+** [YAML Support](#yaml-support)
+* [Gathering configuration values explicitly](gathering-configuration-values-explicitly)
+** [Default](#default)
+** [Configuration Files](#configuration-files)
+*** [Why have more than one configuration file?](why-have-more-than-one-configuration-file)
+** [Environment Variables](#environment-variables)
+** [Command Line](#command-line)
+*** [`opt/cli` entries](#optcli-entries)
+*** [`cli` entries](#cli-entries)
+*** [Using Plain resolver](#using-plain-resolver)
+*** [Using Command resolver](#using-command-resolver)
+*** [CLI Support](#cli-support)
+** [Reading From Pure Sources](#reading-from-pure-sources)
+* [Accessing configuration values](#accessing-configuration-values)
+* [Printing your configuration values](#printing-your-configuration-values)
+* [Cabal Flags](#cabal-flags)
+* [Full Example](#full-example)
+
+
 ## Rationale
 
 Independently of where the configuration values of your application are found,
@@ -238,7 +262,7 @@ The `opt/cli` entry map must have the following keys:
    *NOTE*: you must use [`Etc.resolveCommandCli`](#using-command-resolver) for
    the `commands` entry to take effect
 
-#### CLI entries
+#### `cli` entries
 
 The `cli` entry map can have the following keys (`input` and `type` are
 required):
@@ -379,7 +403,7 @@ using
 you are not interested in generating a CLI input for your program, you don't
 have to pull dependencies you don't need.
 
-### Reading from pure values
+### Reading from pure sources
 
 Sometimes, you would like to use the concept of CLI or environment variables, without
 actually calling the OS APIs, `etc` provides pure versions for these resolvers:
@@ -409,7 +433,7 @@ map:
 Reads values specified on a spec file and casts it to a Haskell type
 using the `Aeson.FromJSON` typeclass
 
-- `getConfigValueWith`
+- `Etc.getConfigValueWith`
 
 Reads values specified on a spec file and casts it using a custom function that
 uses the `Aeson` parser API; this works great when the data structures of
