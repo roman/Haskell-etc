@@ -4,21 +4,18 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 module Main where
 
-import qualified System.Etc as Config
+import qualified System.Etc as Etc
 
 import Protolude
 
---------------------------------------------------------------------------------
--- We specify the support commands for our program
-
 main :: IO ()
 main = do
-  configSpec :: Config.PlainConfigSpec <-
-    Config.readConfigSpec "./examples/plain/resources/spec.json"
+  configSpec <-
+    Etc.readConfigSpec "./resources/spec.json"
 
-  configFiles     <- Config.resolveFiles configSpec
-  configEnv       <- Config.resolveEnvVars configSpec
-  configOptParser <- Config.resolvePlainOptParser configSpec
+  configFiles     <- Etc.resolveFiles configSpec
+  configEnv       <- Etc.resolveEnv configSpec
+  configOptParser <- Etc.resolvePlainCli configSpec
 
   let
     config =
@@ -26,4 +23,4 @@ main = do
       <> configEnv
       <> configOptParser
 
-  Config.printPrettyConfig config
+  Etc.printPrettyConfig config

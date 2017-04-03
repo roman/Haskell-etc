@@ -8,7 +8,7 @@ import Data.Hashable (Hashable)
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
 import qualified Data.Text as Text
-import qualified System.System.Etc as Config
+import qualified System.Etc as Etc
 
 import Protolude
 
@@ -47,11 +47,11 @@ instance JSON.ToJSON Cmd where
 
 main :: IO ()
 main = do
-  configSpec <- Config.readConfigSpec "./examples/command/resources/spec.json"
+  configSpec <- Etc.readConfigSpec "./resources/spec.json"
 
-  configFiles <- Config.resolveFiles configSpec
-  configEnv   <- Config.resolveEnvVars configSpec
-  (cmd, configOptParser) <- Config.resolveCommandOptParser configSpec
+  configFiles <- Etc.resolveFiles configSpec
+  configEnv   <- Etc.resolveEnv configSpec
+  (cmd, configOptParser) <- Etc.resolveCommandCli configSpec
 
   let
     config =
@@ -61,8 +61,8 @@ main = do
 
   case cmd of
     PrintConfig ->
-      Config.printPrettyConfig config
+      Etc.printPrettyConfig config
 
     RunMain -> do
       putStrLn ("Executing main program" :: Text)
-      Config.printPrettyConfig config
+      Etc.printPrettyConfig config
