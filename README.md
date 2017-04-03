@@ -472,6 +472,10 @@ the exact bits of functionality you need for your application.
 ```haskell
 import Control.Applicative ((<$>), (<*>))
 import Data.Aeson ((.:))
+import Data.Hashable (Hashable)
+import Data.Monoid ((<>))
+import GHC.Generics (Generic)
+
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
 import qualified System.Etc as Etc
@@ -481,6 +485,34 @@ data Credentials
                 , password :: Text }
   deriving (Show)
 
+data Cmd
+  = Config
+  | Run
+  deriving (Show, Eq, Generic)
+
+instance Hashable Cmd
+
+instance JSON.FromJSON Cmd where
+  parseJSON json =
+    case json of
+      JSON.String cmdName ->
+        if cmdName == "config" then
+          return Config
+        else if cmdName == "run" then
+          return Run
+        else
+          JSON.typeMismatch ("Cmd (" <> Text.unpack cmdName <> ")") json
+      _ ->
+        JSON.typeMismatch "Cmd" json
+
+instance JSON.ToJSON Cmd where
+  toJSON cmd =
+    case cmd of
+      Config ->
+        JSON.String "config"
+      Run ->
+        JSON.String "run"
+
 parseCredentials json =
   case json of
     JSON.Object object ->
@@ -488,7 +520,7 @@ parseCredentials json =
         <$> object .: "user"
         <*> object .: "password"
 
-getConfiguration :: IO Etc.Config
+getConfiguration :: IO (Cmd, Etc.Config)
 getConfiguration = do
   spec <- Etc.readConfigSpec "./path/to/spec.yaml"
 
@@ -498,24 +530,30 @@ getConfiguration = do
 
   fileConfig <- Etc.resolveFiles spec
   envConfig  <- Etc.resolveEnv spec
-  cliConfig  <- Etc.resolvePlainCli spec
+  (cmd, cliConfig) <- Etc.resolveCommandCli spec
 
-  return (fileConfig
+  return ( cmd
+         , fileConfig
           <> cliConfig
           <> envConfig
-          <> defaultConfig)
+          <> defaultConfig )
 
 main :: IO ()
 main = do
-  config     <- getConfiguration
+  (cmd, config) <- getConfiguration
 
-  -- Get individual entries (Uses instance of Text type for the Aeson.FromJSON
-  -- typeclass)
-  username <- Etc.getConfigValue ["credentials", "username"]
+  case cmd of
+    Config -> do
+      Etc.printPrettyConfig config
 
-  -- Get the values with a supplied JSON parser
-  creds <- Etc.getConfigValueWith parseCredentials ["credentials"]
+    Run -> do
+      -- Get individual entries (Uses instance of Text type for the Aeson.FromJSON
+      -- typeclass)
+      username <- Etc.getConfigValue ["credentials", "username"]
 
-  print (username :: Text)
-  print creds
+      -- Get the values with a supplied JSON parser
+      creds <- Etc.getConfigValueWith parseCredentials ["credentials"]
+
+      print (username :: Text)
+      print creds
 ```
