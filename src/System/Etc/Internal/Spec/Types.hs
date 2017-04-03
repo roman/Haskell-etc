@@ -1,7 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
 {-# LANGUAGE OverloadedStrings     #-}
-module Etc.Internal.Spec.Types where
+module System.Etc.Internal.Spec.Types where
 
 import Prelude   (fail)
 import Protolude

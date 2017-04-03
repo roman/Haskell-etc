@@ -61,15 +61,15 @@ library
 
 
   exposed-modules:
-      Etc
-      Etc.Spec
-      Etc.Internal.Config
-      Etc.Internal.Spec.JSON
-      Etc.Internal.Spec.Types
-      Etc.Internal.Types
-      Etc.Internal.Resolver.Default
-      Etc.Internal.Resolver.File
-      Etc.Internal.Resolver.Env
+      System.Etc
+      System.Etc.Spec
+      System.Etc.Internal.Config
+      System.Etc.Internal.Spec.JSON
+      System.Etc.Internal.Spec.Types
+      System.Etc.Internal.Types
+      System.Etc.Internal.Resolver.Default
+      System.Etc.Internal.Resolver.File
+      System.Etc.Internal.Resolver.Env
 
   other-modules:
       Paths_etc
@@ -81,24 +81,24 @@ library
     build-depends:
       ansi-wl-pprint >=0.6 && <0.7
     exposed-modules:
-      Etc.Internal.Printer
+      System.Etc.Internal.Printer
 
   if flag(cli)
     cpp-options: -DWITH_CLI
     build-depends:
       optparse-applicative >=0.13 && <0.14
     exposed-modules:
-      Etc.Internal.Resolver.Cli
-      Etc.Internal.Resolver.Cli.Common
-      Etc.Internal.Resolver.Cli.Plain
-      Etc.Internal.Resolver.Cli.Command
+      System.Etc.Internal.Resolver.Cli
+      System.Etc.Internal.Resolver.Cli.Common
+      System.Etc.Internal.Resolver.Cli.Plain
+      System.Etc.Internal.Resolver.Cli.Command
 
   if flag(yaml)
     cpp-options: -DWITH_YAML
     build-depends:
       yaml >=0.8 && <0.9
     exposed-modules:
-      Etc.Internal.Spec.YAML
+      System.Etc.Internal.Spec.YAML
 
 test-suite etc-testsuite
   type: exitcode-stdio-1.0
@@ -129,11 +129,11 @@ test-suite etc-testsuite
       yaml >=0.8 && <0.9
   other-modules:
       Paths_etc
-      Etc.Resolver.CliTest
-      Etc.Resolver.Cli.CommandTest
-      Etc.Resolver.Cli.PlainTest
-      Etc.Resolver.DefaultTest
-      Etc.Resolver.EnvTest
-      Etc.Resolver.FileTest
-      Etc.SpecTest
+      System.Etc.Resolver.CliTest
+      System.Etc.Resolver.Cli.CommandTest
+      System.Etc.Resolver.Cli.PlainTest
+      System.Etc.Resolver.DefaultTest
+      System.Etc.Resolver.EnvTest
+      System.Etc.Resolver.FileTest
+      System.Etc.SpecTest
   default-language: Haskell2010

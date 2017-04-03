@@ -8,7 +8,7 @@ import Data.Hashable (Hashable)
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
 import qualified Data.Text as Text
-import qualified System.Etc as Config
+import qualified System.System.Etc as Config
 
 import Protolude
 

@@ -2,9 +2,9 @@
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE RankNTypes                 #-}
 
-module Etc.Internal.Types
-  ( module Etc.Internal.Types
-  , module Etc.Internal.Spec.Types
+module System.Etc.Internal.Types
+  ( module System.Etc.Internal.Types
+  , module System.Etc.Internal.Spec.Types
   ) where
 
 import Protolude
@@ -16,7 +16,7 @@ import           Data.Ord            (comparing)
 import           Data.Set            (Set)
 import qualified Data.Set            as Set
 
-import Etc.Internal.Spec.Types (ConfigurationError (..))
+import System.Etc.Internal.Spec.Types (ConfigurationError (..))
 
 --------------------
 -- Configuration Types

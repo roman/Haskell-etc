@@ -137,7 +137,7 @@ metadata entry. To get this values from the spec you must call the
 #### Example
 
 ```haskell
-import qualified Etc
+import qualified System.Etc as Etc
 
 getConfiguration :: IO Etc.Config
 getConfiguration = do
@@ -168,7 +168,7 @@ production configuration values on a well known path (say
 
 ```haskell
 import Data.Monoid ((<>))
-import qualified Etc
+import qualified System.Etc as Etc
 
 getConfiguration :: IO Etc.Config
 getConfiguration = do
@@ -196,7 +196,7 @@ parameter.
 
 ```haskell
 import Data.Monoid ((<>))
-import qualified Etc
+import qualified System.Etc as Etc
 
 getConfiguration :: IO Etc.Config
 getConfiguration = do
@@ -277,7 +277,7 @@ parameter.
 
 ```haskell
 import Data.Monoid ((<>))
-import qualified Etc
+import qualified System.Etc as Etc
 
 getConfiguration :: IO Etc.Config
 getConfiguration = do
@@ -319,7 +319,7 @@ import Data.Hashable (Hashable)
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
 import Data.Monoid ((<>))
-import qualified Etc
+import qualified System.Etc as Etc
 
 data Cmd
   = Config
@@ -450,7 +450,7 @@ import Control.Applicative ((<$>), (<*>))
 import Data.Aeson ((.:))
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
-import qualified Etc
+import qualified System.Etc as Etc
 
 data Credentials
   = Credentials { username :: Text

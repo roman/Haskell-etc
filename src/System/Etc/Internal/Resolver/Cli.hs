@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Internal.Resolver.Cli
+module System.Etc.Internal.Resolver.Cli
   ( PlainConfigSpec
   -- , resolveCommandCli
   -- , resolveCommandCliPure
@@ -8,6 +8,6 @@ module Etc.Internal.Resolver.Cli
   , resolvePlainCliPure
   ) where
 
--- import Etc.Internal.Resolver.Cli.Command (resolveCommandCli, resolveCommandCliPure)
-import Etc.Internal.Resolver.Cli.Plain
+-- import System.Etc.Internal.Resolver.Cli.Command (resolveCommandCli, resolveCommandCliPure)
+import System.Etc.Internal.Resolver.Cli.Plain
     (PlainConfigSpec, resolvePlainCli, resolvePlainCliPure)

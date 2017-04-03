@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Etc.SpecTest (tests) where
+module System.Etc.SpecTest (tests) where
 
 import Protolude
 
@@ -15,8 +15,8 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
 
-import Etc.Internal.Spec.Types
-import Etc.Spec
+import System.Etc.Internal.Spec.Types
+import System.Etc.Spec
 
 #ifdef WITH_YAML
 import qualified Data.Yaml as YAML

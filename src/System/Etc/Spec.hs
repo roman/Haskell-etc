@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Spec (
+module System.Etc.Spec (
     module Types
   , parseConfigSpec
   , readConfigSpec
@@ -9,7 +9,8 @@ module Etc.Spec (
 
 import Protolude
 
-import Etc.Internal.Spec.Types as Types (ConfigSpec, ConfigValue, ConfigurationError (..))
+import System.Etc.Internal.Spec.Types as Types
+    (ConfigSpec, ConfigValue, ConfigurationError (..))
 
 import Control.Monad.Catch (MonadThrow (..))
 
@@ -17,9 +18,9 @@ import qualified Data.Aeson   as JSON
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text (readFile)
 
-import qualified Etc.Internal.Spec.JSON as JSON
+import qualified System.Etc.Internal.Spec.JSON as JSON
 #ifdef WITH_YAML
-import qualified Etc.Internal.Spec.YAML as YAML
+import qualified System.Etc.Internal.Spec.YAML as YAML
 #endif
 
 parseConfigSpec

@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Internal.Resolver.Env (resolveEnv, resolveEnvPure) where
+module System.Etc.Internal.Resolver.Env (resolveEnv, resolveEnvPure) where
 
 import Protolude
 import System.Environment (getEnvironment)
@@ -11,8 +11,8 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set            as Set
 import qualified Data.Text           as Text
 
-import qualified Etc.Internal.Spec.Types as Spec
-import           Etc.Internal.Types
+import qualified System.Etc.Internal.Spec.Types as Spec
+import           System.Etc.Internal.Types
 
 resolveEnvVarSource
   :: (Text -> Maybe Text)

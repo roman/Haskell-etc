@@ -4,7 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 module Main where
 
-import qualified Etc as Config
+import qualified System.Etc as Config
 
 import Protolude
 

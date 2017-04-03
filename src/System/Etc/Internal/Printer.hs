@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Internal.Printer (
+module System.Etc.Internal.Printer (
     renderConfig
   , printPrettyConfig
   , hPrintPrettyConfig
@@ -16,8 +16,8 @@ import qualified Data.Text           as Text
 
 import Text.PrettyPrint.ANSI.Leijen
 
-import Etc.Internal.Spec.Types (ConfigurationError (..))
-import Etc.Internal.Types
+import System.Etc.Internal.Spec.Types (ConfigurationError (..))
+import System.Etc.Internal.Types
 
 renderJsonValue :: JSON.Value -> (Doc, Int)
 renderJsonValue value' =

@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Etc.Resolver.Cli.CommandTest where
+module System.Etc.Resolver.Cli.CommandTest where
 
 import Protolude
 
@@ -10,7 +10,7 @@ import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
 import qualified Data.Set as Set
 
-import Etc
+import System.Etc
 
 with_command_option_tests :: TestTree
 with_command_option_tests =

@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Etc.Resolver.FileTest (tests) where
+module System.Etc.Resolver.FileTest (tests) where
 
 import Protolude
 
@@ -15,7 +15,7 @@ import qualified Data.Text as Text
 
 import Paths_etc (getDataFileName)
 
-import Etc
+import System.Etc
 
 
 tests :: TestTree

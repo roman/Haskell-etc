@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Internal.Resolver.Cli.Plain where
+module System.Etc.Internal.Resolver.Cli.Plain where
 
 import Protolude
 
@@ -11,9 +11,9 @@ import qualified Data.Text           as Text
 import qualified Options.Applicative as Opt
 import           System.Environment  (getArgs, getProgName)
 
-import           Etc.Internal.Resolver.Cli.Common
-import qualified Etc.Internal.Spec.Types          as Spec
-import           Etc.Internal.Types
+import           System.Etc.Internal.Resolver.Cli.Common
+import qualified System.Etc.Internal.Spec.Types          as Spec
+import           System.Etc.Internal.Types
 
 --------------------------------------------------------------------------------
 

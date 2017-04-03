@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Etc.Resolver.EnvTest where
+module System.Etc.Resolver.EnvTest where
 
 import Protolude
 
@@ -14,7 +14,7 @@ import qualified Data.Text as Text
 
 import Paths_etc (getDataFileName)
 
-import Etc
+import System.Etc
 
 
 tests :: TestTree

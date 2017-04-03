@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Internal.Resolver.Cli.Common where
+module System.Etc.Internal.Resolver.Cli.Common where
 
 import qualified Prelude   as P
 import           Protolude
@@ -17,8 +17,8 @@ import qualified Data.Text.IO               as Text
 import qualified Data.Vector                as Vector
 import qualified Options.Applicative        as Opt
 
-import qualified Etc.Internal.Spec.Types as Spec
-import           Etc.Internal.Types
+import qualified System.Etc.Internal.Spec.Types as Spec
+import           System.Etc.Internal.Types
 
 --------------------------------------------------------------------------------
 

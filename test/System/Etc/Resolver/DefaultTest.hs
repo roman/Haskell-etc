@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Etc.Resolver.DefaultTest (tests) where
+module System.Etc.Resolver.DefaultTest (tests) where
 
 import Protolude
 
@@ -11,7 +11,7 @@ import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
 import qualified Data.Set as Set
 
-import Etc
+import System.Etc
 
 tests :: TestTree
 tests =

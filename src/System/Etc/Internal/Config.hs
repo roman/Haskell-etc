@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Internal.Config where
+module System.Etc.Internal.Config where
 
 import Protolude
 
@@ -13,7 +13,7 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set            as Set
 import qualified Data.Text           as Text
 
-import Etc.Internal.Types
+import System.Etc.Internal.Types
 
 --------------------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Internal.Resolver.Cli.Command where
+module System.Etc.Internal.Resolver.Cli.Command where
 
 import Protolude
 
@@ -17,10 +17,10 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text           as Text
 import qualified Options.Applicative as Opt
 
-import Etc.Internal.Resolver.Cli.Common
-import Etc.Internal.Types
+import System.Etc.Internal.Resolver.Cli.Common
+import System.Etc.Internal.Types
 
-import qualified Etc.Internal.Spec.Types as Spec
+import qualified System.Etc.Internal.Spec.Types as Spec
 
 --------------------------------------------------------------------------------
 
