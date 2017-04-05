@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module System.Etc.Internal.Resolver.Cli.Plain where
+module System.Etc.Internal.Resolver.Cli.Plain (resolvePlainCli, resolvePlainCliPure) where
 
 import Protolude
 
@@ -152,8 +152,22 @@ specToConfigCli spec = do
     & (Config <$>)
     & return
 
+{-|
+
+Dynamically generate an OptParser CLI from the spec settings declared on the
+@ConfigSpec@. This will process the OptParser from given input
+rather than fetching it from the OS.
+
+Once it generates the CLI and gathers the input, it will return the
+configuration map with keys defined for the program on @ConfigSpec@.
+
+-}
 resolvePlainCliPure
-  :: MonadThrow m => PlainConfigSpec -> Text -> [Text] -> m Config
+  :: MonadThrow m
+  => PlainConfigSpec -- ^ Plain ConfigSpec (no sub-commands)
+  -> Text            -- ^ Name of the program running the CLI
+  -> [Text]          -- ^ Arglist for the program
+  -> m Config        -- ^ returns Configuration Map
 resolvePlainCliPure configSpec progName args = do
   configParser <- specToConfigCli configSpec
 
@@ -185,8 +199,18 @@ resolvePlainCliPure configSpec progName args = do
   programResultToResolverResult progName programResult
 
 
+{-|
+
+Dynamically generate an OptParser CLI from the spec settings declared on the
+@ConfigSpec@.
+
+Once it generates the CLI and gathers the input, it will return the
+configuration map with keys defined for the program on @ConfigSpec@.
+
+-}
 resolvePlainCli
-  :: PlainConfigSpec -> IO Config
+  :: PlainConfigSpec  -- ^ Plain ConfigSpec (no sub-commands)
+  -> IO Config        -- ^ returns Configuration Map
 resolvePlainCli configSpec = do
   progName <- Text.pack <$> getProgName
   args     <- map Text.pack <$> getArgs

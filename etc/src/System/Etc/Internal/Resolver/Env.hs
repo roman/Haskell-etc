@@ -66,7 +66,17 @@ buildEnvVarResolver lookupEnv spec =
       (Just emptySubConfig)
       (Spec.specConfigValues spec)
 
-resolveEnvPure ::  Spec.ConfigSpec cmd -> [(Text, Text)] -> Config
+{-|
+
+Gathers all OS Environment Variable values (@env@ entries) from the @etc/spec@
+entries inside a @ConfigSpec@. This version of the function gathers the input
+from a list of tuples rather than the OS.
+
+-}
+resolveEnvPure
+  :: Spec.ConfigSpec cmd -- ^ ConfigSpec
+  -> [(Text, Text)]      -- ^ Environment Variable tuples
+  -> Config              -- ^ returns Configuration Map with Environment Variables values filled in
 resolveEnvPure spec envMap0 =
   let
     envMap =
@@ -80,7 +90,15 @@ resolveEnvPure spec envMap0 =
           (buildEnvVarResolver lookupEnv spec)
 
 
-resolveEnv :: Spec.ConfigSpec cmd -> IO Config
+{-|
+
+Gathers all OS Environment Variable values (@env@ entries) from the @etc/spec@
+entries inside a @ConfigSpec@.
+
+-}
+resolveEnv
+  :: Spec.ConfigSpec cmd -- ^ Config Spec
+  -> IO Config           -- ^ returns Configuration Map with Environment Variables values filled in
 resolveEnv spec =
   let
     getEnvironmentTxt =

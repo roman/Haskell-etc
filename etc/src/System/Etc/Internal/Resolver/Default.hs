@@ -51,7 +51,14 @@ buildDefaultResolver spec =
       (Just emptySubConfig)
       (Spec.specConfigValues spec)
 
-resolveDefault ::  Spec.ConfigSpec cmd -> Config
+{-|
+
+Gathers all default values from the @etc/spec@ entries inside a @ConfigSpec@
+
+-}
+resolveDefault
+  :: Spec.ConfigSpec cmd -- ^ ConfigSpec
+  -> Config              -- ^ returns Configuration Map with default values included
 resolveDefault spec =
   maybe (Config emptySubConfig)
         Config

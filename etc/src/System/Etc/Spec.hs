@@ -24,10 +24,16 @@ import qualified System.Etc.Internal.Spec.JSON as JSON
 import qualified System.Etc.Internal.Spec.YAML as YAML
 #endif
 
+{-|
+
+Parses a text input into a @ConfigSpec@, input can be JSON or YAML (if cabal
+flag is set).
+
+-}
 parseConfigSpec
   :: (MonadCatch m, MonadThrow m, JSON.FromJSON cmd)
-    => Text
-    -> m (ConfigSpec cmd)
+    => Text               -- ^ Text to be parsed
+    -> m (ConfigSpec cmd) -- ^ returns ConfigSpec
 #ifdef WITH_YAML
 parseConfigSpec input =
    catch (JSON.parseConfigSpec input)
@@ -37,7 +43,16 @@ parseConfigSpec =
   JSON.parseConfigSpec
 #endif
 
-readConfigSpec :: JSON.FromJSON cmd => Text -> IO (ConfigSpec cmd)
+{-|
+
+Reads contents of a file and parses into a @ConfigSpec@, file contents can be
+either JSON or YAML (if cabal flag is set).
+
+-}
+readConfigSpec
+  :: JSON.FromJSON cmd
+  => Text -- ^ Filepath where contents are going to be read from and parsed
+  -> IO (ConfigSpec cmd) -- ^ returns ConfigSpec
 readConfigSpec filepath = do
   contents <- Text.readFile $ Text.unpack filepath
   parseConfigSpec contents
