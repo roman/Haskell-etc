@@ -53,8 +53,7 @@ module System.Etc (
   ) where
 
 import System.Etc.Internal.Resolver.Default (resolveDefault)
-import System.Etc.Internal.Types
-    (Config, ConfigSource (..), ConfigValue)
+import System.Etc.Internal.Types            (Config, ConfigSource (..), ConfigValue)
 import System.Etc.Spec
     (ConfigSpec, ConfigurationError (..), parseConfigSpec, readConfigSpec)
 
