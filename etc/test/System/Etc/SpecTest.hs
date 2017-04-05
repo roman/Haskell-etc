@@ -50,9 +50,9 @@ general_tests =
         input = "{}"
 
       case parseConfigSpec input of
-        Nothing ->
+        Left _ ->
           assertFailure "should not fail if no etc/entries key is present"
-        Just (_ :: ConfigSpec ()) ->
+        Right (_ :: ConfigSpec ()) ->
           assertBool "" True
 
   , testCase "entries cannot finish in an empty map" $ do
@@ -60,9 +60,9 @@ general_tests =
         input = "{\"etc/entries\":{\"greeting\":{}}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "entries should not accept empty maps as values " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
 
   , testCase "entries cannot finish in an array" $ do
@@ -70,9 +70,9 @@ general_tests =
         input = "{\"etc/entries\":{\"greeting\":[]}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "entries should not accept arrays as values " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
 
   , testCase "entries that finish with raw values sets them as default value" $ do
@@ -110,9 +110,9 @@ general_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{}}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "etc/spec map should not be an empty object " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
 
   , testCase "spec map cannot be a JSON array" $ do
@@ -120,9 +120,9 @@ general_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":[]}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "etc/spec map should not be an array " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
 
   , testCase "spec map cannot be a JSON bool" $ do
@@ -130,9 +130,9 @@ general_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":true}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "etc/spec map should not be a boolean " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
 
   , testCase "spec map cannot be a JSON string" $ do
@@ -140,9 +140,9 @@ general_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":\"hello\"}}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "etc/spec map should not be a string " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
 
   , testCase "spec map cannot be a JSON number" $ do
@@ -150,9 +150,9 @@ general_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":123}}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "etc/spec map should not be a number " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
 
   , testCase "spec map cannot have any other key that is not etc/spec" $ do
@@ -160,9 +160,9 @@ general_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":\"hello\"},\"foobar\":123}}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "etc/spec map should not contain more than one key " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
   ]
 
@@ -175,9 +175,9 @@ cli_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"cli\":{}}}}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "cli entry should require a type " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
 
   , testCase "cli option entry requires either short or long" $ do
@@ -185,9 +185,9 @@ cli_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"cli\":{\"input\":\"option\"}}}}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "cli entry should require a type " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
 
   , testCase "cli option entry works when setting short and type" $ do
@@ -263,9 +263,9 @@ cli_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"cli\":{\"input\":\"option\",\"long\":\"greeting\",\"type\":\"string\",\"command\":[\"foo\"]}}}}}"
 
       case parseConfigSpec input of
-        Just (result :: ConfigSpec ()) ->
+        Right (result :: ConfigSpec ()) ->
           assertFailure $ "cli entry should fail on invalid entry " ++ show result
-        Nothing ->
+        Left _ ->
           assertBool "" True
 
   ]

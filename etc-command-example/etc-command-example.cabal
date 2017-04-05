@@ -1,0 +1,36 @@
+name:                etc-command-example
+version:             0.0.0.0
+synopsis:            Example of Etc using Command CLI
+description:         Please see README.md
+homepage:            https://github.com/roman/Haskell-etc
+license:             BSD3
+license-file:        LICENSE
+author:              Roman Gonzalez
+maintainer:          romanandreg@gmail.com
+copyright:           2016 Roman Gonzalez
+category:            Configuration, System
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+data-dir: resources
+data-files:
+    config.yaml
+    spec.yaml
+
+executable etc-command-example
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
+  build-depends:       base
+                     , protolude
+                     , aeson
+                     , directory
+                     , text
+                     , etc
+                     , hashable
+                     , optparse-applicative
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/roman/Haskell-etc

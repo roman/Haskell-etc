@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Spec (
@@ -7,12 +8,12 @@ module System.Etc.Spec (
   , readConfigSpec
   ) where
 
-import Protolude
+import Protolude hiding (catch)
 
 import System.Etc.Internal.Spec.Types as Types
     (ConfigSpec, ConfigValue, ConfigurationError (..))
 
-import Control.Monad.Catch (MonadThrow (..))
+import Control.Monad.Catch (MonadThrow (..), MonadCatch(..))
 
 import qualified Data.Aeson   as JSON
 import qualified Data.Text    as Text
@@ -24,12 +25,13 @@ import qualified System.Etc.Internal.Spec.YAML as YAML
 #endif
 
 parseConfigSpec
-  :: (Alternative m, MonadThrow m, JSON.FromJSON cmd)
+  :: (MonadCatch m, MonadThrow m, JSON.FromJSON cmd)
     => Text
     -> m (ConfigSpec cmd)
 #ifdef WITH_YAML
 parseConfigSpec input =
-  JSON.parseConfigSpec input <|> YAML.parseConfigSpec input
+   catch (JSON.parseConfigSpec input)
+         (\(_ :: SomeException) ->  YAML.parseConfigSpec input)
 #else
 parseConfigSpec =
   JSON.parseConfigSpec

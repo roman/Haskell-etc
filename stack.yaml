@@ -36,13 +36,19 @@ resolver: lts-8.0
 # non-dependency (i.e. a user package), and its test suites and benchmarks
 # will not be run. This is useful for tweaking upstream packages.
 packages:
-- '.'
+- 'etc'
+- 'etc-command-example'
+- 'etc-plain-example'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps: []
 
 # Override default flag values for local packages and extra-deps
-flags: {}
+flags:
+  etc:
+    printer: true
+    cli: true
+    yaml: true
 
 # Extra package databases containing global packages
 extra-package-dbs: []

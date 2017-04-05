@@ -1,14 +1,16 @@
 {-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import GHC.Generics (Generic)
-import Data.Hashable (Hashable)
-import qualified Data.Aeson as JSON
+import qualified Data.Aeson       as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
-import qualified Data.Text as Text
-import qualified System.Etc as Etc
+import           Data.Hashable    (Hashable)
+import qualified Data.Text        as Text
+import           GHC.Generics     (Generic)
+import qualified System.Etc       as Etc
+
+import Paths_etc_command_example (getDataFileName)
 
 import Protolude
 
@@ -25,12 +27,14 @@ instance Hashable Cmd
 instance JSON.FromJSON Cmd where
   parseJSON json =
     case json of
-      JSON.String cmdName ->
-        if cmdName == "config" then
+      JSON.String cmdName
+        | cmdName == "config" ->
           return PrintConfig
-        else if cmdName == "run" then
+
+        | cmdName == "run" ->
           return RunMain
-        else
+
+        | otherwise ->
           JSON.typeMismatch ("Cmd (" <> Text.unpack cmdName <> ")") json
       _ ->
         JSON.typeMismatch "Cmd" json
@@ -47,17 +51,18 @@ instance JSON.ToJSON Cmd where
 
 main :: IO ()
 main = do
-  configSpec <- Etc.readConfigSpec "./resources/spec.json"
+  specPath <- getDataFileName "spec.yaml"
+  configSpec <- Etc.readConfigSpec (Text.pack specPath)
 
-  configFiles <- Etc.resolveFiles configSpec
-  configEnv   <- Etc.resolveEnv configSpec
-  (cmd, configOptParser) <- Etc.resolveCommandCli configSpec
+  (configFiles, _fileWarnings) <- Etc.resolveFiles configSpec
+  (cmd, configCli) <- Etc.resolveCommandCli configSpec
+  configEnv <- Etc.resolveEnv configSpec
 
   let
     config =
       configFiles
       <> configEnv
-      <> configOptParser
+      <> configCli
 
   case cmd of
     PrintConfig ->

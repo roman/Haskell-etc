@@ -12,6 +12,7 @@ import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
 import qualified Data.Set  as Set
 import qualified Data.Text as Text
+import qualified Data.Vector as Vector
 
 import Paths_etc (getDataFileName)
 
@@ -77,10 +78,12 @@ tests =
 
       assertEqual "config should be empty" mempty config
 
-      case errs of
-        [] ->
-          assertFailure "expecting one error, got none"
-        (err:_) ->
+      if Vector.null errs then
+        assertFailure "expecting one error, got none"
+      else
+        let
+          err = Vector.head errs
+        in
           case fromException err of
             Just (InvalidConfiguration _) ->
               return ()
@@ -112,10 +115,13 @@ tests =
           assertBool ("expecting to see entry from json config file " <> show set)
                    (Set.member (File 1 (Text.pack jsonFilepath) "hello json") set)
 
-      case errs of
-        [] ->
-          assertFailure "expecting one error, got none"
-        (err:_) ->
+      if Vector.null errs then
+        assertFailure "expecting one error, got none"
+      else
+        let
+          err =
+            Vector.head errs
+        in
           case fromException err of
             Just (ConfigurationFileNotFound _) ->
               return ()

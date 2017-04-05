@@ -29,7 +29,7 @@ stylish_haskell_install:
 
 STYLISH=stylish-haskell -i {} \;
 stylish_haskell: stylish_haskell_install ## Normalize style of source files
-	find src/ test/ -name "*.hs" -exec $(STYLISH) && git diff --exit-code
+	find etc/src/ etc/test/ etc-command-example/src etc-plain-example/src -name "*.hs" -exec $(STYLISH) && git diff --exit-code
 .PHONY: stylish_haskell
 
 hlint_install:
@@ -37,7 +37,7 @@ hlint_install:
 .PHONY: hlint_install
 
 hlint: hlint_install ## Execute linter
-	hlint src/ test/
+	hlint etc/src etc/test etc-command-example/src etc-plain-example/src
 .PHONY: hlint
 
 hlint_apply_refact: hlint_install ## Apply linter recomendations
@@ -46,5 +46,5 @@ hlint_apply_refact: hlint_install ## Apply linter recomendations
 
 HLINT=hlint --refactor --refactor-options -i {} \;
 hlint_refactor: hlint_apply_refact
-	find src/ test/ -name "*.hs" -exec $(HLINT)
+	find etc/src/ etc/test/ etc-command-example/src etc-plain-example/src -name "*.hs" -exec $(HLINT)
 .PHONY: hlint_refactor
