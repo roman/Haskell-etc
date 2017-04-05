@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module System.Etc.Internal.Resolver.Cli.Command where
+module System.Etc.Internal.Resolver.Cli.Command (resolveCommandCli, resolveCommandCliPure) where
 
 import Protolude
 
@@ -217,12 +217,22 @@ specToConfigCli spec = do
 
   joinCommandParsers parsers
 
+{-|
+
+Dynamically generate an OptParser CLI with sub-commands from the spec settings
+declared on the @ConfigSpec@. This will process the OptParser from given input
+rather than fetching it from the OS.
+
+This will return the selected record parsed from the sub-command input and the
+configuration map with keys defined for that sub-command.
+
+-}
 resolveCommandCliPure
   :: (MonadThrow m, JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
-    => Spec.ConfigSpec cmd
-    -> Text
-    -> [Text]
-    -> m (cmd, Config)
+    => Spec.ConfigSpec cmd  -- ^ Config Spec (normally parsed from json or yaml file)-- ^ The
+    -> Text                 -- ^ Name of the program running the CLI
+    -> [Text]               -- ^ Arglist for the program
+    -> m (cmd, Config)      -- ^ Selected command and Configuration Map
 resolveCommandCliPure configSpec progName args = do
   configParser <- specToConfigCli configSpec
 
@@ -254,10 +264,20 @@ resolveCommandCliPure configSpec progName args = do
   programResultToResolverResult progName programResult
 
 
+{-|
+
+Dynamically generate an OptParser CLI with sub-commands from the spec settings
+declared on the @ConfigSpec@.
+
+Once it generates the CLI and gathers the input, it will return the selected
+record parsed from the sub-command input and the configuration map with keys
+defined for that sub-command.
+
+-}
 resolveCommandCli
   :: (JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
-    => Spec.ConfigSpec cmd
-    -> IO (cmd, Config)
+    => Spec.ConfigSpec cmd  -- ^ Config Spec (normally parsed from json or yaml file)
+    -> IO (cmd, Config)     -- ^ Selected command and Configuration Map
 resolveCommandCli configSpec = do
   progName <- Text.pack <$> getProgName
   args     <- map Text.pack <$> getArgs

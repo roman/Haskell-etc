@@ -126,7 +126,17 @@ readConfigFromFiles files =
              (mempty, [])
              <$>)
 
-resolveFiles :: Spec.ConfigSpec cmd -> IO (Config, Vector SomeException)
+{-|
+
+Gathers configuration values from a list of files specified on the
+@etc/filepaths@ entry of a Config Spec. This will return a Configuration Map
+with values from all filepaths merged in, and a list of errors in case there was
+an error reading one of the filepaths.
+
+-}
+resolveFiles
+  :: Spec.ConfigSpec cmd -- ^ Config Spec
+  -> IO (Config, Vector SomeException) -- ^ Configuration Map with all values from files filled in and a list of warnings
 resolveFiles spec = do
   (config, exceptions) <- readConfigFromFiles (Spec.specConfigFilepaths spec)
   return (config, Vector.fromList exceptions)

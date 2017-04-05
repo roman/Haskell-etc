@@ -22,23 +22,33 @@ import           System.Etc.Internal.Types
 
 --------------------------------------------------------------------------------
 
+{-| A wrapper for sub-routines that return an error message; this was
+    created for error report purposes.
+-}
 newtype GetErrorMessage
-  = GetErrorMessage { getErrorMessage :: IO Text }
+  = GetErrorMessage {
+    -- | Unwrap IO action with error message
+    getErrorMessage :: IO Text
+  }
 
 instance Show GetErrorMessage where
   show _ = "<<error message>>"
 
+{-| Error when evaluating the ConfigSpec or when executing the OptParser
+
+-}
 data CliConfigError
+  -- | The type of the Command Key is invalid
   = InvalidCliCommandKey Text
-  -- ^ The type of the Command Key is invalid
+  -- | Trying to use command for an entry without setting commands section
   | CommandsKeyNotDefined
-  -- ^ Trying to use command for an entry without setting commands section
+  -- | Trying to use a command that is not defined in commands section
   | UnknownCommandKey Text
-  -- ^ Trying to use a command that is not defined in commands section
+  -- | The command setting is missing on a Command Cli
   | CommandKeyMissing
-  -- ^ The command setting is missing on a Command Cli
+  -- | There is a command setting on a plain Cli
   | CommandKeyOnPlainCli
-  -- ^ There is a command setting on a plain Cli
+  -- | The internal OptParser API failed
   | CliEvalExited ExitCode GetErrorMessage
   deriving (Show)
 
