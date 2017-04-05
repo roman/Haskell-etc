@@ -1,3 +1,5 @@
+HS_FOLDERS=$$(find . -maxdepth 2 -type d | grep 'src\|test')
+
 help:	## Display this message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 .DEFAULT_GOAL := help
@@ -29,7 +31,7 @@ stylish_haskell_install:
 
 STYLISH=stylish-haskell -i {} \;
 stylish_haskell: stylish_haskell_install ## Normalize style of source files
-	find etc/src/ etc/test/ etc-command-example/src etc-plain-example/src -name "*.hs" -exec $(STYLISH) && git diff --exit-code
+	find $(HS_FOLDERS) -name "*.hs" -exec $(STYLISH) && git diff --exit-code
 .PHONY: stylish_haskell
 
 hlint_install:
@@ -37,7 +39,7 @@ hlint_install:
 .PHONY: hlint_install
 
 hlint: hlint_install ## Execute linter
-	hlint etc/src etc/test etc-command-example/src etc-plain-example/src
+	hlint $(HS_FOLDERS)
 .PHONY: hlint
 
 hlint_apply_refact: hlint_install ## Apply linter recomendations
@@ -46,5 +48,5 @@ hlint_apply_refact: hlint_install ## Apply linter recomendations
 
 HLINT=hlint --refactor --refactor-options -i {} \;
 hlint_refactor: hlint_apply_refact
-	find etc/src/ etc/test/ etc-command-example/src etc-plain-example/src -name "*.hs" -exec $(HLINT)
+	find $(HS_FOLDERS) -name "*.hs" -exec $(HLINT)
 .PHONY: hlint_refactor
