@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module System.Etc.Internal.Resolver.Cli.Plain (resolvePlainCli, resolvePlainCliPure) where
+module System.Etc.Internal.Resolver.Cli.Plain (PlainConfigSpec, resolvePlainCli, resolvePlainCliPure) where
 
 import Protolude
 
