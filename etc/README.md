@@ -70,8 +70,10 @@ etc/cli:
   commands:
     config:
       desc: "Prints configuration summary"
+      header: ""
     run:
       desc: "Executes main program"
+      header: ""
 
 ###
 # With etc/entries we define the configuration map structure your
@@ -96,7 +98,7 @@ etc/entries:
           required: false
           # option is going to be available only on run sub-command
           commands:
-            - run
+          - run
 
     # Define the spec for ["credentials", "password"]
     password:
@@ -109,7 +111,7 @@ etc/entries:
           type: string
           required: true
           commands:
-            - run
+          - run
 ```
 
 The important keys to notice on the previous example:
@@ -202,7 +204,7 @@ getConfiguration = do
     defaultConfig =
       Etc.resolveDefault spec
 
-  fileConfig <- Etc.resolveFiles spec
+  (fileConfig, _fileWarnings) <- Etc.resolveFiles spec
 
   return (fileConfig <> defaultConfig)
 ```
@@ -230,10 +232,10 @@ getConfiguration = do
     defaultConfig =
       Etc.resolveDefault spec
 
-  fileConfig <- Etc.resolveFiles spec
+  (fileConfig, _fileWarnings) <- Etc.resolveFiles spec
   envConfig  <- Etc.resolveEnv spec
 
-  return (fileConfig <> envConfig <> defaultConfig )
+  return (fileConfig <> envConfig <> defaultConfig)
 ```
 
 ### Command Line
@@ -311,7 +313,7 @@ getConfiguration = do
     defaultConfig =
       Etc.resolveDefault spec
 
-  fileConfig <- Etc.resolveFiles spec
+  (fileConfig, _fileWarnings) <- Etc.resolveFiles spec
   envConfig  <- Etc.resolveEnv spec
   cliConfig  <- Etc.resolvePlainCli spec
 
@@ -381,15 +383,15 @@ getConfiguration = do
     defaultConfig =
       Etc.resolveDefault spec
 
-  fileConfig <- Etc.resolveFiles spec
   envConfig  <- Etc.resolveEnv spec
+  (fileConfig, _fileWarnings) <- Etc.resolveFiles spec
   (cmd, cliConfig) <- Etc.resolveCommandCli spec
 
   return ( cmd
          , fileConfig
           <> cliConfig
           <> envConfig
-          <> defaultConfig )
+          <> defaultConfig)
 ```
 
 ### CLI Support
@@ -528,7 +530,7 @@ getConfiguration = do
     defaultConfig =
       Etc.resolveDefault spec
 
-  fileConfig <- Etc.resolveFiles spec
+  (fileConfig, _fileWarnings) <- Etc.resolveFiles spec
   envConfig  <- Etc.resolveEnv spec
   (cmd, cliConfig) <- Etc.resolveCommandCli spec
 
