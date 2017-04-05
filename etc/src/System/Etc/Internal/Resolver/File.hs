@@ -6,7 +6,7 @@ module System.Etc.Internal.Resolver.File (resolveFiles) where
 import Protolude
 
 import Control.Monad.Catch (MonadThrow (..))
-import Data.Vector (Vector)
+import Data.Vector         (Vector)
 import System.Directory    (doesFileExist)
 
 
@@ -20,7 +20,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB8
 import qualified Data.HashMap.Strict        as HashMap
 import qualified Data.Set                   as Set
 import qualified Data.Text                  as Text
-import qualified Data.Vector as Vector
+import qualified Data.Vector                as Vector
 
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types      hiding (filepath)

@@ -1,7 +1,7 @@
-{-# LANGUAGE CPP               #-}
+{-# LANGUAGE CPP                 #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Spec (
     module Types
   , parseConfigSpec
@@ -13,7 +13,7 @@ import Protolude hiding (catch)
 import System.Etc.Internal.Spec.Types as Types
     (ConfigSpec, ConfigValue, ConfigurationError (..))
 
-import Control.Monad.Catch (MonadThrow (..), MonadCatch(..))
+import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 
 import qualified Data.Aeson   as JSON
 import qualified Data.Text    as Text

@@ -10,8 +10,8 @@ import Protolude
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
-import qualified Data.Set  as Set
-import qualified Data.Text as Text
+import qualified Data.Set    as Set
+import qualified Data.Text   as Text
 import qualified Data.Vector as Vector
 
 import Paths_etc (getDataFileName)
