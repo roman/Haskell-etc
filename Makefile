@@ -14,7 +14,7 @@ sdist: ## Build a release
 .PHONY: sdist
 
 DIST_DIR:=$$(stack path --dist-dir)
-SDIST_TAR:=$$(find $(DIST_DIR) -name "*.tar.gz" | tail -1)
+SDIST_TAR:=$$(find etc/$(DIST_DIR) -name "*.tar.gz" | tail -1)
 untar_sdist: sdist
 	tar xzf $(SDIST_TAR)
 .PHONY: untar_sdist
