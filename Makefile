@@ -10,7 +10,7 @@ test: ## Execute test suite with all compiler flags
 .PHONY: test
 
 sdist: ## Build a release
-	stack sdist etc
+	stack sdist
 .PHONY: sdist
 
 DIST_DIR:=$$(stack path --dist-dir)
