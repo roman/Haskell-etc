@@ -4,24 +4,16 @@ module System.Etc.Internal.Resolver.Default (resolveDefault) where
 
 import Protolude
 
+import qualified Data.Aeson as JSON
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set            as Set
 
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types
 
-emptySubConfig :: ConfigValue
-emptySubConfig =
-  SubConfig HashMap.empty
-
-writeConfig :: Text -> ConfigValue -> ConfigValue -> ConfigValue
-writeConfig key val subConfig =
-  case subConfig of
-    SubConfig hsh ->
-      SubConfig
-        $ HashMap.insert key val hsh
-    _ ->
-      subConfig
+toDefaultConfigValue :: JSON.Value -> ConfigValue
+toDefaultConfigValue =
+  ConfigValue . Set.singleton . Default
 
 buildDefaultResolver :: Spec.ConfigSpec cmd -> Maybe ConfigValue
 buildDefaultResolver spec =
@@ -32,24 +24,32 @@ buildDefaultResolver spec =
         Spec.ConfigValue def _ ->
           let
             mConfigSource =
-              (ConfigValue . Set.singleton . Default) <$> def
+              toDefaultConfigValue <$> def
+
+            updateConfig =
+              writeInSubConfig specKey <$> mConfigSource <*> mConfig
           in
-            writeConfig specKey <$> mConfigSource <*> mConfig
+            updateConfig <|> mConfig
 
         Spec.SubConfig specConfigMap ->
           let
             mSubConfig =
-              HashMap.foldrWithKey
-                   resolverReducer
-                   (Just emptySubConfig)
-                   specConfigMap
+              specConfigMap
+              & HashMap.foldrWithKey
+                    resolverReducer
+                    (Just emptySubConfig)
+              & filterMaybe isEmptySubConfig
+
+            updateConfig =
+              writeInSubConfig specKey <$> mSubConfig <*> mConfig
           in
-            writeConfig specKey <$> mSubConfig <*> mConfig
+            updateConfig <|> mConfig
   in
-    HashMap.foldrWithKey
-      resolverReducer
-      (Just emptySubConfig)
-      (Spec.specConfigValues spec)
+    Spec.specConfigValues spec
+    & HashMap.foldrWithKey
+          resolverReducer
+          (Just emptySubConfig)
+    & filterMaybe isEmptySubConfig
 
 {-|
 

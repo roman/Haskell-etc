@@ -111,3 +111,35 @@ newtype Config
 instance Monoid Config where
   mempty = Config $ SubConfig HashMap.empty
   mappend (Config a) (Config b) = Config (a <> b)
+
+isEmptySubConfig :: ConfigValue -> Bool
+isEmptySubConfig val =
+  case val of
+    SubConfig hsh ->
+      HashMap.null hsh
+    ConfigValue {} ->
+      False
+
+emptySubConfig :: ConfigValue
+emptySubConfig =
+  SubConfig HashMap.empty
+
+writeInSubConfig :: Text -> ConfigValue -> ConfigValue -> ConfigValue
+writeInSubConfig key val subConfig =
+  case subConfig of
+    SubConfig hsh ->
+      SubConfig
+        $ HashMap.insert key val hsh
+    _ ->
+      subConfig
+
+filterMaybe :: (a -> Bool) -> Maybe a -> Maybe a
+filterMaybe pfn mvalue =
+  case mvalue of
+    Just a
+      | pfn a ->
+          Nothing
+      | otherwise ->
+          mvalue
+    Nothing ->
+      Nothing
