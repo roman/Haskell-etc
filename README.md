@@ -143,9 +143,9 @@ an [CLI option/argument](#command-line) input.
 
 ## Reading a spec file
 
-To read a spec file you need to use the `Etc.readConfigSpec` function, this
+To read a spec file you need to use the `System.Etc.readConfigSpec` function, this
 function can accept either a JSON or YAML filepath. You can also use the
-`Etc.parseConfigSpec` if you already gather the contents of a spec file from a
+`System.Etc.parseConfigSpec` if you already gather the contents of a spec file from a
 different source.
 
 ### YAML support
@@ -169,7 +169,7 @@ this you must use functions that will _resolve_ these configuration sources.
 
 When defining the spec, you can specify default values on the `etc/spec`
 metadata entry. To get this values from the spec you must call the
-`Etc.resolveDefault` with the result from `Etc.readConfigSpec` as an argument.
+`System.Etc.resolveDefault` with the result from `System.Etc.readConfigSpec` as an argument.
 
 #### Example
 
@@ -190,7 +190,7 @@ configuration values from each path, the latter the filepath, the more
 precedence it has on the configuration map.
 
 After this entry is defined in your spec, you must then call the
-`Etc.resolveFiles` function with the result of `Etc.readConfigSpec` as a
+`System.Etc.resolveFiles` function with the result of `System.Etc.readConfigSpec` as a
 parameter.
 
 #### Why have more than one configuration file?
@@ -226,7 +226,7 @@ When an `env` key is specified in the `etc/spec` metadata of a configuration
 value entry, `etc` will consider an environment variable with the given name.
 
 After this entry is defined in your spec, you must then call the
-`Etc.resolveEnv` function with the result of `Etc.readConfigSpec` as a
+`System.Etc.resolveEnv` function with the result of `System.Etc.readConfigSpec` as a
 parameter.
 
 #### Example
@@ -272,7 +272,7 @@ The `opt/cli` entry map must have the following keys:
    the name of the sub-command, and the value is a map with the key `desc` with
    the same purpose as the top-level `desc` entry defined above.
 
-   *NOTE*: you must use [`Etc.resolveCommandCli`](#using-command-resolver) for
+   *NOTE*: you must use [`System.Etc.resolveCommandCli`](#using-command-resolver) for
    the `commands` entry to take effect
 
 #### `cli` entries
@@ -307,7 +307,7 @@ When the `commands` key *is not* specified on the `etc/cli` entry of the spec
 file, you *must* use this resolver.
 
 After the `cli` entry is defined in your spec, you must then call the
-`Etc.resolvePlainCli` function with the result of `Etc.readConfigSpec` as a
+`System.Etc.resolvePlainCli` function with the result of `System.Etc.readConfigSpec` as a
 parameter.
 
 ##### Example
@@ -340,7 +340,7 @@ When the `commands` key *is* specified on the `etc/cli` entry of the spec file, 
 use this resolver.
 
 After the `cli` entry is defined in your spec, you must then call the
-`Etc.resolveCommandCli` function with the result of `Etc.readConfigSpec` as a
+`System.Etc.resolveCommandCli` function with the result of `System.Etc.readConfigSpec` as a
 parameter.
 
 This will return a tuple with the chosen sub-command and the configuration map;
@@ -421,11 +421,11 @@ have to pull dependencies you don't need.
 Sometimes, you would like to use the concept of CLI or environment variables, without
 actually calling the OS APIs, `etc` provides pure versions for these resolvers:
 
-- `Etc.resolveEnvPure`
+- `System.Etc.resolveEnvPure`
 
-- `Etc.resolvePlainCliPure`
+- `System.Etc.resolvePlainCliPure`
 
-- `Etc.resolveCommandCliPure`
+- `System.Etc.resolveCommandCliPure`
 
 This work exactly the same as their non-pure counterparts, but receive one extra
 argument to fetch the required input.
@@ -441,12 +441,12 @@ logic data structures.
 There are two functions that can be used to get values out from a configuration
 map:
 
-- `Etc.getConfigValue`
+- `System.Etc.getConfigValue`
 
 Reads values specified on a spec file and casts it to a Haskell type
 using the `Aeson.FromJSON` typeclass
 
-- `Etc.getConfigValueWith`
+- `System.Etc.getConfigValueWith`
 
 Reads values specified on a spec file and casts it using a custom function that
 uses the `Aeson` parser API; this works great when the data structures of
@@ -460,7 +460,7 @@ An example of their usage is given in the [full example](#full-example) section
 
 A lot of times you may want to assert where a configuration value is coming
 from, or if a particular environment variable was considered effectively by your
-program. You an use the `Etc.printPrettyConfig` function to render the
+program. You an use the `System.Etc.printPrettyConfig` function to render the
 configuration map and the different values/sources that were resolved when
 calculating it. This function is _really_ useful for debugging purposes.
 
