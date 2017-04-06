@@ -59,8 +59,12 @@ main = do
   configEnv <- Etc.resolveEnv configSpec
 
   let
+    configDefault =
+      Etc.resolveDefault configSpec
+
     config =
-      configFiles
+      configDefault
+      <> configFiles
       <> configEnv
       <> configCli
 

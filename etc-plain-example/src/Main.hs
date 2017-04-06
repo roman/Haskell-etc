@@ -23,8 +23,12 @@ main = do
   configOptParser <- Etc.resolvePlainCli configSpec
 
   let
+    configDefault =
+      Etc.resolveDefault configSpec
+
     config =
       configFiles
+      <> configDefault
       <> configEnv
       <> configOptParser
 
