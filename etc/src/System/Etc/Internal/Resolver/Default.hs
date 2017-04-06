@@ -4,7 +4,7 @@ module System.Etc.Internal.Resolver.Default (resolveDefault) where
 
 import Protolude
 
-import qualified Data.Aeson as JSON
+import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set            as Set
 
