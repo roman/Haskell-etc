@@ -8,7 +8,7 @@ this values are to be found and located in a configuration map.
 
 ## Table Of Contents
 
-* [Rationale](#rationale)
+* [Raison d'etre](#raison-detre)
 * [Defining a spec file](#defining-a-spec-file)
 * [Reading a spec file](#reading-a-spec-file)
   * [YAML Support](#yaml-support)
@@ -30,15 +30,26 @@ this values are to be found and located in a configuration map.
 * [Full Example](#full-example)
 
 
-## Rationale
+## Raison d'etre
 
-Independently of where the configuration values of your application are found,
-your application should use a consistent data structure to hold this values;
-also your business logic must not be concerned around where this values come
-from, nor decide what is the precedence of the sources of this values, instead,
-it should use an API that abstracts this details away and also allows to easily
-cast values to something that makes sense to the business logic (numbers,
-booleans, strings or complex records).
+`etc` is a configuration management that:
+
+* Allows to have a versioned spec of all values your application can accept
+
+* Provides documentation about Environment Variables used by your application
+
+* Provides an API for gathering values from multiple sources (files, overwrite
+  files, cli arguments, environment variables) and then composing them into a
+  single configuration map
+
+* Gives a sane precedence over sources of the configuration value sources
+
+* Provides inspection utilities to understand why the configuration is the way
+  it is
+
+* Provides an API that abstracts away the source of configuration values and
+  allows easy casting into record types your application or other libraries
+  understand
 
 ## Defining a spec file
 
