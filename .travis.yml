@@ -9,8 +9,16 @@ cache:
 
 matrix:
   include:
-  - env: BUILD=stack
+  - env: BUILD=lts-8
     compiler: "GHC-8.0.2"
+    addons: {apt: {packages: [libgmp-dev]}}
+
+  - env: BUILD=lts-7
+    compiler: "GHC-8.0.1"
+    addons: {apt: {packages: [libgmp-dev]}}
+
+  - env: BUILD=lts-6
+    compiler: "GHC-7.10.3"
     addons: {apt: {packages: [libgmp-dev]}}
 
   - env: BUILD=hlint
@@ -43,8 +51,8 @@ script:
 - |
   set -ex
   case "$BUILD" in
-    stack)
-      make test
+    lts-*)
+      TEST_RESOLVER=$BUILD make test
       ;;
     hlint)
       make hlint
