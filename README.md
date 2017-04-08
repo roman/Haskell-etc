@@ -4,7 +4,7 @@
 
 `etc` gathers configuration values from multiple sources (cli options, OS
 environment variables, files) using a declarative spec file that defines where
-this values are to be found and located in a configuration map.
+these values are to be found and located in a configuration map.
 
 ## Table Of Contents
 
@@ -204,7 +204,7 @@ production configuration values on a well known path (say
 #### Example
 
 ```haskell
-import Data.Monoid ((<>))
+import Data.Monoid (mappend)
 import qualified System.Etc as Etc
 
 getConfiguration :: IO Etc.Config
@@ -217,7 +217,7 @@ getConfiguration = do
 
   (fileConfig, _fileWarnings) <- Etc.resolveFiles spec
 
-  return (fileConfig <> defaultConfig)
+  return (fileConfig `mappend` defaultConfig)
 ```
 
 ### Environment Variables
@@ -232,7 +232,7 @@ parameter.
 #### Example
 
 ```haskell
-import Data.Monoid ((<>))
+import Data.Monoid (mappend)
 import qualified System.Etc as Etc
 
 getConfiguration :: IO Etc.Config
@@ -246,7 +246,7 @@ getConfiguration = do
   (fileConfig, _fileWarnings) <- Etc.resolveFiles spec
   envConfig  <- Etc.resolveEnv spec
 
-  return (fileConfig <> envConfig <> defaultConfig)
+  return (fileConfig `mappend` envConfig `mappend` defaultConfig)
 ```
 
 ### Command Line
@@ -313,7 +313,7 @@ parameter.
 ##### Example
 
 ```haskell
-import Data.Monoid ((<>))
+import Data.Monoid (mappend)
 import qualified System.Etc as Etc
 
 getConfiguration :: IO Etc.Config
@@ -329,9 +329,9 @@ getConfiguration = do
   cliConfig  <- Etc.resolvePlainCli spec
 
   return (fileConfig
-          <> cliConfig
-          <> envConfig
-          <> defaultConfig)
+          `mappend` cliConfig
+          `mappend` envConfig
+          `mappend` defaultConfig)
 ```
 
 #### Using Command resolver
@@ -355,7 +355,7 @@ import GHC.Generics (Generic)
 import Data.Hashable (Hashable)
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
-import Data.Monoid ((<>))
+import Data.Monoid (mappend)
 import qualified System.Etc as Etc
 
 data Cmd
@@ -374,7 +374,7 @@ instance JSON.FromJSON Cmd where
         else if cmdName == "run" then
           return Run
         else
-          JSON.typeMismatch ("Cmd (" <> Text.unpack cmdName <> ")") json
+          JSON.typeMismatch ("Cmd (" `mappend` Text.unpack cmdName `mappend` ")") json
       _ ->
         JSON.typeMismatch "Cmd" json
 
@@ -400,9 +400,9 @@ getConfiguration = do
 
   return ( cmd
          , fileConfig
-          <> cliConfig
-          <> envConfig
-          <> defaultConfig)
+          `mappend` cliConfig
+          `mappend` envConfig
+          `mappend` defaultConfig)
 ```
 
 ### CLI Support
@@ -486,7 +486,7 @@ the exact bits of functionality you need for your application.
 import Control.Applicative ((<$>), (<*>))
 import Data.Aeson ((.:))
 import Data.Hashable (Hashable)
-import Data.Monoid ((<>))
+import Data.Monoid (mappend)
 import GHC.Generics (Generic)
 
 import qualified Data.Aeson as JSON
@@ -514,7 +514,7 @@ instance JSON.FromJSON Cmd where
         else if cmdName == "run" then
           return Run
         else
-          JSON.typeMismatch ("Cmd (" <> Text.unpack cmdName <> ")") json
+          JSON.typeMismatch ("Cmd (" `mappend` Text.unpack cmdName `mappend` ")") json
       _ ->
         JSON.typeMismatch "Cmd" json
 
@@ -547,9 +547,9 @@ getConfiguration = do
 
   return ( cmd
          , fileConfig
-          <> cliConfig
-          <> envConfig
-          <> defaultConfig )
+          `mappend` cliConfig
+          `mappend` envConfig
+          `mappend` defaultConfig )
 
 main :: IO ()
 main = do
