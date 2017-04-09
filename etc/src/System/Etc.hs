@@ -71,9 +71,16 @@ import System.Etc.Internal.Resolver.Cli.Plain   (resolvePlainCli, resolvePlainCl
 #endif
 
 #ifdef WITH_EXTRA
-import System.Etc.Internal.Extra.Printer (hPrintPrettyConfig, printPrettyConfig, renderConfig)
 import System.Etc.Internal.Extra.EnvMisspell
-    (EnvMisspell(..), getEnvMisspellsPure, getEnvMisspells, renderEnvMisspells, hPrintEnvMisspells, printEnvMisspellingWarnings)
+    ( EnvMisspell (..)
+    , getEnvMisspells
+    , getEnvMisspellsPure
+    , hPrintEnvMisspells
+    , printEnvMisspellingWarnings
+    , renderEnvMisspells
+    )
+import System.Etc.Internal.Extra.Printer
+    (hPrintPrettyConfig, printPrettyConfig, renderConfig)
 #endif
 
 import System.Etc.Internal.Config

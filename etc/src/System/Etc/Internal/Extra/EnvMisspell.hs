@@ -1,6 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Extra.EnvMisspell (
     EnvMisspell (..)
   , getEnvMisspells
@@ -12,20 +12,20 @@ module System.Etc.Internal.Extra.EnvMisspell (
 
 import Protolude hiding ((<$>), (<>))
 
-import Data.Vector (Vector)
+import Data.Vector        (Vector)
 import System.Environment (getEnvironment)
 
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as Text
-import qualified Data.Vector as Vector
-import qualified Text.EditDistance as Distance
+import qualified Data.Text           as Text
+import qualified Data.Vector         as Vector
+import qualified Text.EditDistance   as Distance
 
-import Text.PrettyPrint.ANSI.Leijen
 import System.Etc.Internal.Spec.Types
+import Text.PrettyPrint.ANSI.Leijen
 
 data EnvMisspell
   = EnvMisspell {
-    currentText :: Text
+    currentText    :: Text
   , suggestionText :: Text
   }
   deriving (Show, Eq, Generic)
