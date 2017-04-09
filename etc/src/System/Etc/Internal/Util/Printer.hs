@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module System.Etc.Internal.Printer (
+module System.Etc.Internal.Util.Printer (
     renderConfig
   , printPrettyConfig
   , hPrintPrettyConfig

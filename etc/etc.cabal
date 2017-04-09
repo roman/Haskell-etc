@@ -81,9 +81,12 @@ library
   if flag(extra)
     cpp-options: -DWITH_EXTRA
     build-depends:
-      ansi-wl-pprint >=0.6 && <0.7
+      ansi-wl-pprint >=0.6 && <0.7,
+      edit-distance
+
     exposed-modules:
-      System.Etc.Internal.Printer
+      System.Etc.Internal.Util.Printer
+      System.Etc.Internal.Util.Environment
 
   if flag(cli)
     cpp-options: -DWITH_CLI

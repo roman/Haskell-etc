@@ -43,15 +43,19 @@ module System.Etc (
   , CliConfigError(..)
 #endif
 
-#ifdef WITH_PRINTER
-  -- * Printer
-  -- $printer
 #ifdef WITH_EXTRA
   -- * Extra utilities
   -- $extra
   , renderConfig
   , printPrettyConfig
   , hPrintPrettyConfig
+
+  , EnvMisspell(..)
+  , getEnvMisspells
+  , getEnvMisspellsPure
+  , renderEnvMisspells
+  , hPrintEnvMisspells
+  , printEnvMisspellingWarnings
 #endif
   ) where
 
@@ -66,9 +70,10 @@ import System.Etc.Internal.Resolver.Cli.Common  (CliConfigError (..), getErrorMe
 import System.Etc.Internal.Resolver.Cli.Plain   (resolvePlainCli, resolvePlainCliPure)
 #endif
 
-#ifdef WITH_PRINTER
-import System.Etc.Internal.Printer (hPrintPrettyConfig, printPrettyConfig, renderConfig)
 #ifdef WITH_EXTRA
+import System.Etc.Internal.Util.Printer (hPrintPrettyConfig, printPrettyConfig, renderConfig)
+import System.Etc.Internal.Util.EnvMisspell
+    (EnvMisspell(..), getEnvMisspellsPure, getEnvMisspells, renderEnvMisspells, hPrintEnvMisspells, printEnvMisspellingWarnings)
 #endif
 
 import System.Etc.Internal.Config
@@ -97,7 +102,6 @@ import System.Etc.Internal.Resolver.File (resolveFiles)
    together using the mappend function
 -}
 
-{- $printer
 {- $extra
 
    Some extra utilities that are great for debugging (miss)-configurations.
