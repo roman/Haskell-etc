@@ -11,6 +11,7 @@ homepage:       https://github.com/roman/Haskell-etc
 author:         Roman Gonzalez
 maintainer:     romanandreg@gmail.com
 copyright:      2017 Roman Gonzalez
+tested-with:    GHC == 7.10.3, GHC == 8.0.1, GHC == 8.0.2
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
