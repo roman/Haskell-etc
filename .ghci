@@ -1,5 +1,6 @@
 :seti -XNoImplicitPrelude
 :seti -XOverloadedStrings
+:seti -XScopedTypeVariables
 
 :set -Wall
 :set -fno-warn-type-defaults
