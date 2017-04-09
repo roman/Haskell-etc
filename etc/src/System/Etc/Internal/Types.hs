@@ -12,8 +12,6 @@ import Protolude
 import qualified Data.Aeson          as JSON
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import           Data.Ord            (comparing)
-import           Data.Set            (Set)
 import qualified Data.Set            as Set
 
 import System.Etc.Internal.Spec.Types (ConfigurationError (..))
@@ -101,16 +99,13 @@ deepMerge left right =
     _ ->
       right
 
-instance Semigroup ConfigValue where
-  (<>) = deepMerge
+instance Monoid ConfigValue where
+  mempty  = emptySubConfig
+  mappend = deepMerge
 
 newtype Config
   = Config { fromConfig :: ConfigValue }
-  deriving (Eq, Show, Semigroup)
-
-instance Monoid Config where
-  mempty = Config $ SubConfig HashMap.empty
-  mappend (Config a) (Config b) = Config (a <> b)
+  deriving (Eq, Show, Monoid)
 
 isEmptySubConfig :: ConfigValue -> Bool
 isEmptySubConfig val =

@@ -8,9 +8,8 @@ import Protolude
 import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Hashable       (Hashable)
 import Data.HashMap.Strict (HashMap)
-import Data.Maybe          (fromMaybe)
 import Data.Vector         (Vector)
-import System.Environment  (getArgs, getProgName)
+import System.Environment  (getProgName)
 
 import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
@@ -76,7 +75,7 @@ configValueSpecToCli acc0 specEntryKey sources =
                    & HashMap.alter
                         (\mAccParser ->
                           mAccParser
-                            & fromMaybe (pure $ SubConfig HashMap.empty)
+                            & fromMaybe (pure mempty)
                             & updateAccConfigOptParser configValueParser
                             & Just)
                         command
@@ -175,7 +174,7 @@ configValueCliAccInit spec =
               (HashMap.toList commands)
 
 joinCommandParsers
-  :: (MonadThrow m, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
+  :: (MonadThrow m, JSON.ToJSON cmd)
     => HashMap cmd (Opt.Parser ConfigValue)
     -> m (Opt.Parser (cmd, Config))
 joinCommandParsers parserPerCommand =

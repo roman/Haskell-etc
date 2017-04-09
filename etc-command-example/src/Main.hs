@@ -64,9 +64,9 @@ main = do
 
     config =
       configDefault
-      <> configFiles
-      <> configEnv
-      <> configCli
+      `mappend` configFiles
+      `mappend` configEnv
+      `mappend` configCli
 
   case cmd of
     PrintConfig ->

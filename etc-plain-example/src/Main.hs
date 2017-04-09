@@ -28,8 +28,8 @@ main = do
 
     config =
       configFiles
-      <> configDefault
-      <> configEnv
-      <> configOptParser
+      `mappend` configDefault
+      `mappend` configEnv
+      `mappend` configOptParser
 
   Etc.printPrettyConfig config

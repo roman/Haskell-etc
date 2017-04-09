@@ -9,7 +9,7 @@ import qualified Data.Aeson          as JSON
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text           as Text
 import qualified Options.Applicative as Opt
-import           System.Environment  (getArgs, getProgName)
+import           System.Environment  (getProgName)
 
 import           System.Etc.Internal.Resolver.Cli.Common
 import qualified System.Etc.Internal.Spec.Types          as Spec

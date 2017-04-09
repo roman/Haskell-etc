@@ -16,7 +16,6 @@ import qualified Data.Text           as Text
 
 import Text.PrettyPrint.ANSI.Leijen
 
-import System.Etc.Internal.Spec.Types (ConfigurationError (..))
 import System.Etc.Internal.Types
 
 renderJsonValue :: JSON.Value -> (Doc, Int)
