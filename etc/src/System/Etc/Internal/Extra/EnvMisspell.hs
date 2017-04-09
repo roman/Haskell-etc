@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module System.Etc.Internal.Util.EnvMisspell (
+module System.Etc.Internal.Extra.EnvMisspell (
     EnvMisspell (..)
   , getEnvMisspells
   , getEnvMisspellsPure

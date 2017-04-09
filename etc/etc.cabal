@@ -85,8 +85,8 @@ library
       edit-distance
 
     exposed-modules:
-      System.Etc.Internal.Util.Printer
-      System.Etc.Internal.Util.Environment
+      System.Etc.Internal.Extra.Printer
+      System.Etc.Internal.Extra.Environment
 
   if flag(cli)
     cpp-options: -DWITH_CLI
