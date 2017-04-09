@@ -46,6 +46,9 @@ module System.Etc (
 #ifdef WITH_PRINTER
   -- * Printer
   -- $printer
+#ifdef WITH_EXTRA
+  -- * Extra utilities
+  -- $extra
   , renderConfig
   , printPrettyConfig
   , hPrintPrettyConfig
@@ -65,6 +68,7 @@ import System.Etc.Internal.Resolver.Cli.Plain   (resolvePlainCli, resolvePlainCl
 
 #ifdef WITH_PRINTER
 import System.Etc.Internal.Printer (hPrintPrettyConfig, printPrettyConfig, renderConfig)
+#ifdef WITH_EXTRA
 #endif
 
 import System.Etc.Internal.Config
@@ -94,7 +98,7 @@ import System.Etc.Internal.Resolver.File (resolveFiles)
 -}
 
 {- $printer
+{- $extra
 
-   Use these function to render the configuration map and understand how the
-   resolving was performed.
+   Some extra utilities that are great for debugging (miss)-configurations.
 -}

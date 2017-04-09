@@ -30,8 +30,8 @@ source-repository head
   type: git
   location: https://github.com/roman/Haskell-etc
 
-flag printer
-  description: Include support for config printer
+flag extra
+  description: Include extra utilities
   manual: False
   default: False
 
@@ -78,8 +78,8 @@ library
 
   default-language: Haskell2010
 
-  if flag(printer)
-    cpp-options: -DWITH_PRINTER
+  if flag(extra)
+    cpp-options: -DWITH_EXTRA
     build-depends:
       ansi-wl-pprint >=0.6 && <0.7
     exposed-modules:
