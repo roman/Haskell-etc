@@ -7,7 +7,7 @@ module System.Etc.Internal.Extra.EnvMisspell (
   , getEnvMisspellingsPure
   , renderEnvMisspellings
   , hPrintEnvMisspellings
-  , printEnvMisspellingWarnings
+  , reportEnvMisspellingWarnings
   ) where
 
 import Protolude hiding ((<$>), (<>))
@@ -99,7 +99,7 @@ hPrintEnvMisspellings h =
 {-|
 
 -}
-printEnvMisspellingWarnings :: ConfigSpec a -> IO ()
-printEnvMisspellingWarnings spec =
+reportEnvMisspellingWarnings :: ConfigSpec a -> IO ()
+reportEnvMisspellingWarnings spec =
   getEnvMisspellings spec >>=
   hPrintEnvMisspellings stderr

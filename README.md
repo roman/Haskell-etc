@@ -475,8 +475,8 @@ the exact bits of functionality you need for your application.
 
 - `cli`: Provides the CLI functionality explained in this README
 
-- `printer`: Provides helper functions for printing the resolved configuration map
-  with all its entries + sources
+- `extra`: Provides helper functions for inspecting the resolved configuration
+  as well as providing warning messages for misspelled environment variables
 
 ## Full Example
 
@@ -536,6 +536,8 @@ parseCredentials json =
 getConfiguration :: IO (Cmd, Etc.Config)
 getConfiguration = do
   spec <- Etc.readConfigSpec "./path/to/spec.yaml"
+
+  Etc.reportEnvMisspellingWarnings spec
 
   let
     defaultConfig =

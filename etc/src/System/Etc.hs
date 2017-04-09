@@ -55,7 +55,7 @@ module System.Etc (
   , getEnvMisspellingsPure
   , renderEnvMisspellings
   , hPrintEnvMisspellings
-  , printEnvMisspellingWarnings
+  , reportEnvMisspellingWarnings
 #endif
   ) where
 
@@ -76,7 +76,7 @@ import System.Etc.Internal.Extra.EnvMisspell
     , getEnvMisspellings
     , getEnvMisspellingsPure
     , hPrintEnvMisspellings
-    , printEnvMisspellingWarnings
+    , reportEnvMisspellingWarnings
     , renderEnvMisspellings
     )
 import System.Etc.Internal.Extra.Printer

@@ -54,7 +54,7 @@ main = do
   specPath <- getDataFileName "spec.yaml"
   configSpec <- Etc.readConfigSpec (Text.pack specPath)
 
-  Etc.printEnvMisspellingWarnings configSpec
+  Etc.reportEnvMisspellingWarnings configSpec
 
   (configFiles, _fileWarnings) <- Etc.resolveFiles configSpec
   (cmd, configCli) <- Etc.resolveCommandCli configSpec
