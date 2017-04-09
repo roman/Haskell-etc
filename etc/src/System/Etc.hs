@@ -51,10 +51,10 @@ module System.Etc (
   , hPrintPrettyConfig
 
   , EnvMisspell(..)
-  , getEnvMisspells
-  , getEnvMisspellsPure
-  , renderEnvMisspells
-  , hPrintEnvMisspells
+  , getEnvMisspellings
+  , getEnvMisspellingsPure
+  , renderEnvMisspellings
+  , hPrintEnvMisspellings
   , printEnvMisspellingWarnings
 #endif
   ) where
@@ -73,11 +73,11 @@ import System.Etc.Internal.Resolver.Cli.Plain   (resolvePlainCli, resolvePlainCl
 #ifdef WITH_EXTRA
 import System.Etc.Internal.Extra.EnvMisspell
     ( EnvMisspell (..)
-    , getEnvMisspells
-    , getEnvMisspellsPure
-    , hPrintEnvMisspells
+    , getEnvMisspellings
+    , getEnvMisspellingsPure
+    , hPrintEnvMisspellings
     , printEnvMisspellingWarnings
-    , renderEnvMisspells
+    , renderEnvMisspellings
     )
 import System.Etc.Internal.Extra.Printer
     (hPrintPrettyConfig, printPrettyConfig, renderConfig)

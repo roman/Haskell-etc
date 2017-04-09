@@ -30,7 +30,7 @@ tests =
 
       let
         result =
-          getEnvMisspellsPure spec ["GREEING"]
+          getEnvMisspellingsPure spec ["GREEING"]
 
       assertBool "expecting to get a warning for typo"
                  (not $ Vector.null result)

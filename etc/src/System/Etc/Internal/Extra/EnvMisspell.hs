@@ -3,10 +3,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Extra.EnvMisspell (
     EnvMisspell (..)
-  , getEnvMisspells
-  , getEnvMisspellsPure
-  , renderEnvMisspells
-  , hPrintEnvMisspells
+  , getEnvMisspellings
+  , getEnvMisspellingsPure
+  , renderEnvMisspellings
+  , hPrintEnvMisspellings
   , printEnvMisspellingWarnings
   ) where
 
@@ -45,8 +45,8 @@ lookupSpecEnvKeys spec =
 {-|
 
 -}
-getEnvMisspellsPure :: ConfigSpec a -> Vector Text -> Vector EnvMisspell
-getEnvMisspellsPure spec env = do
+getEnvMisspellingsPure :: ConfigSpec a -> Vector Text -> Vector EnvMisspell
+getEnvMisspellingsPure spec env = do
    specEnvName  <- lookupSpecEnvKeys spec
    currentEnvName <- env
 
@@ -63,41 +63,43 @@ getEnvMisspellsPure spec env = do
 {-|
 
 -}
-getEnvMisspells :: ConfigSpec a -> IO (Vector EnvMisspell)
-getEnvMisspells spec =
+getEnvMisspellings :: ConfigSpec a -> IO (Vector EnvMisspell)
+getEnvMisspellings spec =
   getEnvironment
   & fmap (Vector.fromList . map (Text.pack . fst))
-  & fmap (getEnvMisspellsPure spec)
+  & fmap (getEnvMisspellingsPure spec)
 
 {-|
 
 -}
-renderEnvMisspells :: Vector EnvMisspell -> Doc
-renderEnvMisspells misspells =
-  misspells
-  & Vector.map
-        (\misspell ->
-            text "WARNING: Environment variable `"
-            <> text (Text.unpack $ currentText misspell)
-            <> text "' found, perhaps you meant `"
-            <> text (Text.unpack $ suggestionText misspell)
-            <> text "'")
-  & Vector.foldl' (<$>) mempty
-  & (<$> mempty)
-
+renderEnvMisspellings :: Vector EnvMisspell -> Doc
+renderEnvMisspellings misspells
+  | Vector.null misspells =
+      mempty
+  | otherwise =
+      misspells
+      & Vector.map
+            (\misspell ->
+                text "WARNING: Environment variable `"
+                <> text (Text.unpack $ currentText misspell)
+                <> text "' found, perhaps you meant `"
+                <> text (Text.unpack $ suggestionText misspell)
+                <> text "'")
+      & Vector.foldl' (<$>) mempty
+      & (<$> mempty)
+      & (<$> mempty)
 
 {-|
 
 -}
-hPrintEnvMisspells :: Handle -> Vector EnvMisspell -> IO ()
-hPrintEnvMisspells h =
-  hPutDoc h . renderEnvMisspells
-
+hPrintEnvMisspellings :: Handle -> Vector EnvMisspell -> IO ()
+hPrintEnvMisspellings h =
+  hPutDoc h . renderEnvMisspellings
 
 {-|
 
 -}
 printEnvMisspellingWarnings :: ConfigSpec a -> IO ()
 printEnvMisspellingWarnings spec =
-  getEnvMisspells spec >>=
-  hPrintEnvMisspells stderr
+  getEnvMisspellings spec >>=
+  hPrintEnvMisspellings stderr
