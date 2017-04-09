@@ -76,8 +76,8 @@ import System.Etc.Internal.Extra.EnvMisspell
     , getEnvMisspellings
     , getEnvMisspellingsPure
     , hPrintEnvMisspellings
-    , reportEnvMisspellingWarnings
     , renderEnvMisspellings
+    , reportEnvMisspellingWarnings
     )
 import System.Etc.Internal.Extra.Printer
     (hPrintPrettyConfig, printPrettyConfig, renderConfig)
