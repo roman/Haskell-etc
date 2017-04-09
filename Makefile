@@ -4,7 +4,8 @@ help:	## Display this message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 .DEFAULT_GOAL := help
 
-TEST:=stack build --test --haddock --no-haddock-deps --pedantic --flag etc:yaml --flag etc:cli --flag etc:printer
+TEST_RESOLVER ?= lts-8
+TEST:=stack build --resolver $(TEST_RESOLVER) --install-ghc --test --haddock --no-haddock-deps --pedantic --flag etc:yaml --flag etc:cli --flag etc:printer
 test: ## Execute test suite with all compiler flags
 	 $(TEST) etc:etc-testsuite
 .PHONY: test

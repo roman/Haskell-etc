@@ -13,7 +13,7 @@ import Protolude hiding (catch)
 import System.Etc.Internal.Spec.Types as Types
     (ConfigSpec, ConfigValue, ConfigurationError (..))
 
-import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
+import Control.Monad.Catch (MonadCatch (..))
 
 import qualified Data.Aeson   as JSON
 import qualified Data.Text    as Text
@@ -31,7 +31,7 @@ flag is set).
 
 -}
 parseConfigSpec
-  :: (MonadCatch m, MonadThrow m, JSON.FromJSON cmd)
+  :: (MonadCatch m, JSON.FromJSON cmd)
     => Text               -- ^ Text to be parsed
     -> m (ConfigSpec cmd) -- ^ returns ConfigSpec
 #ifdef WITH_YAML

@@ -122,7 +122,7 @@ readConfigFromFiles files =
                  Left err ->
                    (result, err:errs)
                  Right current ->
-                   (result <> current, errs))
+                   (result `mappend` current, errs))
              (mempty, [])
              <$>)
 

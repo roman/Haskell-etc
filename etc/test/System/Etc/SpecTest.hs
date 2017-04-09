@@ -26,19 +26,23 @@ import           Paths_etc (getDataFileName)
 
 getConfigValue :: [Text] -> HashMap Text (ConfigValue cmd) -> Maybe (ConfigValue cmd)
 getConfigValue keys hsh =
-  case keys of
-    [] ->
+  -- NOTE: For some reason, pattern matching doesn't work on lts-6, using
+  -- if/else instead
+  if null keys then
       Nothing
-    (k:ks) -> do
-      cv <- HashMap.lookup k hsh
-      case cv of
-        SubConfig hsh1 ->
-          getConfigValue ks hsh1
-        value ->
-          if null ks then
-            Just value
-          else
-            Nothing
+  else do
+    let
+      (k:ks) =
+        keys
+    cv <- HashMap.lookup k hsh
+    case cv of
+      SubConfig hsh1 ->
+        getConfigValue ks hsh1
+      value ->
+        if null ks then
+          Just value
+        else
+          Nothing
 
 
 general_tests :: TestTree

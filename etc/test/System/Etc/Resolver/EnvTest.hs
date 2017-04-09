@@ -63,7 +63,7 @@ tests =
           resolveEnvPure spec [("GREETING", "hello env")]
 
         config =
-            configEnv <> configFile
+            configEnv `mappend` configFile
 
       case getConfigValue ["greeting"] config of
         Nothing ->
