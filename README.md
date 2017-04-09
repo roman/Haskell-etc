@@ -26,7 +26,7 @@ these values are to be found and located in a configuration map.
   * [Reading From Pure Sources](#reading-from-pure-sources)
 * [Accessing configuration values](#accessing-configuration-values)
 * [Printing your configuration values](#printing-your-configuration-values)
-* [Reporting Misspellings on Environment Variables](#reporting-misspellings-on-environment-variables)
+* [Report Misspellings on Environment Variables](#report-misspellings-on-environment-variables)
 * [Cabal Flags](#cabal-flags)
 * [Full Example](#full-example)
 
