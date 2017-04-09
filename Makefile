@@ -5,7 +5,7 @@ help:	## Display this message
 .DEFAULT_GOAL := help
 
 TEST_RESOLVER ?= lts-8
-TEST:=stack build --resolver $(TEST_RESOLVER) --install-ghc --test --haddock --no-haddock-deps --pedantic --flag etc:yaml --flag etc:cli --flag etc:printer
+TEST:=stack build --resolver $(TEST_RESOLVER) --install-ghc --test --haddock --no-haddock-deps --pedantic --flag etc:yaml --flag etc:cli --flag etc:extra
 test: ## Execute test suite with all compiler flags
 	 $(TEST) etc:etc-testsuite
 .PHONY: test

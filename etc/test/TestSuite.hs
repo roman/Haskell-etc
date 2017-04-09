@@ -18,6 +18,10 @@ import qualified System.Etc.SpecTest
 import qualified System.Etc.Resolver.CliTest
 #endif
 
+#ifdef WITH_EXTRA
+import qualified System.Etc.Extra.EnvMisspellTest
+#endif
+
 main :: IO ()
 main =
   defaultMainWithIngredients
@@ -28,5 +32,9 @@ main =
                      , System.Etc.Resolver.EnvTest.tests
 #ifdef WITH_CLI
                      , System.Etc.Resolver.CliTest.tests
+#endif
+
+#ifdef WITH_EXTRA
+                     , System.Etc.Extra.EnvMisspellTest.tests
 #endif
                      ])

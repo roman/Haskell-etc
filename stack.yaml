@@ -46,7 +46,7 @@ extra-deps: []
 # Override default flag values for local packages and extra-deps
 flags:
   etc:
-    printer: true
+    extra: true
     cli: true
     yaml: true
 

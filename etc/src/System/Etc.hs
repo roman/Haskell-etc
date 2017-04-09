@@ -43,12 +43,19 @@ module System.Etc (
   , CliConfigError(..)
 #endif
 
-#ifdef WITH_PRINTER
-  -- * Printer
-  -- $printer
+#ifdef WITH_EXTRA
+  -- * Extra utilities
+  -- $extra
   , renderConfig
   , printPrettyConfig
   , hPrintPrettyConfig
+
+  , EnvMisspell(..)
+  , getEnvMisspellings
+  , getEnvMisspellingsPure
+  , renderEnvMisspellings
+  , hPrintEnvMisspellings
+  , reportEnvMisspellingWarnings
 #endif
   ) where
 
@@ -63,8 +70,17 @@ import System.Etc.Internal.Resolver.Cli.Common  (CliConfigError (..), getErrorMe
 import System.Etc.Internal.Resolver.Cli.Plain   (resolvePlainCli, resolvePlainCliPure)
 #endif
 
-#ifdef WITH_PRINTER
-import System.Etc.Internal.Printer (hPrintPrettyConfig, printPrettyConfig, renderConfig)
+#ifdef WITH_EXTRA
+import System.Etc.Internal.Extra.EnvMisspell
+    ( EnvMisspell (..)
+    , getEnvMisspellings
+    , getEnvMisspellingsPure
+    , hPrintEnvMisspellings
+    , renderEnvMisspellings
+    , reportEnvMisspellingWarnings
+    )
+import System.Etc.Internal.Extra.Printer
+    (hPrintPrettyConfig, printPrettyConfig, renderConfig)
 #endif
 
 import System.Etc.Internal.Config
@@ -93,8 +109,7 @@ import System.Etc.Internal.Resolver.File (resolveFiles)
    together using the mappend function
 -}
 
-{- $printer
+{- $extra
 
-   Use these function to render the configuration map and understand how the
-   resolving was performed.
+   Some extra utilities that are great for debugging (miss)-configurations.
 -}

@@ -26,6 +26,7 @@ these values are to be found and located in a configuration map.
   * [Reading From Pure Sources](#reading-from-pure-sources)
 * [Accessing configuration values](#accessing-configuration-values)
 * [Printing your configuration values](#printing-your-configuration-values)
+* [Reporting Misspellings on Environment Variables](#reporting-misspellings-on-environment-variables)
 * [Cabal Flags](#cabal-flags)
 * [Full Example](#full-example)
 
@@ -464,6 +465,48 @@ program. You an use the `System.Etc.printPrettyConfig` function to render the
 configuration map and the different values/sources that were resolved when
 calculating it. This function is _really_ useful for debugging purposes.
 
+### Example
+
+Here is the output of one of
+the
+[example applications](https://github.com/roman/Haskell-etc/tree/master/etc-command-example):
+
+```bash
+$ MY_APP_USERNAME=foo etc-command-example run -u bar -p 123
+Executing main program
+credentials.username
+  bar        [ Cli        ]
+  foo        [ Env: MY_APP_USERNAME ]
+  root       [ Default    ]
+
+credentials.password
+  123        [ Cli        ]
+```
+
+The output displays all the configuration values and their sources, the first
+value on the list is the value that `System.Etc.getConfigValue` returns for that
+particular key.
+
+## Report Misspellings on Environment Variables
+
+When you define `env` keys on the `etc/entries` map of your spec file, we can
+infer what are the valid Environment Variables that need to be defined for your
+application, knowing this, `etc` can infer when there is a typo on one of this
+environment variables and report this. You need to have the `extra` cabal flag and
+call the `System.Etc.reportEnvMisspellingWarnings` with the configuration spec as
+as an argument.
+
+### Example
+
+Here is an example of the output this function prints to `stderr` when the given
+Environment Variables are almost identical to the ones found on the spec file:
+
+```bash
+$ MY_AP_USERNAME=foo etc-command-example run -u bar -p 123
+
+WARNING: Environment variable `MY_AP_USERNAME' found, perhaps you meant `MY_APP_USERNAME'
+
+```
 
 ## Cabal Flags
 
@@ -475,8 +518,8 @@ the exact bits of functionality you need for your application.
 
 - `cli`: Provides the CLI functionality explained in this README
 
-- `printer`: Provides helper functions for printing the resolved configuration map
-  with all its entries + sources
+- `extra`: Provides helper functions for inspecting the resolved configuration
+  as well as providing warning messages for misspelled environment variables
 
 ## Full Example
 
@@ -536,6 +579,8 @@ parseCredentials json =
 getConfiguration :: IO (Cmd, Etc.Config)
 getConfiguration = do
   spec <- Etc.readConfigSpec "./path/to/spec.yaml"
+
+  Etc.reportEnvMisspellingWarnings spec
 
   let
     defaultConfig =
