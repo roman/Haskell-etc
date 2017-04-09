@@ -19,7 +19,7 @@ import qualified System.Etc.Resolver.CliTest
 #endif
 
 #ifdef WITH_EXTRA
-import qualified System.Etc.Util.EnvMisspellTest
+import qualified System.Etc.Extra.EnvMisspellTest
 #endif
 
 main :: IO ()
@@ -35,6 +35,6 @@ main =
 #endif
 
 #ifdef WITH_EXTRA
-                     , System.Etc.Util.EnvMisspellTest.tests
+                     , System.Etc.Extra.EnvMisspellTest.tests
 #endif
                      ])

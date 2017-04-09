@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module System.Etc.Util.EnvMisspellTest where
+module System.Etc.Extra.EnvMisspellTest where
 
 import Protolude
 
