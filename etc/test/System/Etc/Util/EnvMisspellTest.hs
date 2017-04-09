@@ -32,10 +32,10 @@ tests =
         result =
           getEnvMisspellsPure spec ["GREEING"]
 
-      assertBool ("expecting to get a warning for typo")
+      assertBool "expecting to get a warning for typo"
                  (not $ Vector.null result)
 
-      assertEqual ("expecting to get typo for key GREETING")
+      assertEqual "expecting to get typo for key GREETING"
                   (EnvMisspell "GREEING" "GREETING")
                   (Vector.head result)
   ]

@@ -36,7 +36,7 @@ lookupSpecEnvKeys spec =
     foldEnvSettings val acc =
       case val of
         ConfigValue _ sources ->
-          maybe acc (flip Vector.cons acc) (envVar sources)
+          maybe acc (`Vector.cons` acc) (envVar sources)
         SubConfig hsh ->
           HashMap.foldr foldEnvSettings acc hsh
   in
@@ -65,8 +65,9 @@ getEnvMisspellsPure spec env = do
 -}
 getEnvMisspells :: ConfigSpec a -> IO (Vector EnvMisspell)
 getEnvMisspells spec =
-  (Vector.fromList . map (Text.pack . fst)) `fmap` getEnvironment
-  >>= return . getEnvMisspellsPure spec
+  getEnvironment
+  & fmap (Vector.fromList . map (Text.pack . fst))
+  & fmap (getEnvMisspellsPure spec)
 
 {-|
 
