@@ -5,6 +5,7 @@ module System.Etc.Resolver.DefaultTest (tests) where
 
 import Protolude
 
+import qualified Data.Aeson as JSON
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
@@ -60,5 +61,28 @@ tests =
         Just set ->
           assertBool ("expecting to see entry from env; got " <> show set)
                    (Set.member (Default "hello default") set)
+
+  , testCase "default can be a null JSON value" $ do
+      let
+        input =
+          mconcat
+            [
+              "{\"etc/entries\": {"
+            , " \"greeting\": null}}"
+            ]
+      (spec :: ConfigSpec ()) <- parseConfigSpec input
+
+      let
+        config =
+            resolveDefault spec
+
+      case getAllConfigSources ["greeting"] config of
+        Nothing ->
+          assertFailure ("expecting to get entries for greeting\n"
+                         <> show config)
+        Just set ->
+          assertBool ("expecting to see entry from env; got " <> show set)
+                     (Set.member (Default JSON.Null) set)
+
 
   ]
