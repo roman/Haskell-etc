@@ -149,6 +149,11 @@ function can accept either a JSON or YAML filepath. You can also use the
 `System.Etc.parseConfigSpec` if you already gather the contents of a spec file from a
 different source.
 
+_NOTE_: When using `System.Etc.parseConfigSpec` or `System.Etc.readConfigSpec`
+and the [CLI cabal feature flag is true](#cli-support), unless you use the
+`System.Etc.resolveCommandCli` function, you will have to explicitly declare the
+`ConfigSpec` type parameter.
+
 ### YAML support
 
 In order to allow `etc` to read from YAML files, you will need to use the `yaml`
