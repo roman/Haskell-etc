@@ -1,3 +1,10 @@
+0.0.0.3
+----
+* Add support for null values on Default (issue #3)
+* If cli cabal flag is false, have `parseConfigSpec` return `ConfigSpec ()`
+  instead of ambiguous `FromJSON` value (issue #3)
+* Bump aeson dependency to `<1.3`
+
 0.0.0.2
 ----
 * Rename System.Etc.Internal.Util module to System.Etc.Internal.Extra
