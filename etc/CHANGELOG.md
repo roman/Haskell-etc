@@ -1,4 +1,4 @@
-0.0.0.3
+0.1.0.0
 ----
 * Add support for null values on Default (issue #3)
 * If cli cabal flag is false, have `parseConfigSpec` return `ConfigSpec ()`
