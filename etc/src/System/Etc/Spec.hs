@@ -15,7 +15,9 @@ import System.Etc.Internal.Spec.Types as Types
 
 import Control.Monad.Catch (MonadCatch (..))
 
-import qualified Data.Aeson   as JSON
+#ifdef WITH_CLI
+import qualified Data.Aeson as JSON
+#endif
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text (readFile)
 
@@ -30,10 +32,18 @@ Parses a text input into a @ConfigSpec@, input can be JSON or YAML (if cabal
 flag is set).
 
 -}
+#ifdef WITH_CLI
 parseConfigSpec
   :: (MonadCatch m, JSON.FromJSON cmd)
     => Text               -- ^ Text to be parsed
     -> m (ConfigSpec cmd) -- ^ returns ConfigSpec
+#else
+parseConfigSpec
+  :: (MonadCatch m)
+    => Text               -- ^ Text to be parsed
+    -> m (ConfigSpec ()) -- ^ returns ConfigSpec
+#endif
+
 #ifdef WITH_YAML
 parseConfigSpec input =
    catch (JSON.parseConfigSpec input)
@@ -49,10 +59,16 @@ Reads contents of a file and parses into a @ConfigSpec@, file contents can be
 either JSON or YAML (if cabal flag is set).
 
 -}
+#ifdef WITH_CLI
 readConfigSpec
   :: JSON.FromJSON cmd
   => Text -- ^ Filepath where contents are going to be read from and parsed
   -> IO (ConfigSpec cmd) -- ^ returns ConfigSpec
+#else
+readConfigSpec
+  :: Text -- ^ Filepath where contents are going to be read from and parsed
+  -> IO (ConfigSpec ()) -- ^ returns ConfigSpec
+#endif
 readConfigSpec filepath = do
   contents <- Text.readFile $ Text.unpack filepath
   parseConfigSpec contents

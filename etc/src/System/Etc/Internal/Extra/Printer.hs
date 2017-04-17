@@ -21,6 +21,9 @@ import System.Etc.Internal.Types
 renderJsonValue :: JSON.Value -> (Doc, Int)
 renderJsonValue value' =
   case value' of
+    JSON.Null ->
+      (text "null", 4)
+
     JSON.String str ->
       (text $ Text.unpack str, Text.length str)
 

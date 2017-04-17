@@ -170,6 +170,7 @@ general_tests =
           assertBool "" True
   ]
 
+#ifdef WITH_CLI
 cli_tests :: TestTree
 cli_tests =
   testGroup "cli"
@@ -273,6 +274,7 @@ cli_tests =
           assertBool "" True
 
   ]
+#endif
 
 envvar_tests :: TestTree
 envvar_tests =
@@ -330,5 +332,7 @@ tests =
   , yaml_tests
 #endif
   , envvar_tests
+#ifdef WITH_CLI
   , cli_tests
+#endif
   ]
