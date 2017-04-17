@@ -5,9 +5,9 @@ module System.Etc.Resolver.DefaultTest (tests) where
 
 import Protolude
 
-import qualified Data.Aeson as JSON
-import Test.Tasty       (TestTree, testGroup)
-import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
+import qualified Data.Aeson       as JSON
+import           Test.Tasty       (TestTree, testGroup)
+import           Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
 
 import qualified Data.Set as Set

@@ -16,7 +16,7 @@ import System.Etc.Internal.Spec.Types as Types
 import Control.Monad.Catch (MonadCatch (..))
 
 #ifdef WITH_CLI
-import qualified Data.Aeson   as JSON
+import qualified Data.Aeson as JSON
 #endif
 import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text (readFile)
