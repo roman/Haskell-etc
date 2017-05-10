@@ -37,8 +37,8 @@ resolver: lts-8.8
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - 'etc'
-- 'etc-command-example'
-- 'etc-plain-example'
+- 'examples/etc-command-example'
+- 'examples/etc-plain-example'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps: []
