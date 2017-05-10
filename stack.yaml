@@ -39,6 +39,7 @@ packages:
 - 'etc'
 - 'examples/etc-command-example'
 - 'examples/etc-plain-example'
+- 'examples/etc-embedded-config-example'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps: []
