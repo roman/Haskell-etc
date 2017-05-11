@@ -6,7 +6,7 @@ module Main where
 import Protolude hiding ((<>))
 import Data.Monoid ((<>))
 
-import Config (configSpec)
+import qualified Config (configSpec)
 import qualified Data.ByteString.Base64 as BS
 import qualified Data.Text.Encoding as Text
 import qualified System.Etc as Etc
@@ -18,7 +18,7 @@ import qualified System.Etc as Etc
 main :: IO ()
 main = do
   configSpec <-
-    Etc.parseConfigSpec (Text.decodeUtf8 $ BS.decodeLenient configSpec)
+    Etc.parseConfigSpec (Text.decodeUtf8 $ BS.decodeLenient Config.configSpec)
 
   Etc.reportEnvMisspellingWarnings configSpec
 
