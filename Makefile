@@ -7,7 +7,6 @@ help:	## Display this message
 TEST_RESOLVER ?= lts-8
 TEST:=stack build --resolver $(TEST_RESOLVER) --install-ghc --test --haddock --no-haddock-deps --pedantic --flag etc:yaml --flag etc:cli --flag etc:extra
 test: ## Execute test suite with all compiler flags
-	@cd examples/etc-embedded-config-example && make prepare_config && cd ../..
 	$(TEST) etc:etc-testsuite
 .PHONY: test
 
