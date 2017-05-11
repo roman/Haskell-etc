@@ -10,11 +10,11 @@ maintainer:          romanandreg@gmail.com
 copyright:           2016 Roman Gonzalez
 category:            Configuration, System
 build-type:          Simple
--- extra-source-files:
+extra-source-files:
+  src/Config.tpl.hs
 cabal-version:       >=1.10
 data-dir: resources
 data-files:
-    config.yaml
     spec.yaml
 
 executable etc-embedded-config-example

@@ -1,4 +1,4 @@
-# etc-plain-example
+# etc-embedded-config-example
 
 Similar to the [etc-plain-example]() app with the difference that this example
 uses an embedded configuration spec in the source code via a Base64 encoding.
