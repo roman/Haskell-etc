@@ -1,3 +1,9 @@
+0.2.0.0
+----
+* Move `Config` API to typeclass `IConfig`
+* Add a `Setup.hs` file to every hachage repo (issue #5)
+* Add example of a project with a config spec embedded in the binary
+
 0.1.0.0
 ----
 * Add support for null values on Default (issue #3)
