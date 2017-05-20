@@ -44,7 +44,6 @@ before_install:
 install:
 - |
   set -ex
-  cd examples/etc-embedded-config-example && make prepare_config && cd ../..
   stack setup --upgrade-cabal && stack install --pedantic
   set +ex
 
