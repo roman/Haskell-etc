@@ -7,10 +7,12 @@ module System.Etc.Internal.Types
   , module System.Etc.Internal.Spec.Types
   ) where
 
+import Control.Monad.Catch (MonadThrow)
+import Data.HashMap.Strict (HashMap)
 import Protolude
 
 import qualified Data.Aeson          as JSON
-import           Data.HashMap.Strict (HashMap)
+import qualified Data.Aeson.Types    as JSON (Parser)
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set            as Set
 
@@ -138,3 +140,52 @@ filterMaybe pfn mvalue =
           mvalue
     Nothing ->
       Nothing
+
+
+class IConfig config where
+  -- | Fetches a configuration value from a given key, if key
+  -- is not found, you may pick the failure mode via the 'MonadThrow'
+  -- interface.
+  --
+  -- example:
+  --
+  -- >>> getConfigValue ["db", "user"] config :: Maybe Text
+  -- Just "root"
+  -- >>> getConfigValue ["db", "password"] config :: Maybe Text
+  -- Nothing
+  getConfigValue
+    :: (MonadThrow m, JSON.FromJSON result)
+    => [Text]   -- ^ Key to fetch from config map
+    -> config   -- ^ Config record
+    -> m result
+  -- | Fetches a configuration value from a given key, normally this key will
+  -- point to a sub-config JSON object, which is then passed to the given JSON
+  -- parser function. If key is not found, you may pick the failure mode via the
+  -- 'MonadThrow' interface.
+  --
+  -- example:
+  --
+  -- >>> import qualified Data.Aeson as JSON
+  -- >>> import qualified Data.Aeson.Types as JSON (Parser)
+  --
+  -- >>> connectInfoParser :: JSON.Value -> JSON.Parser DbConnectInfo
+  --
+  -- >>> getConfigValueWith connectInfoParser ["db"] config
+  -- Just (DbConnectInfo {...})
+  --
+  getConfigValueWith
+    :: (MonadThrow m)
+    => (JSON.Value -> JSON.Parser result) -- ^ JSON Parser function
+    -> [Text]                             -- ^ Key to fetch from config map
+    -> config                             -- ^ Config record
+    -> m result
+  getAllConfigSources
+    :: (MonadThrow m)
+    => [Text]
+    -> config
+    -> m (Set ConfigSource)
+  getSelectedConfigSource
+    :: (MonadThrow m)
+    => [Text]
+    -> config
+    -> m ConfigSource

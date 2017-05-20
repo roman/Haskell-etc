@@ -10,6 +10,7 @@ module System.Etc (
   -- * Config
   -- $config
     Config
+  , IConfig
   , getConfigValue
   , getConfigValueWith
   , getSelectedConfigSource
@@ -60,7 +61,8 @@ module System.Etc (
   ) where
 
 import System.Etc.Internal.Resolver.Default (resolveDefault)
-import System.Etc.Internal.Types            (Config, ConfigSource (..), ConfigValue)
+import System.Etc.Internal.Types
+    (Config, ConfigSource (..), ConfigValue, IConfig (..))
 import System.Etc.Spec
     (ConfigSpec, ConfigurationError (..), parseConfigSpec, readConfigSpec)
 
@@ -83,8 +85,7 @@ import System.Etc.Internal.Extra.Printer
     (hPrintPrettyConfig, printPrettyConfig, renderConfig)
 #endif
 
-import System.Etc.Internal.Config
-    (getAllConfigSources, getConfigValue, getConfigValueWith, getSelectedConfigSource)
+import System.Etc.Internal.Config ()
 import System.Etc.Internal.Resolver.Env  (resolveEnv, resolveEnvPure)
 import System.Etc.Internal.Resolver.File (resolveFiles)
 

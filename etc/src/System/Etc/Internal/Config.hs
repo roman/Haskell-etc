@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,6 +10,7 @@ import Control.Monad.Catch (MonadThrow (..))
 
 import qualified Data.Aeson          as JSON
 import qualified Data.Aeson.Internal as JSON (IResult (..), formatError, iparse)
+import qualified Data.Aeson.Types    as JSON (Parser)
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set            as Set
 import qualified Data.Text           as Text
@@ -36,14 +38,13 @@ configValueToJsonObject configValue =
           HashMap.empty
       & JSON.Object
 
--- Can't add signature given JSON.Parser is not exposed ¯\_(ツ)_/¯
--- getConfigValueWith
---   :: MonadThrow m
---   => (JSON.Value -> JSON.Parser value)
---   -> [Text]
---   -> Config
---   -> m value
-getConfigValueWith parser keys0 (Config configValue0) =
+_getConfigValueWith
+  :: MonadThrow m
+  => (JSON.Value -> JSON.Parser result)
+  -> [Text]
+  -> Config
+  -> m result
+_getConfigValueWith parser keys0 (Config configValue0) =
   let
     loop keys configValue =
       case (keys, configValue) of
@@ -89,12 +90,12 @@ getConfigValueWith parser keys0 (Config configValue0) =
   in
     loop keys0 configValue0
 
-getSelectedConfigSource
+_getSelectedConfigSource
   :: (MonadThrow m)
   => [Text]
   -> Config
   -> m ConfigSource
-getSelectedConfigSource keys0 (Config configValue0) =
+_getSelectedConfigSource keys0 (Config configValue0) =
   let
     loop keys configValue =
       case (keys, configValue) of
@@ -119,12 +120,12 @@ getSelectedConfigSource keys0 (Config configValue0) =
     loop keys0 configValue0
 
 
-getAllConfigSources
+_getAllConfigSources
   :: (MonadThrow m)
   => [Text]
   -> Config
   -> m (Set ConfigSource)
-getAllConfigSources keys0 (Config configValue0) =
+_getAllConfigSources keys0 (Config configValue0) =
   let
     loop keys configValue =
       case (keys, configValue) of
@@ -143,10 +144,17 @@ getAllConfigSources keys0 (Config configValue0) =
   in
     loop keys0 configValue0
 
-getConfigValue
+_getConfigValue
   :: (MonadThrow m, JSON.FromJSON result)
   => [Text]
   -> Config
   -> m result
-getConfigValue =
-  getConfigValueWith JSON.parseJSON
+_getConfigValue =
+  _getConfigValueWith JSON.parseJSON
+
+
+instance IConfig Config where
+  getConfigValue = _getConfigValue
+  getConfigValueWith = _getConfigValueWith
+  getAllConfigSources = _getAllConfigSources
+  getSelectedConfigSource = _getSelectedConfigSource
