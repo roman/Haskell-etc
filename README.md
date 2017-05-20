@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/roman/Haskell-etc.svg?branch=master)](https://travis-ci.org/roman/Haskell-etc)
-[![Hackage]](https://img.shields.io/hackage/v/etc.svg)
-[![Hackage Dependencies]](https://img.shields.io/hackage-deps/v/etc.svg)
+[![Hackage](https://img.shields.io/hackage/v/etc.svg)](https://img.shields.io/hackage/v/etc.svg)
+[![Hackage Dependencies](https://img.shields.io/hackage-deps/v/etc.svg)](https://img.shields.io/hackage/v/etc.svg)
 
 # etc
 
