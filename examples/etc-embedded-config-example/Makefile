@@ -1,11 +1,4 @@
-src/Config.hs: resources/spec.yaml
-	@echo "== Building configuration"
-	./bin/build_config.sh
-
-prepare_config: src/Config.hs ## Embed configuration from resources/spec.yaml in library
-.PHONY: prepare_config
-
-build: src/Config.hs ## Build application
+build: ## Build application
 	stack build
 .PHONY: build
 

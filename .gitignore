@@ -1,4 +1,3 @@
 .stack-work/
 .#*
 .tasty-rerun-log
-examples/etc-embedded-config-example/src/Config.hs
