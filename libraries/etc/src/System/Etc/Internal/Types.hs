@@ -102,8 +102,11 @@ deepMerge left right =
       right
 
 instance Monoid ConfigValue where
-  mempty  = emptySubConfig
-  mappend = deepMerge
+  mempty =
+    emptySubConfig
+
+  mappend =
+    deepMerge
 
 newtype Config
   = Config { fromConfig :: ConfigValue }

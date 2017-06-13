@@ -36,7 +36,7 @@ resolver: lts-8.8
 # non-dependency (i.e. a user package), and its test suites and benchmarks
 # will not be run. This is useful for tweaking upstream packages.
 packages:
-- 'etc'
+- 'libraries/etc'
 - 'examples/etc-command-example'
 - 'examples/etc-plain-example'
 - 'examples/etc-embedded-config-example'

@@ -1,15 +1,15 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
-{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 module Main where
 
-import Protolude hiding ((<>))
-import Data.Monoid ((<>))
 import Data.FileEmbed (embedFile)
+import Data.Monoid    ((<>))
+import Protolude      hiding ((<>))
 
 import qualified Data.Text.Encoding as Text
-import qualified System.Etc as Etc
+import qualified System.Etc         as Etc
 
 --------------------------------------------------------------------------------
 -- We specify the support commands for our program

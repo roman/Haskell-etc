@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Config where
@@ -154,7 +153,14 @@ _getConfigValue =
 
 
 instance IConfig Config where
-  getConfigValue = _getConfigValue
-  getConfigValueWith = _getConfigValueWith
-  getAllConfigSources = _getAllConfigSources
-  getSelectedConfigSource = _getSelectedConfigSource
+  getConfigValue =
+    _getConfigValue
+
+  getConfigValueWith =
+    _getConfigValueWith
+
+  getAllConfigSources =
+    _getAllConfigSources
+
+  getSelectedConfigSource =
+    _getSelectedConfigSource
