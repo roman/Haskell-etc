@@ -1,0 +1,96 @@
+name: etc
+version: '0.2.0.0'
+synopsis: Declarative configuration spec for Haskell projects
+description: Please see README.md
+category: Configuration, System
+author: Roman Gonzalez
+maintainer: romanandreg@gmail.com
+copyright: 2017 Roman Gonzalez
+license: MIT
+github: roman/Haskell-etc
+tested-with: GHC==7.10.3 GHC==8.0.1 GHC==8.0.2
+extra-source-files:
+- README.md
+- CHANGELOG.md
+dependencies:
+- base >=4.7 && <5
+- aeson >=0.11 && <1.3
+- bytestring >=0.10 && <0.11
+- containers >=0.5 && <0.6
+- text >=1.2 && <1.3
+- protolude >=0.1 && <0.2
+- unordered-containers >=0.2 && <0.3
+- vector >=0.11 && <0.13
+library:
+  source-dirs: src
+  ghc-options: -Wall
+  exposed-modules:
+  - System.Etc
+  - System.Etc.Spec
+  - System.Etc.Internal.Config
+  - System.Etc.Internal.Spec.JSON
+  - System.Etc.Internal.Spec.Types
+  - System.Etc.Internal.Types
+  - System.Etc.Internal.Resolver.Default
+  - System.Etc.Internal.Resolver.File
+  - System.Etc.Internal.Resolver.Env
+  dependencies:
+  - directory >=1.2 && <1.4
+  - exceptions >=0.8 && <0.9
+  - hashable >=1.2 && <1.3
+  when:
+  - condition: flag(extra)
+    cpp-options: -DWITH_EXTRA
+    dependencies:
+    - ansi-wl-pprint >=0.6 && <0.7
+    - edit-distance >=0.2 && <0.3
+  - condition: flag(cli)
+    cpp-options: -DWITH_CLI
+    dependencies:
+    - optparse-applicative >=0.12 && <0.14
+  - condition: flag(yaml)
+    cpp-options: -DWITH_YAML
+    dependencies:
+    - yaml >=0.8 && <0.9
+tests:
+  etc-testsuite:
+    main: TestSuite.hs
+    source-dirs: test
+    ghc-options: -Wall
+    dependencies:
+    - tasty >=0.11 && <0.12
+    - tasty-hunit >=0.9 && <0.10
+    - tasty-rerun >=1.1 && <1.2
+    - etc
+    when:
+    - condition: flag(cli)
+      cpp-options: -DWITH_CLI
+      dependencies:
+      - optparse-applicative >=0.12 && <0.14
+    - condition: flag(yaml)
+      cpp-options: -DWITH_YAML
+      dependencies:
+      - yaml >=0.8 && <0.9
+    - condition: flag(extra)
+      cpp-options: -DWITH_EXTRA
+      dependencies:
+      - edit-distance >=0.2 && <0.3
+flags:
+  extra:
+    description: Include extra utilities
+    manual: false
+    default: false
+  cli:
+    description: Include support for cli arguments
+    manual: false
+    default: false
+  yaml:
+    description: Include support to parse YAML files
+    manual: false
+    default: false
+data-files:
+- test/fixtures/config.foo
+- test/fixtures/config.json
+- test/fixtures/config.spec.yaml
+- test/fixtures/config.yaml
+- test/fixtures/config.yml
