@@ -1,3 +1,9 @@
+Unreleased
+---
+* Add support for nightly (GHC-8.2)
+* Bump to lts-9.2
+* Drop support for lts-6 (GHC-7.10)
+
 0.2.0.0
 ----
 * Move `Config` API to typeclass `IConfig`
