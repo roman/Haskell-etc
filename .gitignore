@@ -1,3 +1,5 @@
 .stack-work/
 .#*
-.tasty-rerun-log
+out/
+tmp/
+tools/bin
