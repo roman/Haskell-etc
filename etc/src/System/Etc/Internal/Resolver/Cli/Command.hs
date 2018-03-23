@@ -3,17 +3,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Resolver.Cli.Command (resolveCommandCli, resolveCommandCliPure) where
 
-import Protolude
+import RIO
+import qualified RIO.HashMap as HashMap
+import qualified RIO.Text    as Text
 
-import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Hashable       (Hashable)
-import Data.HashMap.Strict (HashMap)
-import Data.Vector         (Vector)
-import System.Environment  (getProgName)
+import System.Environment  (getProgName, getArgs)
 
 import qualified Data.Aeson          as JSON
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text           as Text
 import qualified Options.Applicative as Opt
 
 import System.Etc.Internal.Resolver.Cli.Common

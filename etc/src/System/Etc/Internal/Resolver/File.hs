@@ -3,24 +3,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Resolver.File (resolveFiles) where
 
-import Protolude
-
-import Control.Monad.Catch (MonadThrow (..))
-import Data.Vector         (Vector)
-import System.Directory    (doesFileExist)
+import RIO
+import RIO.Directory (doesFileExist)
+import qualified RIO.HashMap  as HashMap
+import qualified RIO.Set      as Set
+import qualified RIO.Text     as Text
+import qualified RIO.Vector   as Vector
 
 
 #ifdef WITH_YAML
 import qualified Data.Yaml as YAML
 #endif
 
-import qualified Data.Aeson                 as JSON
-import qualified Data.Aeson.Internal        as JSON (IResult (..), iparse)
-import qualified Data.ByteString.Lazy.Char8 as LB8
-import qualified Data.HashMap.Strict        as HashMap
-import qualified Data.Set                   as Set
-import qualified Data.Text                  as Text
-import qualified Data.Vector                as Vector
+import qualified Data.Aeson          as JSON
+import qualified Data.Aeson.Internal as JSON (IResult (..), iparse)
+import qualified RIO.ByteString.Lazy as LB8
 
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types      hiding (filepath)

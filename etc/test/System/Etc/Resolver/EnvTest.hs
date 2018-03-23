@@ -3,14 +3,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.Resolver.EnvTest where
 
-import Protolude
+import RIO
+import qualified RIO.Set  as Set
+import qualified RIO.Text as Text
 
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
-
-import qualified Data.Set  as Set
-import qualified Data.Text as Text
 
 import Paths_etc (getDataFileName)
 
@@ -39,9 +38,9 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting (check fixtures)\n"
                          <> show config)
-        Just set ->
-          assertBool ("expecting to see entry from env; got " <> show set)
-                   (Set.member (Env "GREETING" "hello env") set)
+        Just aSet ->
+          assertBool ("expecting to see entry from env; got " <> show aSet)
+                   (Set.member (Env "GREETING" "hello env") aSet)
 
   , testCase "has precedence over default and file values" $ do
       jsonFilepath <- getDataFileName "test/fixtures/config.json"

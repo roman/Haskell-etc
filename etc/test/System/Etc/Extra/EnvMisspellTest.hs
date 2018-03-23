@@ -4,12 +4,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.Extra.EnvMisspellTest where
 
-import Protolude
+import RIO
+import qualified RIO.Vector as Vector
 
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
-
-import qualified Data.Vector as Vector
 
 import System.Etc
 

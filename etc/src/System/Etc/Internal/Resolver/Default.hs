@@ -2,11 +2,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Resolver.Default (resolveDefault) where
 
-import Protolude
+import RIO
+import qualified RIO.HashMap as HashMap
+import qualified RIO.Set     as Set
 
 import qualified Data.Aeson          as JSON
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set            as Set
 
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types

@@ -5,14 +5,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.Resolver.FileTest (tests) where
 
-import Protolude
+import RIO
+import qualified RIO.Set    as Set
+import qualified RIO.Text   as Text
+import qualified RIO.Vector as Vector
 
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
-
-import qualified Data.Set    as Set
-import qualified Data.Text   as Text
-import qualified Data.Vector as Vector
 
 import Paths_etc (getDataFileName)
 
@@ -50,16 +49,16 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting (check fixtures)\n"
                          <> show config)
-        Just set -> do
-          assertBool ("expecting to see entry from json config file " <> show set)
-                     (Set.member (File 1 (Text.pack jsonFilepath) "hello json") set)
+        Just aSet -> do
+          assertBool ("expecting to see entry from json config file " <> show aSet)
+                     (Set.member (File 1 (Text.pack jsonFilepath) "hello json") aSet)
 
 #ifdef WITH_YAML
-          assertBool ("expecting to see entry from yaml config file " <> show set)
-                     (Set.member (File 2 (Text.pack jsonFilepath) "hello yaml") set)
+          assertBool ("expecting to see entry from yaml config file " <> show aSet)
+                     (Set.member (File 2 (Text.pack jsonFilepath) "hello yaml") aSet)
 
-          assertBool ("expecting to see entry from yml config file " <> show set)
-                     (Set.member (File 3 (Text.pack jsonFilepath) "hello yml") set)
+          assertBool ("expecting to see entry from yml config file " <> show aSet)
+                     (Set.member (File 3 (Text.pack jsonFilepath) "hello yml") aSet)
 #endif
 
   , testCase "does not support any other file extension" $ do
@@ -111,9 +110,9 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting (check fixtures)\n"
                          <> show config)
-        Just set ->
-          assertBool ("expecting to see entry from json config file " <> show set)
-                   (Set.member (File 1 (Text.pack jsonFilepath) "hello json") set)
+        Just aSet ->
+          assertBool ("expecting to see entry from json config file " <> show aSet)
+                   (Set.member (File 1 (Text.pack jsonFilepath) "hello json") aSet)
 
       if Vector.null errs then
         assertFailure "expecting one error, got none"

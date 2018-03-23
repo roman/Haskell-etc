@@ -2,12 +2,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Spec.YAML where
 
-import Protolude
-
-import Control.Monad.Catch (MonadThrow (..))
+import RIO
+import qualified RIO.Text as Text
 
 import qualified Data.Aeson         as JSON
-import qualified Data.Text          as Text
 import qualified Data.Text.Encoding as Text (encodeUtf8)
 import qualified Data.Text.IO       as Text (readFile)
 import qualified Data.Yaml          as YAML

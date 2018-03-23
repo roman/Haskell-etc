@@ -4,8 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
-import Protolude hiding ((<>))
-import Data.Monoid ((<>))
+import RIO
 import Data.FileEmbed (embedFile)
 
 import qualified Data.Text.Encoding as Text

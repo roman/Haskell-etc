@@ -7,12 +7,13 @@ module System.Etc.Internal.Extra.Printer (
   , hPrintPrettyConfig
   ) where
 
-import Protolude hiding ((<>))
+import RIO hiding ((<>))
+import RIO.List (intersperse, maximum)
+import qualified RIO.HashMap as HashMap
+import qualified RIO.Set     as Set
+import qualified RIO.Text    as Text
 
 import qualified Data.Aeson          as JSON
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set            as Set
-import qualified Data.Text           as Text
 
 import Text.PrettyPrint.ANSI.Leijen
 
@@ -40,11 +41,11 @@ renderJsonValue value' =
         (text "false", 5)
     _ ->
       value'
-      & show
+      & tshow
       & ("Invalid configuration value creation " `mappend`)
       & InvalidConfiguration
       & show
-      & panic
+      & error
 
 
 renderConfig :: Config -> Doc

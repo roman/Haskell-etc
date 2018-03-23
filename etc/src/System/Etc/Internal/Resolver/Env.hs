@@ -2,14 +2,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Resolver.Env (resolveEnv, resolveEnvPure) where
 
-import Protolude
+import RIO
+import qualified RIO.HashMap as HashMap
+import qualified RIO.Set     as Set
+import qualified RIO.Text    as Text
 import System.Environment (getEnvironment)
 
 import           Control.Arrow       ((***))
 import qualified Data.Aeson          as JSON
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set            as Set
-import qualified Data.Text           as Text
 
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types

@@ -24,7 +24,7 @@ executable etc-embedded-config-example
     , aeson >=0.11
     , base64-bytestring >= 1.0
     , text >=1.2
-    , protolude >=0.1
+    , rio >=0.0.1.0
     , file-embed >=0.0
     , unordered-containers >=0.2
     , directory >=1.2

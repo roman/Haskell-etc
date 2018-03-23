@@ -3,12 +3,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.Resolver.Cli.PlainTest where
 
-import Protolude
+import RIO
+import qualified RIO.Set as Set
 
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
-
-import qualified Data.Set as Set
 
 import System.Etc
 
@@ -38,9 +37,9 @@ option_tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set ->
-          assertBool ("expecting to see entry from env; got " <> show set)
-                   (Set.member (Cli "hello cli") set)
+        Just aSet ->
+          assertBool ("expecting to see entry from env; got " <> show aSet)
+                   (Set.member (Cli "hello cli") aSet)
 
   , testCase "entry accepts long" $ do
       let
@@ -64,9 +63,9 @@ option_tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set ->
-          assertBool ("expecting to see entry from env; got " <> show set)
-                   (Set.member (Cli "hello cli") set)
+        Just aSet ->
+          assertBool ("expecting to see entry from env; got " <> show aSet)
+                   (Set.member (Cli "hello cli") aSet)
 
   , testCase "entry gets validated with a type" $ do
       let
@@ -119,9 +118,9 @@ option_tests =
       config <- resolvePlainCliPure spec "program" []
 
       case getConfigValue ["greeting"] config of
-        Just set ->
+        Just aSet ->
           assertFailure ("expecting to have no entry for greeting; got\n"
-                       <> show set)
+                       <> show aSet)
 
         (_ :: Maybe ()) ->
           return ()
@@ -213,9 +212,9 @@ argument_tests =
         (Nothing :: Maybe ()) ->
           return ()
 
-        Just set ->
+        Just aSet ->
           assertFailure ("expecting to have no entry for greeting; got\n"
-                       <> show set)
+                       <> show aSet)
 
   , testCase "entry with required fails when argument not given" $ do
       let

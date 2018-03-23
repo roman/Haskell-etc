@@ -25,7 +25,7 @@ executable etc-command-example
       base >=4.7 && <5
     , aeson >=0.11
     , text >=1.2
-    , protolude >=0.1
+    , rio >=0.0.1.0
     , unordered-containers >=0.2
     , directory >=1.2
     , hashable >=1.2
