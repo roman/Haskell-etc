@@ -25,7 +25,7 @@ configValueToJsonObject configValue =
     ConfigValue sources ->
       case Set.maxView sources of
         Nothing ->
-          undefined
+          panic "this should not happen"
 
         Just (source, _) ->
           value source

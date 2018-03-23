@@ -44,7 +44,7 @@ renderJsonValue value' =
       & ("Invalid configuration value creation " `mappend`)
       & InvalidConfiguration
       & show
-      & error
+      & panic
 
 
 renderConfig :: Config -> Doc
