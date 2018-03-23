@@ -2,15 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Spec.JSON where
 
-import Protolude
-
-import Control.Monad.Catch (MonadThrow (..))
+import RIO
+import qualified RIO.Text as Text
+import qualified RIO.ByteString.Lazy as LBS
+import qualified Data.Text.IO as Text (readFile)
 
 import qualified Data.Aeson              as JSON
-import qualified Data.Text               as Text
-import qualified Data.Text.IO            as Text (readFile)
-import qualified Data.Text.Lazy          as Text (fromStrict)
-import qualified Data.Text.Lazy.Encoding as Text (encodeUtf8)
 
 import System.Etc.Internal.Spec.Types
 
@@ -19,7 +16,7 @@ parseConfigSpec
     => Text
     -> m (ConfigSpec cmd)
 parseConfigSpec input =
-  case JSON.eitherDecode (Text.encodeUtf8 $ Text.fromStrict input) of
+  case JSON.eitherDecode (LBS.fromStrict $ encodeUtf8 input) of
     Left err ->
       throwM $ InvalidConfiguration (Text.pack err)
 

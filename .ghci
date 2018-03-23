@@ -6,7 +6,7 @@
 :set -fno-warn-type-defaults
 :set -package pretty-show
 
-import Protolude
+import RIO
 import Text.Show.Pretty (pPrint)
 
 :set -interactive-print pPrint

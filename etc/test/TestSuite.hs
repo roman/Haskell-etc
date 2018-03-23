@@ -3,10 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Protolude
+import RIO
 
 import Test.Tasty                   (defaultMainWithIngredients, testGroup)
-import Test.Tasty.Ingredients.Rerun (rerunningTests)
 import Test.Tasty.Runners           (consoleTestReporter, listingTests)
 
 import qualified System.Etc.Resolver.DefaultTest
@@ -25,7 +24,7 @@ import qualified System.Etc.Extra.EnvMisspellTest
 main :: IO ()
 main =
   defaultMainWithIngredients
-    [ rerunningTests [listingTests, consoleTestReporter] ]
+    [ listingTests, consoleTestReporter ]
     (testGroup "etc" [ System.Etc.SpecTest.tests
                      , System.Etc.Resolver.DefaultTest.tests
                      , System.Etc.Resolver.FileTest.tests

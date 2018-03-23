@@ -3,15 +3,13 @@
 module System.Etc.Internal.Spec.Types where
 
 import Prelude   (fail)
-import Protolude
+import RIO
+import qualified RIO.HashMap as HashMap
 
 import Data.Aeson          ((.:), (.:?))
-import Data.HashMap.Strict (HashMap)
-import Data.Vector         (Vector)
 
 import qualified Data.Aeson          as JSON
 import qualified Data.Aeson.Types    as JSON (Parser, typeMismatch)
-import qualified Data.HashMap.Strict as HashMap
 
 --------------------------------------------------------------------------------
 -- Error Types

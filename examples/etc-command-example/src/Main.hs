@@ -3,16 +3,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import qualified Prelude
+
+import RIO
+import qualified RIO.Text        as Text
+
 import qualified Data.Aeson       as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
 import           Data.Hashable    (Hashable)
-import qualified Data.Text        as Text
 import           GHC.Generics     (Generic)
 import qualified System.Etc       as Etc
 
 import Paths_etc_command_example (getDataFileName)
 
-import Protolude
 
 --------------------------------------------------------------------------------
 -- We specify the support commands for our program
@@ -75,5 +78,5 @@ main = do
       Etc.printPrettyConfig config
 
     RunMain -> do
-      putStrLn ("Executing main program" :: Text)
+      Prelude.putStrLn "Executing main program"
       Etc.printPrettyConfig config

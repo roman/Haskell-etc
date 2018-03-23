@@ -4,16 +4,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Config where
 
-import Protolude
-
-import Control.Monad.Catch (MonadThrow (..))
+import RIO
+import qualified RIO.HashMap as HashMap
+import qualified RIO.Set     as Set
+import qualified RIO.Text    as Text
 
 import qualified Data.Aeson          as JSON
 import qualified Data.Aeson.Internal as JSON (IResult (..), formatError, iparse)
 import qualified Data.Aeson.Types    as JSON (Parser)
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set            as Set
-import qualified Data.Text           as Text
 
 import System.Etc.Internal.Types
 
@@ -25,7 +23,7 @@ configValueToJsonObject configValue =
     ConfigValue sources ->
       case Set.maxView sources of
         Nothing ->
-          panic "this should not happen"
+          error "this should not happen"
 
         Just (source, _) ->
           value source

@@ -8,18 +8,16 @@ module System.Etc.Spec (
   , readConfigSpec
   ) where
 
-import Protolude hiding (catch)
+import RIO
+import qualified RIO.Text    as Text
+import qualified Data.Text.IO as Text (readFile)
 
 import System.Etc.Internal.Spec.Types as Types
     (ConfigSpec, ConfigValue, ConfigurationError (..))
 
-import Control.Monad.Catch (MonadCatch (..))
-
 #ifdef WITH_CLI
 import qualified Data.Aeson as JSON
 #endif
-import qualified Data.Text    as Text
-import qualified Data.Text.IO as Text (readFile)
 
 import qualified System.Etc.Internal.Spec.JSON as JSON
 #ifdef WITH_YAML
@@ -34,20 +32,20 @@ flag is set).
 -}
 #ifdef WITH_CLI
 parseConfigSpec
-  :: (MonadCatch m, JSON.FromJSON cmd)
+  :: (Alternative m, MonadThrow m, JSON.FromJSON cmd)
     => Text               -- ^ Text to be parsed
     -> m (ConfigSpec cmd) -- ^ returns ConfigSpec
 #else
 parseConfigSpec
-  :: (MonadCatch m)
+  :: (Alternative m, MonadThrow m)
     => Text               -- ^ Text to be parsed
     -> m (ConfigSpec ()) -- ^ returns ConfigSpec
 #endif
 
 #ifdef WITH_YAML
 parseConfigSpec input =
-   catch (JSON.parseConfigSpec input)
-         (\(_ :: SomeException) ->  YAML.parseConfigSpec input)
+   JSON.parseConfigSpec input
+   <|> YAML.parseConfigSpec input
 #else
 parseConfigSpec =
   JSON.parseConfigSpec

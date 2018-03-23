@@ -3,14 +3,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.Resolver.DefaultTest (tests) where
 
-import Protolude
+import RIO
+import qualified RIO.Set as Set
 
 import qualified Data.Aeson       as JSON
 import           Test.Tasty       (TestTree, testGroup)
 import           Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
 
-import qualified Data.Set as Set
 
 import System.Etc
 
@@ -36,9 +36,9 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set ->
-          assertBool ("expecting to see entry from env; got " <> show set)
-                   (Set.member (Default "hello default") set)
+        Just aSet ->
+          assertBool ("expecting to see entry from env; got " <> show aSet)
+                   (Set.member (Default "hello default") aSet)
 
   , testCase "default can be raw JSON value on entries spec" $ do
       let
@@ -58,9 +58,9 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set ->
-          assertBool ("expecting to see entry from env; got " <> show set)
-                   (Set.member (Default "hello default") set)
+        Just aSet ->
+          assertBool ("expecting to see entry from env; got " <> show aSet)
+                   (Set.member (Default "hello default") aSet)
 
   , testCase "default can be a null JSON value" $ do
       let
@@ -80,9 +80,9 @@ tests =
         Nothing ->
           assertFailure ("expecting to get entries for greeting\n"
                          <> show config)
-        Just set ->
-          assertBool ("expecting to see entry from env; got " <> show set)
-                     (Set.member (Default JSON.Null) set)
+        Just aSet ->
+          assertBool ("expecting to see entry from env; got " <> show aSet)
+                     (Set.member (Default JSON.Null) aSet)
 
 
   ]

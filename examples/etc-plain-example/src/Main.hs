@@ -3,9 +3,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
-import Protolude
+import RIO
+import qualified RIO.Text  as Text
 
-import qualified Data.Text  as Text
 import qualified System.Etc as Etc
 
 import Paths_etc_plain_example (getDataFileName)

@@ -7,14 +7,14 @@ module System.Etc.Internal.Types
   , module System.Etc.Internal.Spec.Types
   ) where
 
-import Control.Monad.Catch (MonadThrow)
-import Data.HashMap.Strict (HashMap)
-import Protolude
+import RIO
+import qualified RIO.HashMap as HashMap
+import qualified RIO.Set as Set
+
+import qualified Data.Semigroup as Semigroup
 
 import qualified Data.Aeson          as JSON
 import qualified Data.Aeson.Types    as JSON (Parser)
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set            as Set
 
 import System.Etc.Internal.Spec.Types (ConfigurationError (..))
 
@@ -101,13 +101,16 @@ deepMerge left right =
     _ ->
       right
 
+instance Semigroup.Semigroup ConfigValue where
+  (<>) = deepMerge
+
 instance Monoid ConfigValue where
   mempty  = emptySubConfig
-  mappend = deepMerge
+  mappend = (Semigroup.<>)
 
 newtype Config
   = Config { fromConfig :: ConfigValue }
-  deriving (Eq, Show, Monoid)
+  deriving (Eq, Show, Semigroup, Monoid)
 
 isEmptySubConfig :: ConfigValue -> Bool
 isEmptySubConfig val =

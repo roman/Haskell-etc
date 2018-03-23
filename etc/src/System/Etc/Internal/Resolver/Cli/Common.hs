@@ -5,17 +5,19 @@
 module System.Etc.Internal.Resolver.Cli.Common where
 
 import qualified Prelude   as P
-import           Protolude
 
-import           Control.Monad.Catch        (MonadThrow, throwM)
+import           RIO
+import qualified RIO.ByteString.Lazy as BL (toStrict)
+import qualified RIO.Set             as Set
+import qualified RIO.Text            as Text
+import qualified RIO.Vector          as Vector
+
 import qualified Data.Aeson                 as JSON
 import qualified Data.Aeson.Internal        as JSON (IResult (..), iparse)
-import qualified Data.ByteString.Lazy.Char8 as BL (unpack)
-import qualified Data.Set                   as Set
-import qualified Data.Text                  as Text
 import qualified Data.Text.IO               as Text
-import qualified Data.Vector                as Vector
 import qualified Options.Applicative        as Opt
+
+import System.Exit
 
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types
@@ -87,8 +89,9 @@ commandToKey cmd =
     _ ->
       cmd
         & JSON.encode
-        & BL.unpack
-        & Text.pack
+        & BL.toStrict
+        & Text.decodeUtf8'
+        & either tshow id
         & InvalidCliCommandKey
         & throwM
 
@@ -163,7 +166,7 @@ handleCliResult result =
     Left err ->
       case fromException err of
         Just (CliEvalExited ExitSuccess (GetErrorMessage getMsg)) -> do
-          getMsg >>= putStrLn
+          getMsg >>= Text.putStrLn
           exitSuccess
 
         Just (CliEvalExited exitCode (GetErrorMessage getMsg)) -> do

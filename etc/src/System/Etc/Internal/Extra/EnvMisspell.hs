@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,14 +11,13 @@ module System.Etc.Internal.Extra.EnvMisspell (
   , reportEnvMisspellingWarnings
   ) where
 
-import Protolude hiding ((<$>), (<>))
+import RIO hiding ((<$>), (<>))
+import qualified RIO.HashMap as HashMap
+import qualified RIO.Text    as Text
+import qualified RIO.Vector  as Vector
 
-import Data.Vector        (Vector)
 import System.Environment (getEnvironment)
 
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text           as Text
-import qualified Data.Vector         as Vector
 import qualified Text.EditDistance   as Distance
 
 import System.Etc.Internal.Spec.Types
