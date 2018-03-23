@@ -1,5 +1,5 @@
-{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Extra.EnvMisspell (
@@ -11,14 +11,14 @@ module System.Etc.Internal.Extra.EnvMisspell (
   , reportEnvMisspellingWarnings
   ) where
 
-import RIO hiding ((<$>), (<>))
+import           RIO         hiding ((<$>), (<>))
 import qualified RIO.HashMap as HashMap
 import qualified RIO.Text    as Text
 import qualified RIO.Vector  as Vector
 
 import System.Environment (getEnvironment)
 
-import qualified Text.EditDistance   as Distance
+import qualified Text.EditDistance as Distance
 
 import System.Etc.Internal.Spec.Types
 import Text.PrettyPrint.ANSI.Leijen
@@ -32,74 +32,64 @@ data EnvMisspell
 
 lookupSpecEnvKeys :: ConfigSpec a -> Vector Text
 lookupSpecEnvKeys spec =
-  let
-    foldEnvSettings val acc =
-      case val of
-        ConfigValue _ sources ->
-          maybe acc (`Vector.cons` acc) (envVar sources)
-        SubConfig hsh ->
-          HashMap.foldr foldEnvSettings acc hsh
-  in
-    foldEnvSettings (SubConfig $ specConfigValues spec) Vector.empty
+  let foldEnvSettings val acc = case val of
+        ConfigValue _ sources -> maybe acc (`Vector.cons` acc) (envVar sources)
+        SubConfig hsh         -> HashMap.foldr foldEnvSettings acc hsh
+  in  foldEnvSettings (SubConfig $ specConfigValues spec) Vector.empty
 
 {-|
 
 -}
 getEnvMisspellingsPure :: ConfigSpec a -> Vector Text -> Vector EnvMisspell
 getEnvMisspellingsPure spec env = do
-   specEnvName  <- lookupSpecEnvKeys spec
-   currentEnvName <- env
+  specEnvName    <- lookupSpecEnvKeys spec
+  currentEnvName <- env
 
-   let
-     distance =
-       Distance.levenshteinDistance
-           Distance.defaultEditCosts
-           (Text.unpack specEnvName)
-           (Text.unpack currentEnvName)
+  let distance = Distance.levenshteinDistance Distance.defaultEditCosts
+                                              (Text.unpack specEnvName)
+                                              (Text.unpack currentEnvName)
 
-   guard (distance >= 1 && distance < 4)
-   return $ EnvMisspell currentEnvName specEnvName
+  guard (distance >= 1 && distance < 4)
+  return $ EnvMisspell currentEnvName specEnvName
 
 {-|
 
 -}
 getEnvMisspellings :: ConfigSpec a -> IO (Vector EnvMisspell)
 getEnvMisspellings spec =
-  getEnvironment
-  & fmap (Vector.fromList . map (Text.pack . fst))
-  & fmap (getEnvMisspellingsPure spec)
+  getEnvironment & fmap (Vector.fromList . map (Text.pack . fst)) & fmap
+    (getEnvMisspellingsPure spec)
 
 {-|
 
 -}
 renderEnvMisspellings :: Vector EnvMisspell -> Doc
 renderEnvMisspellings misspells
-  | Vector.null misspells =
-      mempty
-  | otherwise =
-      misspells
-      & Vector.map
-            (\misspell ->
-                text "WARNING: Environment variable `"
-                <> text (Text.unpack $ currentText misspell)
-                <> text "' found, perhaps you meant `"
-                <> text (Text.unpack $ suggestionText misspell)
-                <> text "'")
-      & Vector.foldl' (<$>) mempty
-      & (<$> mempty)
-      & (<$> mempty)
+  | Vector.null misspells
+  = mempty
+  | otherwise
+  = misspells
+    & Vector.map
+        (\misspell ->
+          text "WARNING: Environment variable `"
+            <> text (Text.unpack $ currentText misspell)
+            <> text "' found, perhaps you meant `"
+            <> text (Text.unpack $ suggestionText misspell)
+            <> text "'"
+        )
+    & Vector.foldl' (<$>) mempty
+    & (<$> mempty)
+    & (<$> mempty)
 
 {-|
 
 -}
 hPrintEnvMisspellings :: Handle -> Vector EnvMisspell -> IO ()
-hPrintEnvMisspellings h =
-  hPutDoc h . renderEnvMisspellings
+hPrintEnvMisspellings h = hPutDoc h . renderEnvMisspellings
 
 {-|
 
 -}
 reportEnvMisspellingWarnings :: ConfigSpec a -> IO ()
 reportEnvMisspellingWarnings spec =
-  getEnvMisspellings spec >>=
-  hPrintEnvMisspellings stderr
+  getEnvMisspellings spec >>= hPrintEnvMisspellings stderr

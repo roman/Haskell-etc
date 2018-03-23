@@ -3,12 +3,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Resolver.File (resolveFiles) where
 
-import RIO
-import RIO.Directory (doesFileExist)
-import qualified RIO.HashMap  as HashMap
-import qualified RIO.Set      as Set
-import qualified RIO.Text     as Text
-import qualified RIO.Vector   as Vector
+import           RIO
+import           RIO.Directory (doesFileExist)
+import qualified RIO.HashMap   as HashMap
+import qualified RIO.Set       as Set
+import qualified RIO.Text      as Text
+import qualified RIO.Vector    as Vector
 
 
 #ifdef WITH_YAML

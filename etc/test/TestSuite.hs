@@ -5,8 +5,8 @@ module Main where
 
 import RIO
 
-import Test.Tasty                   (defaultMainWithIngredients, testGroup)
-import Test.Tasty.Runners           (consoleTestReporter, listingTests)
+import Test.Tasty         (defaultMainWithIngredients, testGroup)
+import Test.Tasty.Runners (consoleTestReporter, listingTests)
 
 import qualified System.Etc.Resolver.DefaultTest
 import qualified System.Etc.Resolver.EnvTest

@@ -2,22 +2,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Spec.Types where
 
-import Prelude   (fail)
-import RIO
+import           Prelude     (fail)
+import           RIO
 import qualified RIO.HashMap as HashMap
 
-import Data.Aeson          ((.:), (.:?))
+import Data.Aeson ((.:), (.:?))
 
-import qualified Data.Aeson          as JSON
-import qualified Data.Aeson.Types    as JSON (Parser, typeMismatch)
+import qualified Data.Aeson       as JSON
+import qualified Data.Aeson.Types as JSON (Parser, typeMismatch)
 
 --------------------------------------------------------------------------------
 -- Error Types
 
 data ConfigurationError
-  = InvalidConfiguration Text
-  | InvalidConfigKeyPath [Text]
-  | ConfigurationFileNotFound Text
+  = InvalidConfiguration !Text
+  | InvalidConfigKeyPath ![Text]
+  | ConfigurationFileNotFound !Text
   deriving (Show)
 
 instance Exception ConfigurationError
@@ -37,67 +37,67 @@ data CliArgValueType
 
 data CliEntryMetadata
   = Opt {
-    optLong      :: Maybe Text
-  , optShort     :: Maybe Text
-  , optMetavar   :: Maybe Text
-  , optHelp      :: Maybe Text
-  , optRequired  :: Bool
-  , optValueType :: CliOptValueType
+    optLong      :: !(Maybe Text)
+  , optShort     :: !(Maybe Text)
+  , optMetavar   :: !(Maybe Text)
+  , optHelp      :: !(Maybe Text)
+  , optRequired  :: !Bool
+  , optValueType :: !CliOptValueType
   }
   | Arg {
-    argMetavar   :: Maybe Text
-  , optRequired  :: Bool
-  , argValueType :: CliArgValueType
+    argMetavar   :: !(Maybe Text)
+  , optRequired  :: !Bool
+  , argValueType :: !CliArgValueType
   }
   deriving (Show, Eq)
 
 data CliEntrySpec cmd
   = CmdEntry {
-    cliEntryCmdValue :: Vector cmd
-  , cliEntryMetadata :: CliEntryMetadata
+    cliEntryCmdValue :: !(Vector cmd)
+  , cliEntryMetadata :: !CliEntryMetadata
   }
   | PlainEntry {
-    cliEntryMetadata :: CliEntryMetadata
+    cliEntryMetadata :: !CliEntryMetadata
   }
   deriving (Show, Eq)
 
 data CliCmdSpec
   = CliCmdSpec {
-    cliCmdDesc   :: Text
-  , cliCmdHeader :: Text
+    cliCmdDesc   :: !Text
+  , cliCmdHeader :: !Text
   }
   deriving (Show, Eq)
 
 data ConfigSources cmd
   = ConfigSources {
-    envVar   :: Maybe Text
-  , cliEntry :: Maybe (CliEntrySpec cmd)
+    envVar   :: !(Maybe Text)
+  , cliEntry :: !(Maybe (CliEntrySpec cmd))
   }
   deriving (Show, Eq)
 
 data ConfigValue cmd
   = ConfigValue {
-    defaultValue  :: Maybe JSON.Value
-  , configSources :: ConfigSources cmd
+    defaultValue  :: !(Maybe JSON.Value)
+  , configSources :: !(ConfigSources cmd)
   }
   | SubConfig {
-    subConfig :: HashMap Text (ConfigValue cmd)
+    subConfig :: !(HashMap Text (ConfigValue cmd))
   }
   deriving (Show, Eq)
 
 data CliProgramSpec
   = CliProgramSpec {
-    cliProgramDesc   :: Text
-  , cliProgramHeader :: Text
-  , cliCommands      :: Maybe (HashMap Text CliCmdSpec)
+    cliProgramDesc   :: !Text
+  , cliProgramHeader :: !Text
+  , cliCommands      :: !(Maybe (HashMap Text CliCmdSpec))
   }
   deriving (Show, Eq)
 
 data ConfigSpec cmd
   = ConfigSpec {
-    specConfigFilepaths :: [Text]
-  , specCliProgramSpec  :: Maybe CliProgramSpec
-  , specConfigValues    :: HashMap Text (ConfigValue cmd)
+    specConfigFilepaths :: ![Text]
+  , specCliProgramSpec  :: !(Maybe CliProgramSpec)
+  , specConfigValues    :: !(HashMap Text (ConfigValue cmd))
   }
   deriving (Show, Eq)
 
@@ -125,63 +125,47 @@ instance JSON.FromJSON CliProgramSpec where
       _ ->
         JSON.typeMismatch "CliProgramSpec" json
 
-cliArgTypeParser
-  :: JSON.Object
-    -> JSON.Parser CliArgValueType
+cliArgTypeParser :: JSON.Object -> JSON.Parser CliArgValueType
 cliArgTypeParser object = do
   value <- object .: "type"
   case value of
     JSON.String typeName
-      | typeName == "string" ->
-        return StringArg
-      | typeName == "number" ->
-        return NumberArg
-      | otherwise ->
-        JSON.typeMismatch "CliArgValueType (string, number)" value
-    _ ->
-      JSON.typeMismatch "CliArgValueType (string, number)" value
+      | typeName == "string" -> return StringArg
+      | typeName == "number" -> return NumberArg
+      | otherwise -> JSON.typeMismatch "CliArgValueType (string, number)" value
+    _ -> JSON.typeMismatch "CliArgValueType (string, number)" value
 
-cliArgParser
-  :: JSON.Object
-    -> JSON.Parser CliEntryMetadata
+cliArgParser :: JSON.Object -> JSON.Parser CliEntryMetadata
 cliArgParser object =
   Arg
     <$> (object .:? "metavar")
     <*> (fromMaybe True <$> (object .:? "required"))
     <*> cliArgTypeParser object
 
-cliOptTypeParser
-  :: JSON.Object
-    -> JSON.Parser CliOptValueType
+cliOptTypeParser :: JSON.Object -> JSON.Parser CliOptValueType
 cliOptTypeParser object = do
   mvalue <- object .:? "type"
   case mvalue of
     Just value@(JSON.String typeName)
-      | typeName == "string" ->
-        return StringOpt
-      | typeName == "number" ->
-        return NumberOpt
-      | typeName == "switch" ->
-        return SwitchOpt
-      | otherwise ->
-        JSON.typeMismatch "CliOptValueType (string, number, switch)" value
+      | typeName == "string" -> return StringOpt
+      | typeName == "number" -> return NumberOpt
+      | typeName == "switch" -> return SwitchOpt
+      | otherwise -> JSON.typeMismatch
+        "CliOptValueType (string, number, switch)"
+        value
 
-    Just value ->
-      JSON.typeMismatch "CliOptValueType" value
+    Just value -> JSON.typeMismatch "CliOptValueType" value
 
-    Nothing ->
-      fail "CLI Option type is required"
+    Nothing    -> fail "CLI Option type is required"
 
-cliOptParser
-  :: JSON.Object
-    -> JSON.Parser CliEntryMetadata
+cliOptParser :: JSON.Object -> JSON.Parser CliEntryMetadata
 cliOptParser object = do
   long  <- object .:? "long"
   short <- object .:? "short"
-  if isNothing long && isNothing short then
-    fail "'option' field input requires either 'long' or 'short' settings"
-  else
-    Opt
+  if isNothing long && isNothing short
+    then fail "'option' field input requires either 'long' or 'short' settings"
+    else
+      Opt
       <$> pure long
       <*> pure short
       <*> (object .:? "metavar")

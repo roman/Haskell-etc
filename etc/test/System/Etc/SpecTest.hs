@@ -5,13 +5,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.SpecTest (tests) where
 
-import RIO
+import           RIO
 import qualified RIO.HashMap as HashMap
 
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
-import qualified Data.Aeson          as JSON
+import qualified Data.Aeson as JSON
 
 import System.Etc.Internal.Spec.Types
 import System.Etc.Spec

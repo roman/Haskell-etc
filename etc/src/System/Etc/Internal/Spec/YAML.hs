@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
+
 module System.Etc.Internal.Spec.YAML where
 
-import RIO
+import           RIO
 import qualified RIO.Text as Text
 
 import qualified Data.Aeson         as JSON
@@ -13,16 +13,11 @@ import qualified Data.Yaml          as YAML
 import System.Etc.Internal.Spec.Types
 
 parseConfigSpec
-  :: (MonadThrow m, JSON.FromJSON cmd)
-    => Text
-    -> m (ConfigSpec cmd)
-parseConfigSpec input =
-  case YAML.decodeEither (Text.encodeUtf8 input) of
-    Left err ->
-      throwM $ InvalidConfiguration (Text.pack err)
+  :: (MonadThrow m, JSON.FromJSON cmd) => Text -> m (ConfigSpec cmd)
+parseConfigSpec input = case YAML.decodeEither (Text.encodeUtf8 input) of
+  Left  err    -> throwM $ InvalidConfiguration (Text.pack err)
 
-    Right result ->
-      return result
+  Right result -> return result
 
 readConfigSpec :: JSON.FromJSON cmd => Text -> IO (ConfigSpec cmd)
 readConfigSpec filepath = do
