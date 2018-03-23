@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.Resolver.FileTest (tests) where
 
-import RIO
+import           RIO
 import qualified RIO.Set    as Set
 import qualified RIO.Text   as Text
 import qualified RIO.Vector as Vector

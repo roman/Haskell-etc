@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
+
 module System.Etc.Internal.Resolver.Cli
   ( PlainConfigSpec
   -- , resolveCommandCli

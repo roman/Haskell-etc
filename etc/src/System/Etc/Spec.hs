@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
-{-# LANGUAGE OverloadedStrings   #-}
+
 {-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.Spec (
     module Types
@@ -8,9 +8,9 @@ module System.Etc.Spec (
   , readConfigSpec
   ) where
 
-import RIO
-import qualified RIO.Text    as Text
 import qualified Data.Text.IO as Text (readFile)
+import           RIO
+import qualified RIO.Text     as Text
 
 import System.Etc.Internal.Spec.Types as Types
     (ConfigSpec, ConfigValue, ConfigurationError (..))
