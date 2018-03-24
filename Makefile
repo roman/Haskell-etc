@@ -5,7 +5,7 @@ STACK:=stack $(STACK_ARGS) --install-ghc --local-bin-path ./out/bin
 HASKELL_FILES := $(shell find . -name "*.hs" -not -path '*.stack-work*' | grep 'src\|test')
 
 PROJECT_BIN_DIR:=./out/bin
-PROJECT_BIN=$(PROJECT_BIN_DIR)/teardown-example
+PROJECT_BIN=$(PROJECT_BIN_DIR)/etc-plain-example
 
 STACK:=stack $(STACK_ARGS) --local-bin-path ./out/bin
 
