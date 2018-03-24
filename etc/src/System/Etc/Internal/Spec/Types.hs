@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Spec.Types where
@@ -18,7 +19,7 @@ data ConfigurationError
   = InvalidConfiguration !Text
   | InvalidConfigKeyPath ![Text]
   | ConfigurationFileNotFound !Text
-  deriving (Show)
+  deriving (Generic, Show)
 
 instance Exception ConfigurationError
 
@@ -28,12 +29,12 @@ data CliOptValueType
   = StringOpt
   | NumberOpt
   | SwitchOpt
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data CliArgValueType
   = StringArg
   | NumberArg
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data CliEntryMetadata
   = Opt {
@@ -43,13 +44,15 @@ data CliEntryMetadata
   , optHelp      :: !(Maybe Text)
   , optRequired  :: !Bool
   , optValueType :: !CliOptValueType
+  , optSensitive :: !Bool
   }
   | Arg {
     argMetavar   :: !(Maybe Text)
   , optRequired  :: !Bool
   , argValueType :: !CliArgValueType
+  , argSensitive :: !Bool
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data CliEntrySpec cmd
   = CmdEntry {
@@ -59,31 +62,32 @@ data CliEntrySpec cmd
   | PlainEntry {
     cliEntryMetadata :: !CliEntryMetadata
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data CliCmdSpec
   = CliCmdSpec {
     cliCmdDesc   :: !Text
   , cliCmdHeader :: !Text
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data ConfigSources cmd
   = ConfigSources {
     envVar   :: !(Maybe Text)
   , cliEntry :: !(Maybe (CliEntrySpec cmd))
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data ConfigValue cmd
   = ConfigValue {
-    defaultValue  :: !(Maybe JSON.Value)
-  , configSources :: !(ConfigSources cmd)
+    defaultValue   :: !(Maybe JSON.Value)
+  , isSensitiveValue :: !Bool
+  , configSources  :: !(ConfigSources cmd)
   }
   | SubConfig {
     subConfig :: !(HashMap Text (ConfigValue cmd))
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data CliProgramSpec
   = CliProgramSpec {
@@ -91,7 +95,7 @@ data CliProgramSpec
   , cliProgramHeader :: !Text
   , cliCommands      :: !(Maybe (HashMap Text CliCmdSpec))
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data ConfigSpec cmd
   = ConfigSpec {
@@ -99,7 +103,7 @@ data ConfigSpec cmd
   , specCliProgramSpec  :: !(Maybe CliProgramSpec)
   , specConfigValues    :: !(HashMap Text (ConfigValue cmd))
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 --------------------------------------------------------------------------------
 -- JSON Parsers
@@ -234,12 +238,18 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
               return (SubConfig result)
 
           -- etc spec value object
-          Just (JSON.Object spec) ->
-            if HashMap.size object == 1 then
+          Just (JSON.Object fieldSpec) ->
+            let
+              parseSensitive = do
+                result <- fieldSpec .:? "sensitive"
+                return $ fromMaybe False result
+
+            in if HashMap.size object == 1 then
               ConfigValue
-                <$> spec .:? "default"
-                <*> (ConfigSources <$> (spec .:? "env")
-                                   <*> (spec .:? "cli"))
+                <$> (fieldSpec .: "default")
+                <*> parseSensitive
+                <*> (ConfigSources <$> (fieldSpec .:? "env")
+                                   <*> (fieldSpec .:? "cli"))
             else
               fail "etc/spec object can only contain one key"
 
@@ -249,7 +259,7 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
 
       _ ->
         return $
-          ConfigValue (Just json) (ConfigSources Nothing Nothing)
+          ConfigValue (Just json) False (ConfigSources Nothing Nothing)
 
 instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec cmd) where
   parseJSON json  =
@@ -261,3 +271,11 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec cmd) where
         <*> (fromMaybe HashMap.empty <$> (object .:? "etc/entries"))
       _ ->
         JSON.typeMismatch "ConfigSpec" json
+
+lookupSubConfigValue :: Text -> ConfigValue cmd -> Maybe (ConfigValue cmd)
+lookupSubConfigValue key specConfigValue =
+  case specConfigValue of
+    SubConfig hsh ->
+      HashMap.lookup key hsh
+    _ ->
+      Nothing

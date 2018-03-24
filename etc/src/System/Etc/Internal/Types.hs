@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE RankNTypes                 #-}
@@ -16,29 +17,39 @@ import qualified Data.Semigroup as Semigroup
 import qualified Data.Aeson       as JSON
 import qualified Data.Aeson.Types as JSON (Parser)
 
+import qualified System.Etc.Internal.Spec.Types as Spec
 import System.Etc.Internal.Spec.Types (ConfigurationError (..))
 
 --------------------
 -- Configuration Types
 
+data JsonValue
+  = Plain !JSON.Value
+  | Sensitive !JSON.Value
+  deriving (Generic, Eq)
+
+instance Show JsonValue where
+  show (Plain jsonVal) = show jsonVal
+  show (Sensitive _) = "<<redacted>>"
+
 data ConfigSource
   = File {
-      configIndex :: Int
-    , filepath    :: Text
-    , value       :: JSON.Value
+      configIndex :: !Int
+    , filepath    :: !Text
+    , value       :: !JsonValue
     }
   | Env {
-      envVar :: Text
-    , value  :: JSON.Value
+      envVar :: !Text
+    , value  :: !JsonValue
     }
   | Cli {
-      value :: JSON.Value
+      value :: !JsonValue
     }
   | Default {
-      value :: JSON.Value
+      value :: !JsonValue
     }
   | None
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 instance Ord ConfigSource where
   compare a b =
@@ -75,12 +86,12 @@ instance Ord ConfigSource where
 
 data ConfigValue
   = ConfigValue {
-      configSource :: Set ConfigSource
+      configSource :: !(Set ConfigSource)
     }
   | SubConfig {
-      configMap :: HashMap Text ConfigValue
+      configMap :: !(HashMap Text ConfigValue)
     }
-  deriving (Eq, Show)
+  deriving (Generic, Eq, Show)
 
 deepMerge :: ConfigValue -> ConfigValue -> ConfigValue
 deepMerge left right = case (left, right) of
@@ -104,7 +115,7 @@ instance Monoid ConfigValue where
 
 newtype Config
   = Config { fromConfig :: ConfigValue }
-  deriving (Eq, Show, Semigroup, Monoid)
+  deriving (Generic, Eq, Show, Semigroup, Monoid)
 
 isEmptySubConfig :: ConfigValue -> Bool
 isEmptySubConfig val = case val of
@@ -173,3 +184,14 @@ class IConfig config where
     => [Text]
     -> config
     -> m ConfigSource
+
+toJsonValue :: Maybe (Spec.ConfigValue cmd) -> JSON.Value -> JsonValue
+toJsonValue mspec jsonVal =
+  case mspec of
+    Nothing ->
+      Plain jsonVal
+    Just (Spec.SubConfig {}) ->
+      Plain jsonVal
+    Just spec@(Spec.ConfigValue {})
+      | Spec.isSensitiveValue spec -> Sensitive jsonVal
+      | otherwise -> Plain jsonVal

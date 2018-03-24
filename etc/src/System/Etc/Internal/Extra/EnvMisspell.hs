@@ -33,8 +33,8 @@ data EnvMisspell
 lookupSpecEnvKeys :: ConfigSpec a -> Vector Text
 lookupSpecEnvKeys spec =
   let foldEnvSettings val acc = case val of
-        ConfigValue _ sources -> maybe acc (`Vector.cons` acc) (envVar sources)
-        SubConfig hsh         -> HashMap.foldr foldEnvSettings acc hsh
+        ConfigValue _ _ sources -> maybe acc (`Vector.cons` acc) (envVar sources)
+        SubConfig hsh           -> HashMap.foldr foldEnvSettings acc hsh
   in  foldEnvSettings (SubConfig $ specConfigValues spec) Vector.empty
 
 {-|

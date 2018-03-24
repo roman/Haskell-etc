@@ -89,7 +89,7 @@ specToConfigValueCli
   -> m (Opt.Parser ConfigValue)
 specToConfigValueCli acc (specEntryKey, specConfigValue) =
   case specConfigValue of
-    Spec.ConfigValue _ sources -> configValueSpecToCli specEntryKey sources acc
+    Spec.ConfigValue _ _ sources -> configValueSpecToCli specEntryKey sources acc
 
     Spec.SubConfig subConfigSpec ->
       subConfigSpecToCli specEntryKey subConfigSpec acc

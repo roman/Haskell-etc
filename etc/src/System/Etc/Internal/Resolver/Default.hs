@@ -6,13 +6,16 @@ import           RIO
 import qualified RIO.HashMap as HashMap
 import qualified RIO.Set     as Set
 
-import qualified Data.Aeson as JSON
-
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types
 
-toDefaultConfigValue :: JSON.Value -> ConfigValue
-toDefaultConfigValue = ConfigValue . Set.singleton . Default
+toDefaultConfigValue :: Spec.ConfigValue cmd -> Maybe ConfigValue
+toDefaultConfigValue fieldSpec =
+  ConfigValue
+  . Set.singleton
+  . Default
+  . toJsonValue (Just fieldSpec)
+  <$> Spec.defaultValue fieldSpec
 
 buildDefaultResolver :: Spec.ConfigSpec cmd -> Maybe ConfigValue
 buildDefaultResolver spec =
@@ -20,8 +23,8 @@ buildDefaultResolver spec =
     resolverReducer
       :: Text -> Spec.ConfigValue cmd -> Maybe ConfigValue -> Maybe ConfigValue
     resolverReducer specKey specValue mConfig = case specValue of
-      Spec.ConfigValue def _ ->
-        let mConfigSource = toDefaultConfigValue <$> def
+      Spec.ConfigValue {} ->
+        let mConfigSource = toDefaultConfigValue specValue
 
             updateConfig =
               writeInSubConfig specKey <$> mConfigSource <*> mConfig

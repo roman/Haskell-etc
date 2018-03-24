@@ -1,11 +1,5 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-
-
-{-|
-
--}
-
 module System.Etc (
   -- * Config
   -- $config

@@ -33,24 +33,28 @@ data ConfigFile
 
 parseConfigValue
   :: Monad m
-  => Int
+  => Maybe (Spec.ConfigValue cmd)
+  -> Int
   -> Text
   -> JSON.Value
   -> m ConfigValue
-parseConfigValue fileIndex filepath json =
+parseConfigValue mSpec fileIndex filepath json =
   case json of
     JSON.Object object ->
       SubConfig
         <$> foldM
               (\acc (key, subconfigValue) -> do
-                  value1 <- parseConfigValue fileIndex filepath subconfigValue
+                  let mSubSpec = do
+                        valueSpec <- mSpec
+                        Spec.lookupSubConfigValue key valueSpec
+                  value1 <- parseConfigValue mSubSpec fileIndex filepath subconfigValue
                   return $ HashMap.insert key value1 acc)
               HashMap.empty
               (HashMap.toList object)
 
     _ ->
       return $
-        ConfigValue (Set.singleton $ File fileIndex filepath json)
+        ConfigValue (Set.singleton $ File fileIndex filepath $ toJsonValue Nothing json)
 
 
 eitherDecode :: ConfigFile -> Either [Char] JSON.Value
@@ -73,17 +77,18 @@ eitherDecode contents0 =
 
 parseConfig
   :: MonadThrow m
-  => Int
+  => Spec.ConfigValue cmd
+  -> Int
   -> Text
   -> ConfigFile
   -> m Config
-parseConfig fileIndex filepath contents =
+parseConfig spec fileIndex filepath contents =
   case eitherDecode contents of
     Left err ->
       throwM $ InvalidConfiguration (Text.pack err)
 
     Right json ->
-      case JSON.iparse (parseConfigValue fileIndex filepath) json of
+      case JSON.iparse (parseConfigValue (Just spec) fileIndex filepath) json of
         JSON.IError _ err ->
           throwM $ InvalidConfiguration (Text.pack err)
 
@@ -107,13 +112,13 @@ readConfigFile filepath =
     else
       return $ throwM $ ConfigurationFileNotFound filepath
 
-readConfigFromFiles :: [Text] -> IO (Config, [SomeException])
-readConfigFromFiles files =
+readConfigFromFiles :: Spec.ConfigValue cmd -> [Text] -> IO (Config, [SomeException])
+readConfigFromFiles spec files =
   files
   & zip [1..]
   & mapM (\(fileIndex, filepath) -> do
                  mContents <- readConfigFile filepath
-                 return (mContents >>= parseConfig fileIndex filepath))
+                 return (mContents >>= parseConfig spec fileIndex filepath))
   & (foldl' (\(result, errs) eCurrent ->
                case eCurrent of
                  Left err ->
@@ -135,5 +140,5 @@ resolveFiles
   :: Spec.ConfigSpec cmd -- ^ Config Spec
   -> IO (Config, Vector SomeException) -- ^ Configuration Map with all values from files filled in and a list of warnings
 resolveFiles spec = do
-  (config, exceptions) <- readConfigFromFiles (Spec.specConfigFilepaths spec)
+  (config, exceptions) <- readConfigFromFiles (Spec.SubConfig $ Spec.specConfigValues spec) (Spec.specConfigFilepaths spec)
   return (config, Vector.fromList exceptions)

@@ -15,12 +15,14 @@ import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types
 
 resolveEnvVarSource
-  :: (Text -> Maybe Text) -> Spec.ConfigSources cmd -> Maybe ConfigSource
-resolveEnvVarSource lookupEnv specSources =
-  let toEnvSource varname envValue = envValue & JSON.String & Env varname
-  in  do
-        varname <- Spec.envVar specSources
-        toEnvSource varname <$> lookupEnv varname
+  :: (Text -> Maybe Text) -> Spec.ConfigValue cmd -> Maybe ConfigSource
+resolveEnvVarSource lookupEnv spec =
+  let
+    toEnvSource varname envValue =
+        Env varname $ toJsonValue (Just spec) (JSON.String envValue)
+  in do
+    varname <- Spec.envVar (Spec.configSources spec)
+    toEnvSource varname <$> lookupEnv varname
 
 buildEnvVarResolver
   :: (Text -> Maybe Text) -> Spec.ConfigSpec cmd -> Maybe ConfigValue
@@ -29,9 +31,9 @@ buildEnvVarResolver lookupEnv spec =
     resolverReducer
       :: Text -> Spec.ConfigValue cmd -> Maybe ConfigValue -> Maybe ConfigValue
     resolverReducer specKey specValue mConfig = case specValue of
-      Spec.ConfigValue _ sources ->
+      Spec.ConfigValue {} ->
         let updateConfig = do
-              envSource <- resolveEnvVarSource lookupEnv sources
+              envSource <- resolveEnvVarSource lookupEnv specValue
               writeInSubConfig specKey (ConfigValue $ Set.singleton envSource)
                 <$> mConfig
         in  updateConfig <|> mConfig

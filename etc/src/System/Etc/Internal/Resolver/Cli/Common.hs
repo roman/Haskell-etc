@@ -119,7 +119,7 @@ parseCommandJsonValue commandValue =
 
     JSON.ISuccess result  -> return result
 
-jsonToConfigValue :: Maybe JSON.Value -> ConfigValue
+jsonToConfigValue :: Maybe JsonValue -> ConfigValue
 jsonToConfigValue specEntryDefVal =
   ConfigValue $ Set.fromList $ maybe [] ((: []) . Cli) specEntryDefVal
 
