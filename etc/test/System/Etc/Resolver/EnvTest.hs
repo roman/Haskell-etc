@@ -30,12 +30,9 @@ tests = testGroup
 
     case getAllConfigSources ["greeting"] config of
       Nothing -> assertFailure
-        (  "expecting to get entries for greeting (check fixtures)\n"
-        <> show config
-        )
-      Just aSet -> assertBool
-        ("expecting to see entry from env; got " <> show aSet)
-        (Set.member (Env "GREETING" "hello env") aSet)
+        ("expecting to get entries for greeting (check fixtures)\n" <> show config)
+      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
+                              (Set.member (Env "GREETING" "hello env") aSet)
   , testCase "has precedence over default and file values" $ do
     jsonFilepath <- getDataFileName "test/fixtures/config.json"
     let input = mconcat
@@ -54,19 +51,15 @@ tests = testGroup
 
     case getConfigValue ["greeting"] config of
       Nothing -> assertFailure
-        (  "expecting to get entries for greeting (check fixtures)\n"
-        <> show config
-        )
-      Just result -> assertEqual
-        ("expecting to see entry from env " <> show result)
-        ("hello env" :: Text)
-        result
+        ("expecting to get entries for greeting (check fixtures)\n" <> show config)
+      Just result -> assertEqual ("expecting to see entry from env " <> show result)
+                                 ("hello env" :: Text)
+                                 result
   , testCase "does not add entries to config if env var is not present" $ do
-    let
-      input = mconcat
-        [ "{\"etc/entries\": {"
-        , " \"nested\": {\"greeting\": { \"etc/spec\": { \"env\": \"GREETING\" }}}}}"
-        ]
+    let input = mconcat
+          [ "{\"etc/entries\": {"
+          , " \"nested\": {\"greeting\": { \"etc/spec\": { \"env\": \"GREETING\" }}}}}"
+          ]
     (spec :: ConfigSpec ()) <- parseConfigSpec input
 
     let config = resolveEnvPure spec []

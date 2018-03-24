@@ -9,9 +9,8 @@ import "hint" HLint.Builtin.All
 ignore "Use String"
 -- Because we need underscored names for test discovery
 -- this hint isn't much use any more.
-ignore "Use camelCase" = System.Etc.SpecTest
-  System.Etc.Resolver.Cli.PlainTest
-  System.Etc.Resolver.Cli.CommandTest
+ignore "Use camelCase" =
+  System.Etc.SpecTest System.Etc.Resolver.Cli.PlainTest System.Etc.Resolver.Cli.CommandTest
 -- Reduce code duplication on tests is false economy
 ignore "Reduce duplication" =
   System.Etc.Resolver.DefaultTest System.Etc.Resolver.Cli.CommandTest

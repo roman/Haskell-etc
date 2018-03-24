@@ -132,7 +132,7 @@ cliArgTypeParser object = do
     JSON.String typeName
       | typeName == "string" -> return StringArg
       | typeName == "number" -> return NumberArg
-      | otherwise -> JSON.typeMismatch "CliArgValueType (string, number)" value
+      | otherwise            -> JSON.typeMismatch "CliArgValueType (string, number)" value
     _ -> JSON.typeMismatch "CliArgValueType (string, number)" value
 
 cliArgParser :: JSON.Object -> JSON.Parser CliEntryMetadata
@@ -150,9 +150,7 @@ cliOptTypeParser object = do
       | typeName == "string" -> return StringOpt
       | typeName == "number" -> return NumberOpt
       | typeName == "switch" -> return SwitchOpt
-      | otherwise -> JSON.typeMismatch
-        "CliOptValueType (string, number, switch)"
-        value
+      | otherwise -> JSON.typeMismatch "CliOptValueType (string, number, switch)" value
 
     Just value -> JSON.typeMismatch "CliOptValueType" value
 

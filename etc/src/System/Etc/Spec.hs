@@ -38,8 +38,8 @@ parseConfigSpec
 #else
 parseConfigSpec
   :: (Alternative m, MonadThrow m)
-    => Text               -- ^ Text to be parsed
-    -> m (ConfigSpec ()) -- ^ returns ConfigSpec
+  => Text               -- ^ Text to be parsed
+  -> m (ConfigSpec ()) -- ^ returns ConfigSpec
 #endif
 
 #ifdef WITH_YAML
@@ -47,8 +47,7 @@ parseConfigSpec input =
    JSON.parseConfigSpec input
    <|> YAML.parseConfigSpec input
 #else
-parseConfigSpec =
-  JSON.parseConfigSpec
+parseConfigSpec = JSON.parseConfigSpec
 #endif
 
 {-|

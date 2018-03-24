@@ -14,40 +14,36 @@ import qualified Data.Aeson    as JSON
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types
 
-resolveEnvVarSource
-  :: (Text -> Maybe Text) -> Spec.ConfigSources cmd -> Maybe ConfigSource
+resolveEnvVarSource :: (Text -> Maybe Text) -> Spec.ConfigSources cmd -> Maybe ConfigSource
 resolveEnvVarSource lookupEnv specSources =
   let toEnvSource varname envValue = envValue & JSON.String & Env varname
   in  do
         varname <- Spec.envVar specSources
         toEnvSource varname <$> lookupEnv varname
 
-buildEnvVarResolver
-  :: (Text -> Maybe Text) -> Spec.ConfigSpec cmd -> Maybe ConfigValue
+buildEnvVarResolver :: (Text -> Maybe Text) -> Spec.ConfigSpec cmd -> Maybe ConfigValue
 buildEnvVarResolver lookupEnv spec =
-  let
-    resolverReducer
-      :: Text -> Spec.ConfigValue cmd -> Maybe ConfigValue -> Maybe ConfigValue
-    resolverReducer specKey specValue mConfig = case specValue of
-      Spec.ConfigValue _ sources ->
-        let updateConfig = do
-              envSource <- resolveEnvVarSource lookupEnv sources
-              writeInSubConfig specKey (ConfigValue $ Set.singleton envSource)
-                <$> mConfig
-        in  updateConfig <|> mConfig
+  let resolverReducer
+        :: Text -> Spec.ConfigValue cmd -> Maybe ConfigValue -> Maybe ConfigValue
+      resolverReducer specKey specValue mConfig = case specValue of
+        Spec.ConfigValue _ sources ->
+          let updateConfig = do
+                envSource <- resolveEnvVarSource lookupEnv sources
+                writeInSubConfig specKey (ConfigValue $ Set.singleton envSource)
+                  <$> mConfig
+          in  updateConfig <|> mConfig
 
-      Spec.SubConfig specConfigMap ->
-        let mSubConfig =
-              specConfigMap
-                & HashMap.foldrWithKey resolverReducer (Just emptySubConfig)
-                & filterMaybe isEmptySubConfig
+        Spec.SubConfig specConfigMap ->
+          let mSubConfig =
+                specConfigMap
+                  & HashMap.foldrWithKey resolverReducer (Just emptySubConfig)
+                  & filterMaybe isEmptySubConfig
 
-            updateConfig = writeInSubConfig specKey <$> mSubConfig <*> mConfig
-        in  updateConfig <|> mConfig
-  in
-    Spec.specConfigValues spec
-    & HashMap.foldrWithKey resolverReducer (Just emptySubConfig)
-    & filterMaybe isEmptySubConfig
+              updateConfig = writeInSubConfig specKey <$> mSubConfig <*> mConfig
+          in  updateConfig <|> mConfig
+  in  Spec.specConfigValues spec
+      & HashMap.foldrWithKey resolverReducer (Just emptySubConfig)
+      & filterMaybe isEmptySubConfig
 {-|
 
 Gathers all OS Environment Variable values (@env@ entries) from the @etc/spec@

@@ -42,9 +42,7 @@ configValueSpecToCli acc0 specEntryKey sources =
             ConfigValue{} -> accSubConfig
 
             SubConfig subConfigMap ->
-              subConfigMap
-                & HashMap.alter (const $ Just configValue) specEntryKey
-                & SubConfig
+              subConfigMap & HashMap.alter (const $ Just configValue) specEntryKey & SubConfig
           )
           <$> configValueParser
           <*> accOptParser
@@ -84,9 +82,7 @@ subConfigSpecToCli specEntryKey subConfigSpec acc =
             ConfigValue{} -> accSubConfig
 
             SubConfig subConfigMap ->
-              subConfigMap
-                & HashMap.alter (const $ Just subConfig) specEntryKey
-                & SubConfig
+              subConfigMap & HashMap.alter (const $ Just subConfig) specEntryKey & SubConfig
           )
           <$> subConfigParser
           <*> accOptParser
@@ -97,8 +93,7 @@ subConfigSpecToCli specEntryKey subConfigSpec acc =
             commandText <- commandToKey command
             throwM $ UnknownCommandKey (Text.intercalate ", " commandText)
 
-          Just accOptParser ->
-            Just $ updateAccConfigOptParser subConfigParser accOptParser
+          Just accOptParser -> Just $ updateAccConfigOptParser subConfigParser accOptParser
         )
         command
   in  do
@@ -113,12 +108,10 @@ specToConfigValueCli
   => HashMap cmd (Opt.Parser ConfigValue)
   -> (Text, Spec.ConfigValue cmd)
   -> m (HashMap cmd (Opt.Parser ConfigValue))
-specToConfigValueCli acc (specEntryKey, specConfigValue) =
-  case specConfigValue of
-    Spec.ConfigValue _ sources -> configValueSpecToCli acc specEntryKey sources
+specToConfigValueCli acc (specEntryKey, specConfigValue) = case specConfigValue of
+  Spec.ConfigValue _ sources   -> configValueSpecToCli acc specEntryKey sources
 
-    Spec.SubConfig subConfigSpec ->
-      subConfigSpecToCli specEntryKey subConfigSpec acc
+  Spec.SubConfig subConfigSpec -> subConfigSpecToCli specEntryKey subConfigSpec acc
 
 configValueCliAccInit
   :: (MonadThrow m, JSON.FromJSON cmd, Eq cmd, Hashable cmd)
@@ -147,8 +140,7 @@ joinCommandParsers
   -> m (Opt.Parser (cmd, Config))
 joinCommandParsers parserPerCommand =
   let joinParser acc (command, subConfigParser) =
-        let parser =
-              fmap (\subConfig -> (command, Config subConfig)) subConfigParser
+        let parser = fmap (\subConfig -> (command, Config subConfig)) subConfigParser
         in  do
               commandTexts <- commandToKey command
 
@@ -160,9 +152,7 @@ joinCommandParsers parserPerCommand =
                     commandTexts
 
               [acc] & (++ commandParsers) & mconcat & return
-  in  do
-        Opt.subparser
-          <$> foldM joinParser Opt.idm (HashMap.toList parserPerCommand)
+  in  Opt.subparser <$> foldM joinParser Opt.idm (HashMap.toList parserPerCommand)
 
 specToConfigCli
   :: (MonadThrow m, JSON.FromJSON cmd, JSON.ToJSON cmd, Eq cmd, Hashable cmd)
@@ -170,9 +160,7 @@ specToConfigCli
   -> m (Opt.Parser (cmd, Config))
 specToConfigCli spec = do
   acc     <- configValueCliAccInit spec
-  parsers <- foldM specToConfigValueCli
-                   acc
-                   (HashMap.toList $ Spec.specConfigValues spec)
+  parsers <- foldM specToConfigValueCli acc (HashMap.toList $ Spec.specConfigValues spec)
 
   joinCommandParsers parsers
 
@@ -199,16 +187,8 @@ resolveCommandCliPure configSpec progName args = do
     programModFlags = case Spec.specCliProgramSpec configSpec of
       Just programSpec ->
         Opt.fullDesc
-          `mappend` ( programSpec
-                    & Spec.cliProgramDesc
-                    & Text.unpack
-                    & Opt.progDesc
-                    )
-          `mappend` ( programSpec
-                    & Spec.cliProgramHeader
-                    & Text.unpack
-                    & Opt.header
-                    )
+          `mappend` (programSpec & Spec.cliProgramDesc & Text.unpack & Opt.progDesc)
+          `mappend` (programSpec & Spec.cliProgramHeader & Text.unpack & Opt.header)
       Nothing -> mempty
 
     programParser = Opt.info (Opt.helper <*> configParser) programModFlags

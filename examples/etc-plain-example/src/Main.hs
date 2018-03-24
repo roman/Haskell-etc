@@ -27,9 +27,6 @@ main = do
   let configDefault = Etc.resolveDefault configSpec
 
       config =
-        configFiles
-          `mappend` configDefault
-          `mappend` configEnv
-          `mappend` configOptParser
+        configFiles `mappend` configDefault `mappend` configEnv `mappend` configOptParser
 
   Etc.printPrettyConfig config

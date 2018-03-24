@@ -11,13 +11,11 @@ import qualified Data.Aeson as JSON
 
 import System.Etc.Internal.Spec.Types
 
-parseConfigSpec
-  :: (MonadThrow m, JSON.FromJSON cmd) => Text -> m (ConfigSpec cmd)
-parseConfigSpec input =
-  case JSON.eitherDecode (LBS.fromStrict $ encodeUtf8 input) of
-    Left  err    -> throwM $ InvalidConfiguration (Text.pack err)
+parseConfigSpec :: (MonadThrow m, JSON.FromJSON cmd) => Text -> m (ConfigSpec cmd)
+parseConfigSpec input = case JSON.eitherDecode (LBS.fromStrict $ encodeUtf8 input) of
+  Left  err    -> throwM $ InvalidConfiguration (Text.pack err)
 
-    Right result -> return result
+  Right result -> return result
 
 readConfigSpec :: JSON.FromJSON cmd => Text -> IO (ConfigSpec cmd)
 readConfigSpec filepath = do

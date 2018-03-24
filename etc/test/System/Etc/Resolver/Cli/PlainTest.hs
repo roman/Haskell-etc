@@ -27,14 +27,12 @@ option_tests = testGroup
           , "}}}}}"
           ]
     (spec :: ConfigSpec ()) <- parseConfigSpec input
-    config <- resolvePlainCliPure spec "program" ["-g", "hello cli"]
+    config                  <- resolvePlainCliPure spec "program" ["-g", "hello cli"]
 
     case getAllConfigSources ["greeting"] config of
-      Nothing ->
-        assertFailure ("expecting to get entries for greeting\n" <> show config)
-      Just aSet -> assertBool
-        ("expecting to see entry from env; got " <> show aSet)
-        (Set.member (Cli "hello cli") aSet)
+      Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
+      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
+                              (Set.member (Cli "hello cli") aSet)
   , testCase "entry accepts long" $ do
     let input = mconcat
           [ "{ \"etc/entries\": {"
@@ -51,11 +49,9 @@ option_tests = testGroup
     config <- resolvePlainCliPure spec "program" ["--greeting", "hello cli"]
 
     case getAllConfigSources ["greeting"] config of
-      Nothing ->
-        assertFailure ("expecting to get entries for greeting\n" <> show config)
-      Just aSet -> assertBool
-        ("expecting to see entry from env; got " <> show aSet)
-        (Set.member (Cli "hello cli") aSet)
+      Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
+      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
+                              (Set.member (Cli "hello cli") aSet)
   , testCase "entry gets validated with a type" $ do
     let input = mconcat
           [ "{ \"etc/entries\": {"
@@ -74,8 +70,7 @@ option_tests = testGroup
       Left err -> case fromException err of
         Just CliEvalExited{} -> return ()
 
-        _                    -> assertFailure
-          ("Expecting type validation to work on cli; got " <> show err)
+        _ -> assertFailure ("Expecting type validation to work on cli; got " <> show err)
 
 
       Right _ -> assertFailure "Expecting type validation to work on cli"
@@ -96,8 +91,8 @@ option_tests = testGroup
     config                  <- resolvePlainCliPure spec "program" []
 
     case getConfigValue ["greeting"] config of
-      Just aSet -> assertFailure
-        ("expecting to have no entry for greeting; got\n" <> show aSet)
+      Just aSet ->
+        assertFailure ("expecting to have no entry for greeting; got\n" <> show aSet)
 
       (_ :: Maybe ()) -> return ()
   , testCase "entry with required fails when option not given" $ do
@@ -118,11 +113,10 @@ option_tests = testGroup
       Left err -> case fromException err of
         Just CliEvalExited{} -> return ()
 
-        _                    -> assertFailure
-          ("Expecting required validation to work on cli; got " <> show err)
+        _ ->
+          assertFailure ("Expecting required validation to work on cli; got " <> show err)
 
-      Right _ ->
-        assertFailure "Expecting required option to fail cli resolving"
+      Right _ -> assertFailure "Expecting required option to fail cli resolving"
   ]
 
 argument_tests :: TestTree
@@ -145,8 +139,7 @@ argument_tests = testGroup
       Left err -> case fromException err of
         Just CliEvalExited{} -> return ()
 
-        _                    -> assertFailure
-          ("Expecting type validation to work on cli; got " <> show err)
+        _ -> assertFailure ("Expecting type validation to work on cli; got " <> show err)
 
       Right _ -> assertFailure "Expecting type validation to work on cli"
   , testCase "entry with required false does not barf" $ do
@@ -167,8 +160,8 @@ argument_tests = testGroup
     case getConfigValue ["greeting"] config of
       (Nothing :: Maybe ()) -> return ()
 
-      Just aSet             -> assertFailure
-        ("expecting to have no entry for greeting; got\n" <> show aSet)
+      Just aSet ->
+        assertFailure ("expecting to have no entry for greeting; got\n" <> show aSet)
   , testCase "entry with required fails when argument not given" $ do
     let input = mconcat
           [ "{ \"etc/entries\": {"
@@ -186,11 +179,10 @@ argument_tests = testGroup
       Left err -> case fromException err of
         Just CliEvalExited{} -> return ()
 
-        _                    -> assertFailure
-          ("Expecting required validation to work on cli; got " <> show err)
+        _ ->
+          assertFailure ("Expecting required validation to work on cli; got " <> show err)
 
-      Right _ ->
-        assertFailure "Expecting required argument to fail cli resolving"
+      Right _ -> assertFailure "Expecting required argument to fail cli resolving"
   ]
 
 tests :: TestTree

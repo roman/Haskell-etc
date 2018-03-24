@@ -65,11 +65,7 @@ main = do
 
   let configDefault = Etc.resolveDefault configSpec
 
-      config =
-        configDefault
-          `mappend` configFiles
-          `mappend` configEnv
-          `mappend` configCli
+      config = configDefault `mappend` configFiles `mappend` configEnv `mappend` configCli
 
   case cmd of
     PrintConfig -> Etc.printPrettyConfig config

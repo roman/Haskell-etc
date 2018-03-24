@@ -21,13 +21,12 @@ import System.Etc.Internal.Types
 
 renderJsonValue :: JSON.Value -> (Doc, Int)
 renderJsonValue value' = case value' of
-  JSON.Null       -> (text "null", 4)
+  JSON.Null              -> (text "null", 4)
 
-  JSON.String str -> (text $ Text.unpack str, Text.length str)
+  JSON.String str        -> (text $ Text.unpack str, Text.length str)
 
-  JSON.Number scientific ->
-    let number = show scientific in (text number, length number)
-  JSON.Bool bool' -> if bool' then (text "true", 5) else (text "false", 5)
+  JSON.Number scientific -> let number = show scientific in (text number, length number)
+  JSON.Bool   bool'      -> if bool' then (text "true", 5) else (text "false", 5)
   _ ->
     value'
       & tshow
@@ -44,8 +43,7 @@ renderConfig (Config configValue0) =
 
     renderSource :: ConfigSource -> ((Doc, Int), Doc)
     renderSource source' = case source' of
-      Default value' ->
-        (renderJsonValue value', brackets' (fill 10 (text "Default")))
+      Default value' -> (renderJsonValue value', brackets' (fill 10 (text "Default")))
 
       File _index filepath' value' ->
         ( renderJsonValue value'
@@ -64,18 +62,14 @@ renderConfig (Config configValue0) =
     renderSources :: [ConfigSource] -> Doc
     renderSources sources0 =
       let
-        sources@(((selValueDoc, _), selSourceDoc) : others) =
-          map renderSource sources0
+        sources@(((selValueDoc, _), selSourceDoc) : others) = map renderSource sources0
 
-        fillingWidth = sources & map (snd . fst) & maximum & max 10
+        fillingWidth  = sources & map (snd . fst) & maximum & max 10
 
-        selectedValue =
-          [green $ fill fillingWidth selValueDoc <+> selSourceDoc]
+        selectedValue = [green $ fill fillingWidth selValueDoc <+> selSourceDoc]
 
-        otherValues = map
-          (\((valueDoc, _), sourceDoc) ->
-            fill fillingWidth valueDoc <+> sourceDoc
-          )
+        otherValues   = map
+          (\((valueDoc, _), sourceDoc) -> fill fillingWidth valueDoc <+> sourceDoc)
           others
       in
         selectedValue & flip mappend otherValues & vcat & indent 2
@@ -89,20 +83,14 @@ renderConfig (Config configValue0) =
         HashMap.foldlWithKey' (configEntryRenderer keys) mempty subConfigm
 
       ConfigValue sources0 ->
-        let
-          configKey = keys & reverse & Text.intercalate "."
+        let configKey = keys & reverse & Text.intercalate "."
 
-          sources   = Set.toDescList sources0
-        in
-          if null sources
-            then []
-            else
-              [blue (text (Text.unpack configKey)) <$$> renderSources sources]
+            sources   = Set.toDescList sources0
+        in  if null sources
+              then []
+              else [blue (text (Text.unpack configKey)) <$$> renderSources sources]
   in
-    loop [] configValue0
-    & intersperse (linebreak <> linebreak)
-    & hcat
-    & (<> linebreak)
+    loop [] configValue0 & intersperse (linebreak <> linebreak) & hcat & (<> linebreak)
 
 printPrettyConfig :: Config -> IO ()
 printPrettyConfig = putDoc . renderConfig

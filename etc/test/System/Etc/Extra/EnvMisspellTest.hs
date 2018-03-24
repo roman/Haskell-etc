@@ -25,8 +25,7 @@ tests = testGroup
 
       let result = getEnvMisspellingsPure spec ["GREEING"]
 
-      assertBool "expecting to get a warning for typo"
-                 (not $ Vector.null result)
+      assertBool "expecting to get a warning for typo" (not $ Vector.null result)
 
       assertEqual "expecting to get typo for key GREETING"
                   (EnvMisspell "GREEING" "GREETING")
