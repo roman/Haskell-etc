@@ -44,7 +44,7 @@ parseConfigValue fileIndex filepath json = case json of
   _ -> return $ ConfigValue (Set.singleton $ File fileIndex filepath json)
 
 
-eitherDecode :: ConfigFile -> Either [Char] JSON.Value
+eitherDecode :: ConfigFile -> Either String JSON.Value
 #ifdef WITH_YAML
 eitherDecode contents0 =
   case contents0 of

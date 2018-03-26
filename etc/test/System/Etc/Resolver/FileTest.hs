@@ -44,9 +44,9 @@ tests = testGroup
     case getAllConfigSources ["greeting"] config of
       Nothing -> assertFailure
         ("expecting to get entries for greeting (check fixtures)\n" <> show config)
-      Just aSet ->
-        assertBool ("expecting to see entry from json config file " <> show aSet)
-                   (Set.member (File 1 (Text.pack jsonFilepath) "hello json") aSet)
+      Just aSet -> assertBool
+        ("expecting to see entry from json config file " <> show aSet)
+        (Set.member (File 1 (Text.pack jsonFilepath) "hello json") aSet)
 
 #ifdef WITH_YAML
        >> assertBool ("expecting to see entry from yaml config file " <> show aSet)
