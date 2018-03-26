@@ -11,6 +11,7 @@ module System.Etc (
   -- $config
     Config
   , IConfig
+  , Value(..)
   , getConfigValue
   , getConfigValueWith
   , getSelectedConfigSource
@@ -62,7 +63,7 @@ module System.Etc (
 
 import System.Etc.Internal.Resolver.Default (resolveDefault)
 import System.Etc.Internal.Types
-    (Config, ConfigSource (..), ConfigValue, IConfig (..))
+    (Config, ConfigSource (..), ConfigValue, IConfig (..), Value(..))
 import System.Etc.Spec
     (ConfigSpec, ConfigurationError (..), parseConfigSpec, readConfigSpec)
 

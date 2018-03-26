@@ -49,5 +49,5 @@ tests = testGroup
     case getAllConfigSources ["greeting"] config of
       Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
       Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (Default JSON.Null) aSet)
+                              (Set.member (Default $ Plain JSON.Null) aSet)
   ]

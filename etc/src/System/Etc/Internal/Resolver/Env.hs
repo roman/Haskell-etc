@@ -14,9 +14,9 @@ import qualified Data.Aeson    as JSON
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types
 
-resolveEnvVarSource :: (Text -> Maybe Text) -> Spec.ConfigSources cmd -> Maybe ConfigSource
-resolveEnvVarSource lookupEnv specSources =
-  let toEnvSource varname envValue = envValue & JSON.String & Env varname
+resolveEnvVarSource :: (Text -> Maybe Text) -> Bool -> Spec.ConfigSources cmd -> Maybe ConfigSource
+resolveEnvVarSource lookupEnv sensitive specSources =
+  let toEnvSource varname envValue = envValue & JSON.String & boolToValue sensitive & Env varname
   in  do
         varname <- Spec.envVar specSources
         toEnvSource varname <$> lookupEnv varname
@@ -26,9 +26,9 @@ buildEnvVarResolver lookupEnv spec =
   let resolverReducer
         :: Text -> Spec.ConfigValue cmd -> Maybe ConfigValue -> Maybe ConfigValue
       resolverReducer specKey specValue mConfig = case specValue of
-        Spec.ConfigValue _ sources ->
+        Spec.ConfigValue _ sensitive sources ->
           let updateConfig = do
-                envSource <- resolveEnvVarSource lookupEnv sources
+                envSource <- resolveEnvVarSource lookupEnv sensitive sources
                 writeInSubConfig specKey (ConfigValue $ Set.singleton envSource)
                   <$> mConfig
           in  updateConfig <|> mConfig

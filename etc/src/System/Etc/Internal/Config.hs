@@ -22,7 +22,7 @@ configValueToJsonObject configValue = case configValue of
   ConfigValue sources -> case Set.maxView sources of
     Nothing          -> error "this should not happen"
 
-    Just (source, _) -> value source
+    Just (source, _) -> fromValue $ value source
 
   SubConfig configm ->
     configm
@@ -42,7 +42,7 @@ _getConfigValueWith parser keys0 (Config configValue0) =
 
           Just (None  , _) -> throwM $ InvalidConfigKeyPath keys0
 
-          Just (source, _) -> case JSON.iparse parser (value source) of
+          Just (source, _) -> case JSON.iparse parser (fromValue $ value source) of
             JSON.IError path err ->
               JSON.formatError path err & Text.pack & InvalidConfiguration & throwM
 

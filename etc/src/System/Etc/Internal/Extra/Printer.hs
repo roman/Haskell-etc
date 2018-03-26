@@ -19,14 +19,15 @@ import Text.PrettyPrint.ANSI.Leijen
 
 import System.Etc.Internal.Types
 
-renderJsonValue :: JSON.Value -> (Doc, Int)
+renderJsonValue :: (Value JSON.Value) -> (Doc, Int)
 renderJsonValue value' = case value' of
-  JSON.Null              -> (text "null", 4)
+  Plain JSON.Null              -> (text "null", 4)
 
-  JSON.String str        -> (text $ Text.unpack str, Text.length str)
+  Plain (JSON.String str)        -> (text $ Text.unpack str, Text.length str)
 
-  JSON.Number scientific -> let number = show scientific in (text number, length number)
-  JSON.Bool   bool'      -> if bool' then (text "true", 5) else (text "false", 5)
+  Plain (JSON.Number scientific) -> let number = show scientific in (text number, length number)
+  Plain (JSON.Bool   bool')      -> if bool' then (text "true", 5) else (text "false", 5)
+  Sensitive _                    -> (text "<<sensitive>>", 13)
   _ ->
     value'
       & tshow
