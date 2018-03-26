@@ -22,20 +22,24 @@ type PlainConfigSpec =
 --------------------------------------------------------------------------------
 
 entrySpecToConfigValueCli
-  :: (MonadThrow m) => Spec.CliEntrySpec () -> m (Opt.Parser (Maybe JSON.Value))
-entrySpecToConfigValueCli entrySpec = case entrySpec of
+  :: (MonadThrow m)
+  => Bool
+  -> Spec.CliEntrySpec ()
+  -> m (Opt.Parser (Maybe (Value JSON.Value)))
+entrySpecToConfigValueCli sensitive entrySpec = case entrySpec of
   Spec.CmdEntry{}              -> throwM CommandKeyOnPlainCli
 
-  Spec.PlainEntry specSettings -> return (settingsToJsonCli specSettings)
+  Spec.PlainEntry specSettings -> return (settingsToJsonCli sensitive specSettings)
 
 
 configValueSpecToCli
   :: (MonadThrow m)
   => Text
+  -> Bool
   -> Spec.ConfigSources ()
   -> Opt.Parser ConfigValue
   -> m (Opt.Parser ConfigValue)
-configValueSpecToCli specEntryKey sources acc =
+configValueSpecToCli specEntryKey sensitive sources acc =
   let updateAccConfigOptParser configValueParser accOptParser =
         (\configValue accSubConfig -> case accSubConfig of
             ConfigValue{} -> accSubConfig
@@ -49,7 +53,7 @@ configValueSpecToCli specEntryKey sources acc =
         Nothing        -> return acc
 
         Just entrySpec -> do
-          jsonOptParser <- entrySpecToConfigValueCli entrySpec
+          jsonOptParser <- entrySpecToConfigValueCli sensitive entrySpec
 
           let configValueParser = jsonToConfigValue <$> jsonOptParser
 
@@ -84,7 +88,8 @@ specToConfigValueCli
   -> (Text, Spec.ConfigValue ())
   -> m (Opt.Parser ConfigValue)
 specToConfigValueCli acc (specEntryKey, specConfigValue) = case specConfigValue of
-  Spec.ConfigValue _ sources   -> configValueSpecToCli specEntryKey sources acc
+  Spec.ConfigValue _ sensitive sources ->
+    configValueSpecToCli specEntryKey sensitive sources acc
 
   Spec.SubConfig subConfigSpec -> subConfigSpecToCli specEntryKey subConfigSpec acc
 

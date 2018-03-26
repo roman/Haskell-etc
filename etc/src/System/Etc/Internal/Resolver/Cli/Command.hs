@@ -22,11 +22,12 @@ import qualified System.Etc.Internal.Spec.Types as Spec
 
 entrySpecToJsonCli
   :: (MonadThrow m)
-  => Spec.CliEntrySpec cmd
-  -> m (Vector cmd, Opt.Parser (Maybe JSON.Value))
-entrySpecToJsonCli entrySpec = case entrySpec of
+  => Bool
+  -> Spec.CliEntrySpec cmd
+  -> m (Vector cmd, Opt.Parser (Maybe (Value JSON.Value)))
+entrySpecToJsonCli sensitive entrySpec = case entrySpec of
   Spec.CmdEntry commandJsonValue specSettings ->
-    return (commandJsonValue, settingsToJsonCli specSettings)
+    return (commandJsonValue, settingsToJsonCli sensitive specSettings)
 
   Spec.PlainEntry{} -> throwM CommandKeyMissing
 
@@ -34,9 +35,10 @@ configValueSpecToCli
   :: (MonadThrow m, Eq cmd, Hashable cmd)
   => HashMap cmd (Opt.Parser ConfigValue)
   -> Text
+  -> Bool
   -> Spec.ConfigSources cmd
   -> m (HashMap cmd (Opt.Parser ConfigValue))
-configValueSpecToCli acc0 specEntryKey sources =
+configValueSpecToCli acc0 specEntryKey sensitive sources =
   let updateAccConfigOptParser configValueParser accOptParser =
         (\configValue accSubConfig -> case accSubConfig of
             ConfigValue{} -> accSubConfig
@@ -50,7 +52,7 @@ configValueSpecToCli acc0 specEntryKey sources =
         Nothing        -> return acc0
 
         Just entrySpec -> do
-          (commands, jsonOptParser) <- entrySpecToJsonCli entrySpec
+          (commands, jsonOptParser) <- entrySpecToJsonCli sensitive entrySpec
 
           let configValueParser = jsonToConfigValue <$> jsonOptParser
 
@@ -109,7 +111,8 @@ specToConfigValueCli
   -> (Text, Spec.ConfigValue cmd)
   -> m (HashMap cmd (Opt.Parser ConfigValue))
 specToConfigValueCli acc (specEntryKey, specConfigValue) = case specConfigValue of
-  Spec.ConfigValue _ sources   -> configValueSpecToCli acc specEntryKey sources
+  Spec.ConfigValue _ sensitive sources ->
+    configValueSpecToCli acc specEntryKey sensitive sources
 
   Spec.SubConfig subConfigSpec -> subConfigSpecToCli specEntryKey subConfigSpec acc
 

@@ -6,6 +6,9 @@
 * Replace `protolude` in favor of `rio`
 * Update `parseConfigSpec` to no longer attempt to parse JSON when `yaml` cabal
    flag is set
+* Add `sensitive` setting to `etc/spec` entries
+* Add `Value` type to deal with sensitive values
+* Update examples with `sensitive` values
 
 0.2.0.0
 ----

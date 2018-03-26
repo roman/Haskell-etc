@@ -21,6 +21,7 @@ etc/entries:
           required: false
     password:
       etc/spec:
+        sensitive: true
         env: "MY_APP_PASSWORD"
         cli:
           input: "option"

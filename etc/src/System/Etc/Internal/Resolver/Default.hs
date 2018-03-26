@@ -11,16 +11,17 @@ import qualified Data.Aeson as JSON
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types
 
-toDefaultConfigValue :: JSON.Value -> ConfigValue
-toDefaultConfigValue = ConfigValue . Set.singleton . Default
+toDefaultConfigValue :: Bool -> JSON.Value -> ConfigValue
+toDefaultConfigValue sensitive =
+  ConfigValue . Set.singleton . Default . boolToValue sensitive
 
 buildDefaultResolver :: Spec.ConfigSpec cmd -> Maybe ConfigValue
 buildDefaultResolver spec =
   let resolverReducer
         :: Text -> Spec.ConfigValue cmd -> Maybe ConfigValue -> Maybe ConfigValue
       resolverReducer specKey specValue mConfig = case specValue of
-        Spec.ConfigValue def _ ->
-          let mConfigSource = toDefaultConfigValue <$> def
+        Spec.ConfigValue def sensitive _ ->
+          let mConfigSource = toDefaultConfigValue sensitive <$> def
 
               updateConfig  = writeInSubConfig specKey <$> mConfigSource <*> mConfig
           in  updateConfig <|> mConfig

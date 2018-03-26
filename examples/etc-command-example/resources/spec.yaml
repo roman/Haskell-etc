@@ -30,6 +30,7 @@ etc/entries:
           - run
     password:
       etc/spec:
+        sensitive: true
         env: "MY_APP_PASSWORD"
         cli:
           input: "option"

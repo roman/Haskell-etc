@@ -80,27 +80,31 @@ commandToKey cmd = case JSON.toJSON cmd of
       & InvalidCliCommandKey
       & throwM
 
-settingsToJsonCli :: Spec.CliEntryMetadata -> Opt.Parser (Maybe JSON.Value)
-settingsToJsonCli specSettings =
+settingsToJsonCli :: Bool -> Spec.CliEntryMetadata -> Opt.Parser (Maybe (Value JSON.Value))
+settingsToJsonCli sensitive specSettings =
   let requiredCombinator =
         if Spec.optRequired specSettings then (Just <$>) else Opt.optional
   in
     requiredCombinator $ case specSettings of
       Spec.Opt{} -> case Spec.optValueType specSettings of
-        Spec.StringOpt ->
-          (JSON.String . Text.pack) <$> Opt.strOption (specToCliVarFieldMod specSettings)
+        Spec.StringOpt -> (boolToValue sensitive . JSON.String . Text.pack)
+          <$> Opt.strOption (specToCliVarFieldMod specSettings)
 
-        Spec.NumberOpt -> (JSON.Number . fromInteger)
-          <$> Opt.option Opt.auto (specToCliVarFieldMod specSettings)
+        Spec.NumberOpt ->
+          (boolToValue sensitive . JSON.Number . fromInteger)
+            <$> Opt.option Opt.auto (specToCliVarFieldMod specSettings)
 
-        Spec.SwitchOpt -> JSON.Bool <$> Opt.switch (specToCliSwitchFieldMod specSettings)
+        Spec.SwitchOpt -> (boolToValue sensitive . JSON.Bool)
+          <$> Opt.switch (specToCliSwitchFieldMod specSettings)
 
       Spec.Arg{} -> case Spec.argValueType specSettings of
-        Spec.StringArg -> (JSON.String . Text.pack) <$> Opt.strArgument
-          (specSettings & Spec.argMetavar & maybe Opt.idm (Opt.metavar . Text.unpack))
-        Spec.NumberArg -> (JSON.Number . fromInteger) <$> Opt.argument
-          Opt.auto
-          (specSettings & Spec.argMetavar & maybe Opt.idm (Opt.metavar . Text.unpack))
+        Spec.StringArg ->
+          (boolToValue sensitive . JSON.String . Text.pack) <$> Opt.strArgument
+            (specSettings & Spec.argMetavar & maybe Opt.idm (Opt.metavar . Text.unpack))
+        Spec.NumberArg ->
+          (boolToValue sensitive . JSON.Number . fromInteger) <$> Opt.argument
+            Opt.auto
+            (specSettings & Spec.argMetavar & maybe Opt.idm (Opt.metavar . Text.unpack))
 
 parseCommandJsonValue :: (MonadThrow m, JSON.FromJSON a) => JSON.Value -> m a
 parseCommandJsonValue commandValue = case JSON.iparse JSON.parseJSON commandValue of
@@ -108,7 +112,7 @@ parseCommandJsonValue commandValue = case JSON.iparse JSON.parseJSON commandValu
 
   JSON.ISuccess result  -> return result
 
-jsonToConfigValue :: Maybe JSON.Value -> ConfigValue
+jsonToConfigValue :: Maybe (Value JSON.Value) -> ConfigValue
 jsonToConfigValue specEntryDefVal =
   ConfigValue $ Set.fromList $ maybe [] ((: []) . Cli) specEntryDefVal
 

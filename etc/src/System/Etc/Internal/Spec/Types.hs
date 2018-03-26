@@ -78,6 +78,7 @@ data ConfigSources cmd
 data ConfigValue cmd
   = ConfigValue {
     defaultValue  :: !(Maybe JSON.Value)
+  , isSensitive   :: !Bool
   , configSources :: !(ConfigSources cmd)
   }
   | SubConfig {
@@ -232,12 +233,15 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
               return (SubConfig result)
 
           -- etc spec value object
-          Just (JSON.Object spec) ->
-            if HashMap.size object == 1 then
+          Just (JSON.Object fieldSpec) ->
+            if HashMap.size object == 1 then do
+              mSensitive <- fieldSpec .:? "sensitive"
+              let sensitive = fromMaybe False mSensitive
               ConfigValue
-                <$> spec .:? "default"
-                <*> (ConfigSources <$> (spec .:? "env")
-                                   <*> (spec .:? "cli"))
+                <$> fieldSpec .:? "default"
+                <*> pure sensitive
+                <*> (ConfigSources <$> fieldSpec .:? "env"
+                                   <*> fieldSpec .:? "cli")
             else
               fail "etc/spec object can only contain one key"
 
@@ -246,8 +250,13 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
             fail "etc/spec value must be a JSON object"
 
       _ ->
-        return $
-          ConfigValue (Just json) (ConfigSources Nothing Nothing)
+        return
+          ConfigValue
+          {
+            defaultValue = Just json
+          , isSensitive = False
+          , configSources = ConfigSources Nothing Nothing
+          }
 
 instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec cmd) where
   parseJSON json  =

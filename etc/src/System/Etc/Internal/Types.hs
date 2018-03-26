@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE RankNTypes                 #-}
@@ -11,6 +12,7 @@ import           RIO
 import qualified RIO.HashMap as HashMap
 import qualified RIO.Set     as Set
 
+import           Data.Bool      (bool)
 import qualified Data.Semigroup as Semigroup
 
 import qualified Data.Aeson       as JSON
@@ -21,21 +23,51 @@ import System.Etc.Internal.Spec.Types (ConfigurationError (..))
 --------------------
 -- Configuration Types
 
+data Value a
+  = Plain { fromValue :: !a }
+  | Sensitive { fromValue :: !a }
+  deriving (Generic, Eq, Ord)
+
+instance Show a => Show (Value a) where
+  show (Plain a)     = show a
+  show (Sensitive _) = "<<sensitive>>"
+
+instance Functor Value where
+  fmap f val =
+    case val of
+      Plain a     -> Plain (f a)
+      Sensitive a -> Sensitive (f a)
+
+instance Applicative Value where
+  pure a = Plain a
+  (<*>) vf va =
+    case (vf, va) of
+      (Plain f, Plain a)         -> Plain (f a)
+      (Sensitive f, Sensitive a) -> Sensitive (f a)
+      (Sensitive f, Plain a)     -> Sensitive (f a)
+      (Plain f, Sensitive a)     -> Sensitive (f a)
+
+instance IsString a => IsString (Value a) where
+  fromString = Plain . fromString
+
+boolToValue :: Bool -> (a -> Value a)
+boolToValue = bool Plain Sensitive
+
 data ConfigSource
   = File {
-      configIndex :: Int
-    , filepath    :: Text
-    , value       :: JSON.Value
+      configIndex :: !Int
+    , filepath    :: !Text
+    , value       :: !(Value JSON.Value)
     }
   | Env {
-      envVar :: Text
-    , value  :: JSON.Value
+      envVar :: !Text
+    , value  :: !(Value JSON.Value)
     }
   | Cli {
-      value :: JSON.Value
+      value :: !(Value JSON.Value)
     }
   | Default {
-      value :: JSON.Value
+      value :: !(Value JSON.Value)
     }
   | None
   deriving (Show, Eq)
@@ -75,10 +107,10 @@ instance Ord ConfigSource where
 
 data ConfigValue
   = ConfigValue {
-      configSource :: Set ConfigSource
+      configSource :: !(Set ConfigSource)
     }
   | SubConfig {
-      configMap :: HashMap Text ConfigValue
+      configMap :: !(HashMap Text ConfigValue)
     }
   deriving (Eq, Show)
 
