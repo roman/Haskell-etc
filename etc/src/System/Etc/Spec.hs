@@ -19,9 +19,10 @@ import System.Etc.Internal.Spec.Types as Types
 import qualified Data.Aeson as JSON
 #endif
 
-import qualified System.Etc.Internal.Spec.JSON as JSON
 #ifdef WITH_YAML
 import qualified System.Etc.Internal.Spec.YAML as YAML
+#else
+import qualified System.Etc.Internal.Spec.JSON as JSONSpec
 #endif
 
 {-|
@@ -32,22 +33,20 @@ flag is set).
 -}
 #ifdef WITH_CLI
 parseConfigSpec
-  :: (Alternative m, MonadThrow m, JSON.FromJSON cmd)
+  :: (MonadThrow m, JSON.FromJSON cmd)
     => Text               -- ^ Text to be parsed
     -> m (ConfigSpec cmd) -- ^ returns ConfigSpec
 #else
 parseConfigSpec
-  :: (Alternative m, MonadThrow m)
+  :: (MonadThrow m)
   => Text               -- ^ Text to be parsed
   -> m (ConfigSpec ()) -- ^ returns ConfigSpec
 #endif
 
 #ifdef WITH_YAML
-parseConfigSpec input =
-   JSON.parseConfigSpec input
-   <|> YAML.parseConfigSpec input
+parseConfigSpec = YAML.parseConfigSpec
 #else
-parseConfigSpec = JSON.parseConfigSpec
+parseConfigSpec = JSONSpec.parseConfigSpec
 #endif
 
 {-|
