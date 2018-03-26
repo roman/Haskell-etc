@@ -14,9 +14,11 @@ import qualified Data.Aeson    as JSON
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types
 
-resolveEnvVarSource :: (Text -> Maybe Text) -> Bool -> Spec.ConfigSources cmd -> Maybe ConfigSource
+resolveEnvVarSource
+  :: (Text -> Maybe Text) -> Bool -> Spec.ConfigSources cmd -> Maybe ConfigSource
 resolveEnvVarSource lookupEnv sensitive specSources =
-  let toEnvSource varname envValue = envValue & JSON.String & boolToValue sensitive & Env varname
+  let toEnvSource varname envValue =
+        envValue & JSON.String & boolToValue sensitive & Env varname
   in  do
         varname <- Spec.envVar specSources
         toEnvSource varname <$> lookupEnv varname

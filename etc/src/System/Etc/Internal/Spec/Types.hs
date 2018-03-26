@@ -250,7 +250,7 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
             fail "etc/spec value must be a JSON object"
 
       _ ->
-        return $
+        return
           ConfigValue
           {
             defaultValue = Just json

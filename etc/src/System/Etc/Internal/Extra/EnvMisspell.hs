@@ -35,8 +35,7 @@ lookupSpecEnvKeys spec =
   let foldEnvSettings val acc = case val of
         ConfigValue _defVal _sensitive sources ->
           maybe acc (`Vector.cons` acc) (envVar sources)
-        SubConfig hsh         ->
-          HashMap.foldr foldEnvSettings acc hsh
+        SubConfig hsh -> HashMap.foldr foldEnvSettings acc hsh
   in  foldEnvSettings (SubConfig $ specConfigValues spec) Vector.empty
 
 {-|

@@ -111,7 +111,8 @@ specToConfigValueCli
   -> (Text, Spec.ConfigValue cmd)
   -> m (HashMap cmd (Opt.Parser ConfigValue))
 specToConfigValueCli acc (specEntryKey, specConfigValue) = case specConfigValue of
-  Spec.ConfigValue _ sensitive sources   -> configValueSpecToCli acc specEntryKey sensitive sources
+  Spec.ConfigValue _ sensitive sources ->
+    configValueSpecToCli acc specEntryKey sensitive sources
 
   Spec.SubConfig subConfigSpec -> subConfigSpecToCli specEntryKey subConfigSpec acc
 

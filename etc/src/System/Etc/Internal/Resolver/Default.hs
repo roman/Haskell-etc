@@ -12,7 +12,8 @@ import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types
 
 toDefaultConfigValue :: Bool -> JSON.Value -> ConfigValue
-toDefaultConfigValue sensitive = ConfigValue . Set.singleton . Default . boolToValue sensitive
+toDefaultConfigValue sensitive =
+  ConfigValue . Set.singleton . Default . boolToValue sensitive
 
 buildDefaultResolver :: Spec.ConfigSpec cmd -> Maybe ConfigValue
 buildDefaultResolver spec =

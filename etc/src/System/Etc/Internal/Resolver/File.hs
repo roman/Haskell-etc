@@ -30,19 +30,18 @@ data ConfigFile
 
 --------------------------------------------------------------------------------
 
-parseConfigValue :: Monad m => Maybe (Spec.ConfigValue cmd) -> Int -> Text -> JSON.Value -> m ConfigValue
+parseConfigValue
+  :: Monad m => Maybe (Spec.ConfigValue cmd) -> Int -> Text -> JSON.Value -> m ConfigValue
 parseConfigValue mSpec fileIndex filepath json = case json of
   JSON.Object object -> SubConfig <$> foldM
     (\acc (key, subConfigValue) -> do
-      let
-        msubConfigSpec = do
-          spec <- mSpec
-          case spec of
-            Spec.SubConfig hsh ->
-              HashMap.lookup key hsh
-            _ ->
-              -- TODO: This should be an error given the config doesn't match spec
-              fail "configuration spec and configuration value are different"
+      let msubConfigSpec = do
+            spec <- mSpec
+            case spec of
+              Spec.SubConfig hsh -> HashMap.lookup key hsh
+              _ ->
+                -- TODO: This should be an error given the config doesn't match spec
+                fail "configuration spec and configuration value are different"
 
       value1 <- parseConfigValue msubConfigSpec fileIndex filepath subConfigValue
       return $ HashMap.insert key value1 acc
@@ -51,17 +50,14 @@ parseConfigValue mSpec fileIndex filepath json = case json of
     (HashMap.toList object)
 
   _ ->
-    let
-      mToValue = do
-        spec <- mSpec
-        case spec of
-          Spec.ConfigValue {} -> return $ boolToValue (Spec.isSensitive spec)
-          _ -> fail "configuration spec and configuration value are different"
+    let mToValue = do
+          spec <- mSpec
+          case spec of
+            Spec.ConfigValue{} -> return $ boolToValue (Spec.isSensitive spec)
+            _ -> fail "configuration spec and configuration value are different"
 
-      toValue =
-        fromMaybe Plain mToValue
-
-    in return $ ConfigValue (Set.singleton $ File fileIndex filepath (toValue json))
+        toValue = fromMaybe Plain mToValue
+    in  return $ ConfigValue (Set.singleton $ File fileIndex filepath (toValue json))
 
 
 eitherDecode :: ConfigFile -> Either String JSON.Value
@@ -113,7 +109,12 @@ readConfigFromFiles spec =
     & mapM
         (\(fileIndex, filepath) -> do
           mContents <- readConfigFile filepath
-          return (mContents >>= parseConfig (Spec.SubConfig $ Spec.specConfigValues spec) fileIndex filepath)
+          return
+            (   mContents
+            >>= parseConfig (Spec.SubConfig $ Spec.specConfigValues spec)
+                            fileIndex
+                            filepath
+            )
         )
     & (foldl'
         (\(result, errs) eCurrent -> case eCurrent of

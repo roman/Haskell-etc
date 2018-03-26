@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE RankNTypes                 #-}
@@ -12,7 +12,7 @@ import           RIO
 import qualified RIO.HashMap as HashMap
 import qualified RIO.Set     as Set
 
-import Data.Bool (bool)
+import           Data.Bool      (bool)
 import qualified Data.Semigroup as Semigroup
 
 import qualified Data.Aeson       as JSON
@@ -29,23 +29,23 @@ data Value a
   deriving (Generic, Eq, Ord)
 
 instance Show a => Show (Value a) where
-  show (Plain a) = show a
+  show (Plain a)     = show a
   show (Sensitive _) = "<<sensitive>>"
 
 instance Functor Value where
   fmap f val =
     case val of
-      Plain a -> Plain (f a)
+      Plain a     -> Plain (f a)
       Sensitive a -> Sensitive (f a)
 
 instance Applicative Value where
   pure a = Plain a
   (<*>) vf va =
     case (vf, va) of
-      (Plain f, Plain a) -> Plain (f a)
+      (Plain f, Plain a)         -> Plain (f a)
       (Sensitive f, Sensitive a) -> Sensitive (f a)
-      (Sensitive f, Plain a) -> Sensitive (f a)
-      (Plain f, Sensitive a) -> Sensitive (f a)
+      (Sensitive f, Plain a)     -> Sensitive (f a)
+      (Plain f, Sensitive a)     -> Sensitive (f a)
 
 instance IsString a => IsString (Value a) where
   fromString = Plain . fromString

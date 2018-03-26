@@ -22,7 +22,10 @@ type PlainConfigSpec =
 --------------------------------------------------------------------------------
 
 entrySpecToConfigValueCli
-  :: (MonadThrow m) => Bool -> Spec.CliEntrySpec () -> m (Opt.Parser (Maybe (Value JSON.Value)))
+  :: (MonadThrow m)
+  => Bool
+  -> Spec.CliEntrySpec ()
+  -> m (Opt.Parser (Maybe (Value JSON.Value)))
 entrySpecToConfigValueCli sensitive entrySpec = case entrySpec of
   Spec.CmdEntry{}              -> throwM CommandKeyOnPlainCli
 
@@ -42,9 +45,7 @@ configValueSpecToCli specEntryKey sensitive sources acc =
             ConfigValue{} -> accSubConfig
 
             SubConfig subConfigMap ->
-              subConfigMap
-                & HashMap.alter (const $ Just configValue) specEntryKey
-                & SubConfig
+              subConfigMap & HashMap.alter (const $ Just configValue) specEntryKey & SubConfig
           )
           <$> configValueParser
           <*> accOptParser
@@ -54,8 +55,7 @@ configValueSpecToCli specEntryKey sensitive sources acc =
         Just entrySpec -> do
           jsonOptParser <- entrySpecToConfigValueCli sensitive entrySpec
 
-          let
-            configValueParser = jsonToConfigValue <$> jsonOptParser
+          let configValueParser = jsonToConfigValue <$> jsonOptParser
 
           return $ updateAccConfigOptParser configValueParser acc
 
@@ -71,9 +71,7 @@ subConfigSpecToCli specEntryKey subConfigSpec acc =
             ConfigValue{} -> accSubConfig
 
             SubConfig subConfigMap ->
-              subConfigMap
-                & HashMap.alter (const $ Just subConfig) specEntryKey
-                & SubConfig
+              subConfigMap & HashMap.alter (const $ Just subConfig) specEntryKey & SubConfig
           )
           <$> subConfigParser
           <*> accOptParser
@@ -89,15 +87,13 @@ specToConfigValueCli
   => Opt.Parser ConfigValue
   -> (Text, Spec.ConfigValue ())
   -> m (Opt.Parser ConfigValue)
-specToConfigValueCli acc (specEntryKey, specConfigValue) =
-  case specConfigValue of
-    Spec.ConfigValue _ sensitive sources -> configValueSpecToCli specEntryKey sensitive sources acc
+specToConfigValueCli acc (specEntryKey, specConfigValue) = case specConfigValue of
+  Spec.ConfigValue _ sensitive sources ->
+    configValueSpecToCli specEntryKey sensitive sources acc
 
-    Spec.SubConfig subConfigSpec ->
-      subConfigSpecToCli specEntryKey subConfigSpec acc
+  Spec.SubConfig subConfigSpec -> subConfigSpecToCli specEntryKey subConfigSpec acc
 
-configValueCliAccInit
-  :: (MonadThrow m) => Spec.ConfigSpec () -> m (Opt.Parser ConfigValue)
+configValueCliAccInit :: (MonadThrow m) => Spec.ConfigSpec () -> m (Opt.Parser ConfigValue)
 configValueCliAccInit spec =
   let zeroParser   = pure $ SubConfig HashMap.empty
 
@@ -112,9 +108,7 @@ configValueCliAccInit spec =
 specToConfigCli :: (MonadThrow m) => Spec.ConfigSpec () -> m (Opt.Parser Config)
 specToConfigCli spec = do
   acc    <- configValueCliAccInit spec
-  parser <- foldM specToConfigValueCli
-                  acc
-                  (HashMap.toList $ Spec.specConfigValues spec)
+  parser <- foldM specToConfigValueCli acc (HashMap.toList $ Spec.specConfigValues spec)
 
   parser & (Config <$>) & return
 
@@ -141,16 +135,8 @@ resolvePlainCliPure configSpec progName args = do
     programModFlags = case Spec.specCliProgramSpec configSpec of
       Just programSpec ->
         Opt.fullDesc
-          `mappend` ( programSpec
-                    & Spec.cliProgramDesc
-                    & Text.unpack
-                    & Opt.progDesc
-                    )
-          `mappend` ( programSpec
-                    & Spec.cliProgramHeader
-                    & Text.unpack
-                    & Opt.header
-                    )
+          `mappend` (programSpec & Spec.cliProgramDesc & Text.unpack & Opt.progDesc)
+          `mappend` (programSpec & Spec.cliProgramHeader & Text.unpack & Opt.header)
       Nothing -> mempty
 
     programParser = Opt.info (Opt.helper <*> configParser) programModFlags
