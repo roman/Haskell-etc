@@ -1,3 +1,12 @@
+0.3.0.0
+----
+**BREAKING CHANGES**
+
+* Bump resolver to lts-11
+* Replace `protolude` in favor of `rio`
+* Update `parseConfigSpec` to no longer attempt to parse JSON when `yaml` cabal
+   flag is set
+
 0.2.0.0
 ----
 * Move `Config` API to typeclass `IConfig`

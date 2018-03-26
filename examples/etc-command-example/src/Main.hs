@@ -3,16 +3,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import qualified Prelude
+
+import           RIO
+import qualified RIO.Text as Text
+
 import qualified Data.Aeson       as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
 import           Data.Hashable    (Hashable)
-import qualified Data.Text        as Text
 import           GHC.Generics     (Generic)
 import qualified System.Etc       as Etc
 
 import Paths_etc_command_example (getDataFileName)
 
-import Protolude
 
 --------------------------------------------------------------------------------
 -- We specify the support commands for our program
@@ -51,29 +54,22 @@ instance JSON.ToJSON Cmd where
 
 main :: IO ()
 main = do
-  specPath <- getDataFileName "spec.yaml"
+  specPath   <- getDataFileName "spec.yaml"
   configSpec <- Etc.readConfigSpec (Text.pack specPath)
 
   Etc.reportEnvMisspellingWarnings configSpec
 
   (configFiles, _fileWarnings) <- Etc.resolveFiles configSpec
-  (cmd, configCli) <- Etc.resolveCommandCli configSpec
-  configEnv <- Etc.resolveEnv configSpec
+  (cmd        , configCli    ) <- Etc.resolveCommandCli configSpec
+  configEnv                    <- Etc.resolveEnv configSpec
 
-  let
-    configDefault =
-      Etc.resolveDefault configSpec
+  let configDefault = Etc.resolveDefault configSpec
 
-    config =
-      configDefault
-      `mappend` configFiles
-      `mappend` configEnv
-      `mappend` configCli
+      config = configDefault `mappend` configFiles `mappend` configEnv `mappend` configCli
 
   case cmd of
-    PrintConfig ->
-      Etc.printPrettyConfig config
+    PrintConfig -> Etc.printPrettyConfig config
 
-    RunMain -> do
-      putStrLn ("Executing main program" :: Text)
+    RunMain     -> do
+      Prelude.putStrLn "Executing main program"
       Etc.printPrettyConfig config

@@ -7,14 +7,14 @@ module System.Etc.Internal.Types
   , module System.Etc.Internal.Spec.Types
   ) where
 
-import Control.Monad.Catch (MonadThrow)
-import Data.HashMap.Strict (HashMap)
-import Protolude
+import           RIO
+import qualified RIO.HashMap as HashMap
+import qualified RIO.Set     as Set
 
-import qualified Data.Aeson          as JSON
-import qualified Data.Aeson.Types    as JSON (Parser)
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set            as Set
+import qualified Data.Semigroup as Semigroup
+
+import qualified Data.Aeson       as JSON
+import qualified Data.Aeson.Types as JSON (Parser)
 
 import System.Etc.Internal.Spec.Types (ConfigurationError (..))
 
@@ -83,63 +83,47 @@ data ConfigValue
   deriving (Eq, Show)
 
 deepMerge :: ConfigValue -> ConfigValue -> ConfigValue
-deepMerge left right =
-  case (left, right) of
-    (SubConfig leftm, SubConfig rightm) ->
-      SubConfig $
-        HashMap.foldrWithKey
-            (\key rightv result ->
-                case HashMap.lookup key result of
-                  Just leftv ->
-                    HashMap.insert key (deepMerge leftv rightv) result
-                  _ ->
-                    HashMap.insert key rightv result)
-            leftm
-            rightm
-    (ConfigValue leftSources, ConfigValue rightSources) ->
-      ConfigValue $ Set.union leftSources rightSources
-    _ ->
-      right
+deepMerge left right = case (left, right) of
+  (SubConfig leftm, SubConfig rightm) -> SubConfig $ HashMap.foldrWithKey
+    (\key rightv result -> case HashMap.lookup key result of
+      Just leftv -> HashMap.insert key (deepMerge leftv rightv) result
+      _          -> HashMap.insert key rightv result
+    )
+    leftm
+    rightm
+  (ConfigValue leftSources, ConfigValue rightSources) ->
+    ConfigValue $ Set.union leftSources rightSources
+  _ -> right
+
+instance Semigroup.Semigroup ConfigValue where
+  (<>) = deepMerge
 
 instance Monoid ConfigValue where
   mempty  = emptySubConfig
-  mappend = deepMerge
+  mappend = (Semigroup.<>)
 
 newtype Config
   = Config { fromConfig :: ConfigValue }
-  deriving (Eq, Show, Monoid)
+  deriving (Eq, Show, Semigroup, Monoid)
 
 isEmptySubConfig :: ConfigValue -> Bool
-isEmptySubConfig val =
-  case val of
-    SubConfig hsh ->
-      HashMap.null hsh
-    ConfigValue {} ->
-      False
+isEmptySubConfig val = case val of
+  SubConfig hsh -> HashMap.null hsh
+  ConfigValue{} -> False
 
 emptySubConfig :: ConfigValue
-emptySubConfig =
-  SubConfig HashMap.empty
+emptySubConfig = SubConfig HashMap.empty
 
 writeInSubConfig :: Text -> ConfigValue -> ConfigValue -> ConfigValue
-writeInSubConfig key val subConfig =
-  case subConfig of
-    SubConfig hsh ->
-      SubConfig
-        $ HashMap.insert key val hsh
-    _ ->
-      subConfig
+writeInSubConfig key val subConfig = case subConfig of
+  SubConfig hsh -> SubConfig $ HashMap.insert key val hsh
+  _             -> subConfig
 
 filterMaybe :: (a -> Bool) -> Maybe a -> Maybe a
-filterMaybe pfn mvalue =
-  case mvalue of
-    Just a
-      | pfn a ->
-          Nothing
-      | otherwise ->
-          mvalue
-    Nothing ->
-      Nothing
+filterMaybe pfn mvalue = case mvalue of
+  Just a | pfn a     -> Nothing
+         | otherwise -> mvalue
+  Nothing -> Nothing
 
 
 class IConfig config where

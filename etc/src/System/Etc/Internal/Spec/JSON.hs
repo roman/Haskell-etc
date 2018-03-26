@@ -1,30 +1,21 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
+
 module System.Etc.Internal.Spec.JSON where
 
-import Protolude
+import qualified Data.Text.IO        as Text (readFile)
+import           RIO
+import qualified RIO.ByteString.Lazy as LBS
+import qualified RIO.Text            as Text
 
-import Control.Monad.Catch (MonadThrow (..))
-
-import qualified Data.Aeson              as JSON
-import qualified Data.Text               as Text
-import qualified Data.Text.IO            as Text (readFile)
-import qualified Data.Text.Lazy          as Text (fromStrict)
-import qualified Data.Text.Lazy.Encoding as Text (encodeUtf8)
+import qualified Data.Aeson as JSON
 
 import System.Etc.Internal.Spec.Types
 
-parseConfigSpec
-  :: (MonadThrow m, JSON.FromJSON cmd)
-    => Text
-    -> m (ConfigSpec cmd)
-parseConfigSpec input =
-  case JSON.eitherDecode (Text.encodeUtf8 $ Text.fromStrict input) of
-    Left err ->
-      throwM $ InvalidConfiguration (Text.pack err)
+parseConfigSpec :: (MonadThrow m, JSON.FromJSON cmd) => Text -> m (ConfigSpec cmd)
+parseConfigSpec input = case JSON.eitherDecode (LBS.fromStrict $ encodeUtf8 input) of
+  Left  err    -> throwM $ InvalidConfiguration (Text.pack err)
 
-    Right result ->
-      return result
+  Right result -> return result
 
 readConfigSpec :: JSON.FromJSON cmd => Text -> IO (ConfigSpec cmd)
 readConfigSpec filepath = do
