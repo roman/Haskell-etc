@@ -19,8 +19,8 @@ import Text.PrettyPrint.ANSI.Leijen
 
 import System.Etc.Internal.Types
 
-renderJsonValue :: Value JSON.Value -> (Doc, Int)
-renderJsonValue value' = case value' of
+renderJsonValue :: Text -> Value JSON.Value -> (Doc, Int)
+renderJsonValue key value' = case value' of
   Plain JSON.Null         -> (text "null", 4)
 
   Plain (JSON.String str) -> (text $ Text.unpack str, Text.length str)
@@ -33,7 +33,7 @@ renderJsonValue value' = case value' of
     value'
       & tshow
       & ("Invalid configuration value creation " `mappend`)
-      & InvalidConfiguration
+      & InvalidConfiguration (Just key)
       & show
       & error
 
@@ -43,28 +43,29 @@ renderConfig (Config configValue0) =
   let
     brackets' = enclose (lbracket <> space) (space <> rbracket)
 
-    renderSource :: ConfigSource -> ((Doc, Int), Doc)
-    renderSource source' = case source' of
-      Default value' -> (renderJsonValue value', brackets' (fill 10 (text "Default")))
+    renderSource :: Text -> ConfigSource -> ((Doc, Int), Doc)
+    renderSource key source' = case source' of
+      Default value' -> (renderJsonValue key value', brackets' (fill 10 (text "Default")))
 
       File _index filepath' value' ->
-        ( renderJsonValue value'
+        ( renderJsonValue key value'
         , brackets' (fill 10 (text "File:" <+> text (Text.unpack filepath')))
         )
 
       Env varname value' ->
-        ( renderJsonValue value'
+        ( renderJsonValue key value'
         , brackets' (fill 10 (text "Env:" <+> text (Text.unpack varname)))
         )
 
-      Cli value' -> (renderJsonValue value', brackets' (fill 10 (text "Cli")))
+      Cli value' -> (renderJsonValue key value', brackets' (fill 10 (text "Cli")))
 
       None       -> ((mempty, 0), mempty)
 
-    renderSources :: [ConfigSource] -> Doc
-    renderSources sources0 =
+    renderSources :: Text -> [ConfigSource] -> Doc
+    renderSources keys sources0 =
       let
-        sources@(((selValueDoc, _), selSourceDoc) : others) = map renderSource sources0
+        sources@(((selValueDoc, _), selSourceDoc) : others) =
+          map (renderSource keys) sources0
 
         fillingWidth  = sources & map (snd . fst) & maximum & max 10
 
@@ -85,12 +86,14 @@ renderConfig (Config configValue0) =
         HashMap.foldlWithKey' (configEntryRenderer keys) mempty subConfigm
 
       ConfigValue sources0 ->
-        let configKey = keys & reverse & Text.intercalate "."
+        let
+          configKey = keys & reverse & Text.intercalate "."
 
-            sources   = Set.toDescList sources0
-        in  if null sources
-              then []
-              else [blue (text (Text.unpack configKey)) <$$> renderSources sources]
+          sources   = Set.toDescList sources0
+        in
+          if null sources
+            then []
+            else [blue (text (Text.unpack configKey)) <$$> renderSources configKey sources]
   in
     loop [] configValue0 & intersperse (linebreak <> linebreak) & hcat & (<> linebreak)
 

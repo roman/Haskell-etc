@@ -21,7 +21,6 @@ import qualified Data.Yaml as YAML
 import           Paths_etc (getDataFileName)
 #endif
 
-
 getConfigValue :: [Text] -> HashMap Text (ConfigValue cmd) -> Maybe (ConfigValue cmd)
 getConfigValue keys hsh =
   -- NOTE: For some reason, pattern matching doesn't work on lts-6, using
