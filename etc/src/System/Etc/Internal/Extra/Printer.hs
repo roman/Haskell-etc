@@ -1,8 +1,10 @@
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Extra.Printer (
     renderConfig
+  , renderConfigColor
   , printPrettyConfig
   , hPrintPrettyConfig
   ) where
@@ -37,9 +39,14 @@ renderJsonValue key value' = case value' of
       & show
       & error
 
+data ColorFn
+  = ColorFn {
+    greenColor :: !(Doc -> Doc)
+  , blueColor  :: !(Doc -> Doc)
+  }
 
-renderConfig :: Config -> Doc
-renderConfig (Config configValue0) =
+renderConfig' :: ColorFn -> Config -> Doc
+renderConfig' ColorFn { greenColor, blueColor } (Config configValue0) =
   let
     brackets' = enclose (lbracket <> space) (space <> rbracket)
 
@@ -69,7 +76,7 @@ renderConfig (Config configValue0) =
 
         fillingWidth  = sources & map (snd . fst) & maximum & max 10
 
-        selectedValue = [green $ fill fillingWidth selValueDoc <+> selSourceDoc]
+        selectedValue = [greenColor $ fill fillingWidth selValueDoc <+> selSourceDoc]
 
         otherValues   = map
           (\((valueDoc, _), sourceDoc) -> fill fillingWidth valueDoc <+> sourceDoc)
@@ -92,10 +99,19 @@ renderConfig (Config configValue0) =
           sources   = Set.toDescList sources0
         in
           if null sources
-            then []
-            else [blue (text (Text.unpack configKey)) <$$> renderSources configKey sources]
+          then
+            []
+          else
+            [blueColor (text (Text.unpack configKey)) <$$> renderSources configKey sources]
   in
     loop [] configValue0 & intersperse (linebreak <> linebreak) & hcat & (<> linebreak)
+
+
+renderConfigColor :: Config -> Doc
+renderConfigColor = renderConfig' ColorFn {greenColor = green, blueColor = blue}
+
+renderConfig :: Config -> Doc
+renderConfig = renderConfig' ColorFn {greenColor = id, blueColor = id}
 
 printPrettyConfig :: Config -> IO ()
 printPrettyConfig = putDoc . renderConfig
