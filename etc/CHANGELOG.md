@@ -10,6 +10,7 @@
 * Add `Value` type to deal with sensitive values
 * Update examples with `sensitive` values
 * Add optional key context to the `InvalidConfiguration` error (issue #12)
+* Give precedence to values that do not contain inner `JSON.Null` values (issue #16)
 
 0.2.0.0
 ----
