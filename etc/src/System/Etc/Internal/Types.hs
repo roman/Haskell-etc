@@ -84,6 +84,10 @@ instance Ord ConfigSource where
         (_, None) ->
           GT
 
+        (_, _)
+          | fromValue (value a) == JSON.Null -> LT
+          | fromValue (value b) == JSON.Null -> GT
+
         (Default {}, _) ->
           LT
 

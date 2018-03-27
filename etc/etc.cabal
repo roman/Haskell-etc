@@ -21,6 +21,7 @@ cabal-version:  >= 1.10
 data-files:
     test/fixtures/config.foo
     test/fixtures/config.json
+    test/fixtures/config.null.json
     test/fixtures/config.spec.yaml
     test/fixtures/config.yaml
     test/fixtures/config.yml
@@ -111,7 +112,7 @@ test-suite etc-testsuite
   build-depends:
       base >=4.7
     , aeson >=0.11
-    , rio   >= 0.0.1.0
+    , rio   >=0.0.1.0
     , tasty >=0.11
     , tasty-hunit >=0.9
     , etc
