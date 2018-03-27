@@ -9,7 +9,7 @@ import qualified RIO.Set as Set
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
-import System.Etc
+import qualified System.Etc as SUT
 
 option_tests :: TestTree
 option_tests = testGroup
@@ -26,13 +26,13 @@ option_tests = testGroup
           , "        , \"type\": \"string\""
           , "}}}}}"
           ]
-    (spec :: ConfigSpec ()) <- parseConfigSpec input
-    config                  <- resolvePlainCliPure spec "program" ["-g", "hello cli"]
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+    config                  <- SUT.resolvePlainCliPure spec "program" ["-g", "hello cli"]
 
-    case getAllConfigSources ["greeting"] config of
+    case SUT.getAllConfigSources ["greeting"] config of
       Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
       Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (Cli "hello cli") aSet)
+                              (Set.member (SUT.Cli "hello cli") aSet)
   , testCase "entry accepts long" $ do
     let input = mconcat
           [ "{ \"etc/entries\": {"
@@ -45,13 +45,13 @@ option_tests = testGroup
           , "        , \"type\": \"string\""
           , "}}}}}"
           ]
-    (spec :: ConfigSpec ()) <- parseConfigSpec input
-    config <- resolvePlainCliPure spec "program" ["--greeting", "hello cli"]
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+    config <- SUT.resolvePlainCliPure spec "program" ["--greeting", "hello cli"]
 
-    case getAllConfigSources ["greeting"] config of
+    case SUT.getAllConfigSources ["greeting"] config of
       Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
       Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (Cli "hello cli") aSet)
+                              (Set.member (SUT.Cli "hello cli") aSet)
   , testCase "entry gets validated with a type" $ do
     let input = mconcat
           [ "{ \"etc/entries\": {"
@@ -64,11 +64,11 @@ option_tests = testGroup
           , "        , \"type\": \"number\""
           , "}}}}}"
           ]
-    (spec :: ConfigSpec ()) <- parseConfigSpec input
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
 
-    case resolvePlainCliPure spec "program" ["--greeting", "hello cli"] of
+    case SUT.resolvePlainCliPure spec "program" ["--greeting", "hello cli"] of
       Left err -> case fromException err of
-        Just CliEvalExited{} -> return ()
+        Just SUT.CliEvalExited{} -> return ()
 
         _ -> assertFailure ("Expecting type validation to work on cli; got " <> show err)
 
@@ -87,10 +87,10 @@ option_tests = testGroup
           , "        , \"required\": false"
           , "}}}}}"
           ]
-    (spec :: ConfigSpec ()) <- parseConfigSpec input
-    config                  <- resolvePlainCliPure spec "program" []
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+    config                  <- SUT.resolvePlainCliPure spec "program" []
 
-    case getConfigValue ["greeting"] config of
+    case SUT.getConfigValue ["greeting"] config of
       Just aSet ->
         assertFailure ("expecting to have no entry for greeting; got\n" <> show aSet)
 
@@ -108,10 +108,10 @@ option_tests = testGroup
           , "        , \"required\": true"
           , "}}}}}"
           ]
-    (spec :: ConfigSpec ()) <- parseConfigSpec input
-    case resolvePlainCliPure spec "program" [] of
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+    case SUT.resolvePlainCliPure spec "program" [] of
       Left err -> case fromException err of
-        Just CliEvalExited{} -> return ()
+        Just SUT.CliEvalExited{} -> return ()
 
         _ ->
           assertFailure ("Expecting required validation to work on cli; got " <> show err)
@@ -133,11 +133,11 @@ argument_tests = testGroup
           , "        , \"metavar\": \"GREETING\""
           , "}}}}}"
           ]
-    (spec :: ConfigSpec ()) <- parseConfigSpec input
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
 
-    case resolvePlainCliPure spec "program" ["hello cli"] of
+    case SUT.resolvePlainCliPure spec "program" ["hello cli"] of
       Left err -> case fromException err of
-        Just CliEvalExited{} -> return ()
+        Just SUT.CliEvalExited{} -> return ()
 
         _ -> assertFailure ("Expecting type validation to work on cli; got " <> show err)
 
@@ -154,10 +154,10 @@ argument_tests = testGroup
           , "        , \"required\": false"
           , "}}}}}"
           ]
-    (spec :: ConfigSpec ()) <- parseConfigSpec input
-    config                  <- resolvePlainCliPure spec "program" []
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+    config                  <- SUT.resolvePlainCliPure spec "program" []
 
-    case getConfigValue ["greeting"] config of
+    case SUT.getConfigValue ["greeting"] config of
       (Nothing :: Maybe ()) -> return ()
 
       Just aSet ->
@@ -174,10 +174,10 @@ argument_tests = testGroup
           , "        , \"required\": true"
           , "}}}}}"
           ]
-    (spec :: ConfigSpec ()) <- parseConfigSpec input
-    case resolvePlainCliPure spec "program" [] of
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+    case SUT.resolvePlainCliPure spec "program" [] of
       Left err -> case fromException err of
-        Just CliEvalExited{} -> return ()
+        Just SUT.CliEvalExited{} -> return ()
 
         _ ->
           assertFailure ("Expecting required validation to work on cli; got " <> show err)
