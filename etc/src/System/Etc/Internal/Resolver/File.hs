@@ -77,10 +77,10 @@ eitherDecode contents0 = case contents0 of
 
 parseConfig :: MonadThrow m => Spec.ConfigValue cmd -> Int -> Text -> ConfigFile -> m Config
 parseConfig spec fileIndex filepath contents = case eitherDecode contents of
-  Left  err  -> throwM $ InvalidConfiguration (Text.pack err)
+  Left  err  -> throwM $ InvalidConfiguration Nothing (Text.pack err)
 
   Right json -> case JSON.iparse (parseConfigValue (Just spec) fileIndex filepath) json of
-    JSON.IError _ err    -> throwM $ InvalidConfiguration (Text.pack err)
+    JSON.IError _ err    -> throwM $ InvalidConfiguration Nothing (Text.pack err)
 
     JSON.ISuccess result -> return (Config result)
 
@@ -99,7 +99,8 @@ readConfigFile filepath =
           else
             if (".yaml" `Text.isSuffixOf` filepath) || (".yml" `Text.isSuffixOf` filepath)
               then return $ return (YamlFile filepath contents)
-              else return (throwM $ InvalidConfiguration "Unsupported file extension")
+              else return
+                (throwM $ InvalidConfiguration Nothing "Unsupported file extension")
         else return $ throwM $ ConfigurationFileNotFound filepath
 
 readConfigFromFiles :: Spec.ConfigSpec cmd -> IO (Config, [SomeException])

@@ -15,7 +15,7 @@ import qualified Data.Aeson.Types as JSON (Parser, typeMismatch)
 -- Error Types
 
 data ConfigurationError
-  = InvalidConfiguration !Text
+  = InvalidConfiguration !(Maybe Text) !Text
   | InvalidConfigKeyPath ![Text]
   | ConfigurationFileNotFound !Text
   deriving (Show)

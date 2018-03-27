@@ -71,8 +71,8 @@ tests = testGroup
         let err = Vector.head errs
         in
           case fromException err of
-            Just (InvalidConfiguration _) -> return ()
-            _                             -> assertFailure
+            Just (InvalidConfiguration _ _) -> return ()
+            _                               -> assertFailure
               ("Expecting InvalidConfigurationError; got instead " <> show err)
   , testCase "does not fail if file doesn't exist" $ do
     jsonFilepath <- getDataFileName "test/fixtures/config.json"

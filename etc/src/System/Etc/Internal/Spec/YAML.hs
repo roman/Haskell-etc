@@ -1,3 +1,4 @@
+
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module System.Etc.Internal.Spec.YAML where
@@ -14,7 +15,7 @@ import System.Etc.Internal.Spec.Types
 
 parseConfigSpec :: (MonadThrow m, JSON.FromJSON cmd) => Text -> m (ConfigSpec cmd)
 parseConfigSpec input = case YAML.decodeEither (Text.encodeUtf8 input) of
-  Left  err    -> throwM $ InvalidConfiguration (Text.pack err)
+  Left  err    -> throwM $ InvalidConfiguration Nothing (Text.pack err)
 
   Right result -> return result
 

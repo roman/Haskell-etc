@@ -140,4 +140,5 @@ test-suite etc-testsuite
       System.Etc.Resolver.EnvTest
       System.Etc.Resolver.FileTest
       System.Etc.SpecTest
+      System.Etc.ConfigTest
   default-language: Haskell2010

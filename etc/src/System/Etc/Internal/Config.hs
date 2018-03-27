@@ -36,30 +36,40 @@ configValueToJsonObject configValue = case configValue of
 _getConfigValueWith
   :: MonadThrow m => (JSON.Value -> JSON.Parser result) -> [Text] -> Config -> m result
 _getConfigValueWith parser keys0 (Config configValue0) =
-  let loop keys configValue = case (keys, configValue) of
-        ([], ConfigValue sources) -> case Set.maxView sources of
-          Nothing          -> throwM $ InvalidConfigKeyPath keys0
+  let
+    loop keys configValue = case (keys, configValue) of
+      ([], ConfigValue sources) -> case Set.maxView sources of
+        Nothing          -> throwM $ InvalidConfigKeyPath keys0
 
-          Just (None  , _) -> throwM $ InvalidConfigKeyPath keys0
+        Just (None  , _) -> throwM $ InvalidConfigKeyPath keys0
 
-          Just (source, _) -> case JSON.iparse parser (fromValue $ value source) of
-            JSON.IError path err ->
-              JSON.formatError path err & Text.pack & InvalidConfiguration & throwM
+        Just (source, _) -> case JSON.iparse parser (fromValue $ value source) of
 
-            JSON.ISuccess result -> return result
+          JSON.IError path err ->
+            let key = keys0 & reverse & Text.intercalate "."
+            in  JSON.formatError path err
+                & Text.pack
+                & InvalidConfiguration (Just key)
+                & throwM
 
-        ([], innerConfigValue) ->
-          case JSON.iparse parser (configValueToJsonObject innerConfigValue) of
-            JSON.IError path err ->
-              JSON.formatError path err & Text.pack & InvalidConfiguration & throwM
+          JSON.ISuccess result -> return result
 
-            JSON.ISuccess result -> return result
+      ([], innerConfigValue) ->
+        case JSON.iparse parser (configValueToJsonObject innerConfigValue) of
+          JSON.IError path err ->
+            let key = keys0 & reverse & Text.intercalate "."
+            in  JSON.formatError path err
+                & Text.pack
+                & InvalidConfiguration (Just key)
+                & throwM
 
-        (k : keys1, SubConfig configm) -> case HashMap.lookup k configm of
-          Nothing           -> throwM $ InvalidConfigKeyPath keys0
-          Just configValue1 -> loop keys1 configValue1
+          JSON.ISuccess result -> return result
 
-        _ -> throwM $ InvalidConfigKeyPath keys0
+      (k : keys1, SubConfig configm) -> case HashMap.lookup k configm of
+        Nothing           -> throwM $ InvalidConfigKeyPath keys0
+        Just configValue1 -> loop keys1 configValue1
+
+      _ -> throwM $ InvalidConfigKeyPath keys0
   in  loop keys0 configValue0
 
 _getSelectedConfigSource :: (MonadThrow m) => [Text] -> Config -> m ConfigSource

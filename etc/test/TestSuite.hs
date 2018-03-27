@@ -8,6 +8,7 @@ import RIO
 import Test.Tasty         (defaultMainWithIngredients, testGroup)
 import Test.Tasty.Runners (consoleTestReporter, listingTests)
 
+import qualified System.Etc.ConfigTest
 import qualified System.Etc.Resolver.DefaultTest
 import qualified System.Etc.Resolver.EnvTest
 import qualified System.Etc.Resolver.FileTest
@@ -27,6 +28,7 @@ main = defaultMainWithIngredients
   (testGroup
     "etc"
     [ System.Etc.SpecTest.tests
+    , System.Etc.ConfigTest.tests
     , System.Etc.Resolver.DefaultTest.tests
     , System.Etc.Resolver.FileTest.tests
     , System.Etc.Resolver.EnvTest.tests

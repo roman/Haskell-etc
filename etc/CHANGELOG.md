@@ -9,6 +9,7 @@
 * Add `sensitive` setting to `etc/spec` entries
 * Add `Value` type to deal with sensitive values
 * Update examples with `sensitive` values
+* Add optional key context to the `InvalidConfiguration` error (issue #12)
 
 0.2.0.0
 ----
