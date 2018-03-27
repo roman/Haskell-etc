@@ -27,7 +27,7 @@ option_tests = testGroup
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
-    config                  <- SUT.resolvePlainCliPure spec "program" ["-g", "hello cli"]
+    config <- SUT.resolvePlainCliPure spec "program" ["-g", "hello cli"]
 
     case SUT.getAllConfigSources ["greeting"] config of
       Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
@@ -88,7 +88,7 @@ option_tests = testGroup
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
-    config                  <- SUT.resolvePlainCliPure spec "program" []
+    config                      <- SUT.resolvePlainCliPure spec "program" []
 
     case SUT.getConfigValue ["greeting"] config of
       Just aSet ->
@@ -155,7 +155,7 @@ argument_tests = testGroup
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
-    config                  <- SUT.resolvePlainCliPure spec "program" []
+    config                      <- SUT.resolvePlainCliPure spec "program" []
 
     case SUT.getConfigValue ["greeting"] config of
       (Nothing :: Maybe ()) -> return ()

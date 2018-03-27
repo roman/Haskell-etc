@@ -14,7 +14,7 @@ import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
 import qualified Data.Aeson as JSON
-import Paths_etc (getDataFileName)
+import           Paths_etc  (getDataFileName)
 
 import System.Etc
 
@@ -103,7 +103,6 @@ tests = testGroup
             Just (ConfigurationFileNotFound _) -> return ()
             _ -> assertFailure
               ("Expecting ConfigurationFileNotFound; got instead " <> show err)
-
   , testCase "null file input has no precedence over default values" $ do
     jsonFilepath <- getDataFileName "test/fixtures/config.null.json"
     let input = mconcat
@@ -115,29 +114,27 @@ tests = testGroup
           , "      \"etc/spec\": {"
           , "        \"default\": \"hola\""
           , "}}}}"
-
           ]
 
     (spec :: ConfigSpec ()) <- parseConfigSpec input
-    (configFiles, _errs)          <- resolveFiles spec
+    (configFiles, _errs)    <- resolveFiles spec
     let configDef = resolveDefault spec
-        config = configDef <> configFiles
+        config    = configDef <> configFiles
 
     case getAllConfigSources ["greeting"] config of
-      Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
+      Nothing -> assertFailure ("expecting to get entries for greeting\n" <> show config)
       Just aSet ->
-        let
-          result =
-               any (\entry ->
-                     case entry of
-                       File _ _ (Plain JSON.Null) -> True
-                       _ -> False)
-                  aSet
-        in assertBool ("expecting to see entry from env; got " <> show aSet) result
+        let result = any
+              (\entry -> case entry of
+                File _ _ (Plain JSON.Null) -> True
+                _                          -> False
+              )
+              aSet
+        in  assertBool ("expecting to see entry from env; got " <> show aSet) result
 
     case getConfigValue ["greeting"] config of
-      Just greeting ->
-        assertEqual "Didn't take default value, despite CLI being null" ("hola" :: Text) greeting
-      Nothing ->
-        assertFailure "Expecting config value, but got nothing"
+      Just greeting -> assertEqual "Didn't take default value, despite CLI being null"
+                                   ("hola" :: Text)
+                                   greeting
+      Nothing -> assertFailure "Expecting config value, but got nothing"
   ]
