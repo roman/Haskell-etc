@@ -49,6 +49,7 @@ module System.Etc (
   -- * Extra utilities
   -- $extra
   , renderConfig
+  , renderConfigColor
   , printPrettyConfig
   , hPrintPrettyConfig
 
@@ -83,7 +84,7 @@ import System.Etc.Internal.Extra.EnvMisspell
     , reportEnvMisspellingWarnings
     )
 import System.Etc.Internal.Extra.Printer
-    (hPrintPrettyConfig, printPrettyConfig, renderConfig)
+    (hPrintPrettyConfig, printPrettyConfig, renderConfig, renderConfigColor)
 #endif
 
 import System.Etc.Internal.Config ()
