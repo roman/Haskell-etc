@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           etc
-version:        0.2.0.1
+version:        0.3.0.0
 synopsis:       Declarative configuration spec for Haskell projects
 description:    `etc` gathers configuration values from multiple sources (cli options, OS
                 environment variables, files) using a declarative spec file that defines where
@@ -11,8 +11,8 @@ description:    `etc` gathers configuration values from multiple sources (cli op
 category:       Configuration, System
 homepage:       https://github.com/roman/Haskell-etc
 author:         Roman Gonzalez
-maintainer:     romanandreg@gmail.com
-copyright:      2017 Roman Gonzalez
+maintainer:     open-source@roman-gonzalez.info
+copyright:      2017, 2018 Roman Gonzalez
 tested-with:    GHC == 8.0.1, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.2
 license:        MIT
 license-file:   LICENSE
@@ -52,13 +52,15 @@ library
   hs-source-dirs: src
   ghc-options: -Wall
   build-depends:
-      base >=4.7 && <5
-    , aeson >=0.11
-    , rio   >= 0.0.1.0
-    , typed-process >= 0.1.1
-    , unliftio >= 0.1.1.0
-    , text   >= 0.0.1.0
-    , hashable >=1.2
+      base          >=4.7 && <5
+    , aeson         >=0.11
+    , hashable      >=1.2
+    , rio           >=0.0.1.0
+    , text          >=0.0.1.0
+    -- NOTE: bellow are rio dependencies that help the stack resolver, not
+    -- really required by etc
+    , typed-process >=0.1.1
+    , unliftio      >=0.1.1.0
 
   exposed-modules:
       System.Etc
@@ -110,10 +112,10 @@ test-suite etc-testsuite
       test
   ghc-options: -Wall
   build-depends:
-      base >=4.7
-    , aeson >=0.11
-    , rio   >=0.0.1.0
-    , tasty >=0.11
+      base        >=4.7
+    , aeson       >=0.11
+    , rio         >=0.0.1.0
+    , tasty       >=0.11
     , tasty-hunit >=0.9
     , etc
 
