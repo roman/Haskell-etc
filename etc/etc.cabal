@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           etc
-version:        0.3.0.0
+version:        0.3.1.0
 synopsis:       Declarative configuration spec for Haskell projects
 description:    `etc` gathers configuration values from multiple sources (cli options, OS
                 environment variables, files) using a declarative spec file that defines where
@@ -21,6 +21,7 @@ cabal-version:  >= 1.10
 data-files:
     test/fixtures/config.foo
     test/fixtures/config.json
+    test/fixtures/config.env.json
     test/fixtures/config.null.json
     test/fixtures/config.spec.yaml
     test/fixtures/config.yaml

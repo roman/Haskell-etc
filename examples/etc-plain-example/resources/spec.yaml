@@ -1,6 +1,8 @@
-etc/filepaths:
-- "./resources/config.yaml"
-- "/etc/etc-plain-example/config.yaml"
+etc/files:
+  env: PLAIN_EXAMPLE_CONFIG
+  paths:
+    - "./resources/config.yaml"
+    - "/etc/etc-plain-example/config.yaml"
 
 etc/cli:
   desc: "Description of the program that reads this configuration spec"

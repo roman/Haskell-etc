@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Resolver.File (resolveFiles) where
@@ -18,6 +19,8 @@ import qualified Data.Aeson          as JSON
 import qualified Data.Aeson.Internal as JSON (IResult (..), iparse)
 import qualified RIO.ByteString.Lazy as LB8
 
+import System.Environment (lookupEnv)
+
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types      hiding (filepath)
 
@@ -31,8 +34,13 @@ data ConfigFile
 --------------------------------------------------------------------------------
 
 parseConfigValue
-  :: Monad m => Maybe (Spec.ConfigValue cmd) -> Int -> Text -> JSON.Value -> m ConfigValue
-parseConfigValue mSpec fileIndex filepath json = case json of
+  :: Monad m
+  => Maybe (Spec.ConfigValue cmd)
+  -> Int
+  -> FileSource
+  -> JSON.Value
+  -> m ConfigValue
+parseConfigValue mSpec fileIndex fileSource json = case json of
   JSON.Object object -> SubConfig <$> foldM
     (\acc (key, subConfigValue) -> do
       let msubConfigSpec = do
@@ -43,7 +51,7 @@ parseConfigValue mSpec fileIndex filepath json = case json of
                 -- TODO: This should be an error given the config doesn't match spec
                 fail "configuration spec and configuration value are different"
 
-      value1 <- parseConfigValue msubConfigSpec fileIndex filepath subConfigValue
+      value1 <- parseConfigValue msubConfigSpec fileIndex fileSource subConfigValue
       return $ HashMap.insert key value1 acc
     )
     HashMap.empty
@@ -57,7 +65,7 @@ parseConfigValue mSpec fileIndex filepath json = case json of
             _ -> fail "configuration spec and configuration value are different"
 
         toValue = fromMaybe Plain mToValue
-    in  return $ ConfigValue (Set.singleton $ File fileIndex filepath (toValue json))
+    in  return $ ConfigValue (Set.singleton $ File fileIndex fileSource (toValue json))
 
 
 eitherDecode :: ConfigFile -> Either String JSON.Value
@@ -75,14 +83,15 @@ eitherDecode contents0 = case contents0 of
 #endif
 
 
-parseConfig :: MonadThrow m => Spec.ConfigValue cmd -> Int -> Text -> ConfigFile -> m Config
-parseConfig spec fileIndex filepath contents = case eitherDecode contents of
-  Left  err  -> throwM $ InvalidConfiguration Nothing (Text.pack err)
+parseConfig
+  :: MonadThrow m => Spec.ConfigValue cmd -> Int -> FileSource -> ConfigFile -> m Config
+parseConfig spec fileIndex fileSource contents = case eitherDecode contents of
+  Left err -> throwM $ InvalidConfiguration Nothing (Text.pack err)
 
-  Right json -> case JSON.iparse (parseConfigValue (Just spec) fileIndex filepath) json of
-    JSON.IError _ err    -> throwM $ InvalidConfiguration Nothing (Text.pack err)
-
-    JSON.ISuccess result -> return (Config result)
+  Right json ->
+    case JSON.iparse (parseConfigValue (Just spec) fileIndex fileSource) json of
+      JSON.IError _ err    -> throwM $ InvalidConfiguration Nothing (Text.pack err)
+      JSON.ISuccess result -> return (Config result)
 
 readConfigFile :: MonadThrow m => Text -> IO (m ConfigFile)
 readConfigFile filepath =
@@ -103,18 +112,19 @@ readConfigFile filepath =
                 (throwM $ InvalidConfiguration Nothing "Unsupported file extension")
         else return $ throwM $ ConfigurationFileNotFound filepath
 
-readConfigFromFiles :: Spec.ConfigSpec cmd -> IO (Config, [SomeException])
-readConfigFromFiles spec =
-  Spec.specConfigFilepaths spec
+readConfigFromFileSources
+  :: Spec.ConfigSpec cmd -> [FileSource] -> IO (Config, [SomeException])
+readConfigFromFileSources spec fileSources =
+  fileSources
     & zip [1 ..]
     & mapM
-        (\(fileIndex, filepath) -> do
-          mContents <- readConfigFile filepath
+        (\(fileIndex, fileSource) -> do
+          mContents <- readConfigFile (fileSourcePath fileSource)
           return
             (   mContents
             >>= parseConfig (Spec.SubConfig $ Spec.specConfigValues spec)
                             fileIndex
-                            filepath
+                            fileSource
             )
         )
     & (foldl'
@@ -124,6 +134,23 @@ readConfigFromFiles spec =
         )
         (mempty, []) <$>
       )
+
+processFilesSpec :: Spec.ConfigSpec cmd -> IO (Config, [SomeException])
+processFilesSpec spec = case Spec.specConfigFilepaths spec of
+  Nothing -> readConfigFromFileSources spec []
+  Just (Spec.FilePathsSpec paths) ->
+    readConfigFromFileSources spec (map FilePathSource paths)
+  Just (Spec.FilesSpec fileEnvVar paths0) -> do
+    let getPaths = case fileEnvVar of
+          Nothing       -> return $ map FilePathSource paths0
+          Just filePath -> do
+            envFilePath <- lookupEnv (Text.unpack filePath)
+            let envPath =
+                  maybeToList ((EnvVarFileSource filePath . Text.pack) <$> envFilePath)
+            return $ map FilePathSource paths0 ++ envPath
+
+    paths <- getPaths
+    readConfigFromFileSources spec paths
 
 {-|
 
@@ -137,5 +164,5 @@ resolveFiles
   :: Spec.ConfigSpec cmd -- ^ Config Spec
   -> IO (Config, Vector SomeException) -- ^ Configuration Map with all values from files filled in and a list of warnings
 resolveFiles spec = do
-  (config, exceptions) <- readConfigFromFiles spec
+  (config, exceptions) <- processFilesSpec spec
   return (config, Vector.fromList exceptions)
