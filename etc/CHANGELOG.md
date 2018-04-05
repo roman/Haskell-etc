@@ -1,3 +1,10 @@
+0.3.1.0
+----
+
+* Add new `etc/files` entry to the spec file which allows to specify an
+  environment variable to fetch a file
+
+
 0.3.0.0
 ----
 **BREAKING CHANGES**
