@@ -54,10 +54,21 @@ renderConfig' ColorFn { greenColor, blueColor } (Config configValue0) =
     renderSource key source' = case source' of
       Default value' -> (renderJsonValue key value', brackets' (fill 10 (text "Default")))
 
-      File _index filepath' value' ->
-        ( renderJsonValue key value'
-        , brackets' (fill 10 (text "File:" <+> text (Text.unpack filepath')))
-        )
+      File _index fileSource value' -> case fileSource of
+        FilePathSource filepath' ->
+          ( renderJsonValue key value'
+          , brackets' (fill 10 (text "File:" <+> text (Text.unpack filepath')))
+          )
+        EnvVarFileSource envVar filepath' ->
+          ( renderJsonValue key value'
+          , brackets'
+            (fill
+              10
+              (text "File:" <+> text (Text.unpack envVar) <> "=" <> text
+                (Text.unpack filepath')
+              )
+            )
+          )
 
       Env varname value' ->
         ( renderJsonValue key value'

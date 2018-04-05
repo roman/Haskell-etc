@@ -260,13 +260,13 @@ yaml_tests =
       let
         keys  = ["greeting"]
       path   <- getDataFileName "test/fixtures/config.spec.yaml"
-      mconfig <- YAML.decodeFile path
+      econfig <- YAML.decodeFileEither path
 
-      case mconfig of
-        Nothing ->
-          assertFailure "yaml file did not have a configuration spec"
+      case econfig of
+        Left err ->
+          assertFailure $ "yaml file did not have a configuration spec: " <> show err
 
-        Just (config :: ConfigSpec ()) ->
+        Right (config :: ConfigSpec ()) ->
           case getConfigValue keys (specConfigValues config) of
             Nothing ->
               assertFailure (show keys ++ " should map to a config value, got sub config map instead")

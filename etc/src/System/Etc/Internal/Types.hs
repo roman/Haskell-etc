@@ -53,10 +53,15 @@ instance IsString a => IsString (Value a) where
 boolToValue :: Bool -> (a -> Value a)
 boolToValue = bool Plain Sensitive
 
+data FileSource
+  = FilePathSource { fileSourcePath :: !Text }
+  | EnvVarFileSource { fileSourceEnvVar :: !Text,  fileSourcePath :: !Text }
+  deriving (Show, Eq)
+
 data ConfigSource
   = File {
       configIndex :: !Int
-    , filepath    :: !Text
+    , filepath    :: !FileSource
     , value       :: !(Value JSON.Value)
     }
   | Env {

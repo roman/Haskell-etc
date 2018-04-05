@@ -94,9 +94,14 @@ data CliProgramSpec
   }
   deriving (Show, Eq)
 
+data FilesSpec
+  = FilePathsSpec ![Text]
+  | FilesSpec { fileLocationEnvVar :: !(Maybe Text), fileLocationPaths :: ![Text] }
+  deriving (Show, Eq)
+
 data ConfigSpec cmd
   = ConfigSpec {
-    specConfigFilepaths :: ![Text]
+    specConfigFilepaths :: !(Maybe FilesSpec)
   , specCliProgramSpec  :: !(Maybe CliProgramSpec)
   , specConfigValues    :: !(HashMap Text (ConfigValue cmd))
   }
@@ -258,12 +263,37 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
           , configSources = ConfigSources Nothing Nothing
           }
 
+
+parseFiles :: JSON.Value -> JSON.Parser FilesSpec
+parseFiles = JSON.withObject "FilesSpec" $ \object -> do
+  files  <- object .: "etc/files"
+  mEnv   <- files .:? "env"
+  mPaths <- files .:? "paths"
+  if isNothing mEnv && isNothing mPaths
+    then fail "either `env` or a `paths` keys are required when using `etc/files`"
+    else return $ FilesSpec mEnv (fromMaybe [] mPaths)
+
+parseFilePaths :: JSON.Value -> JSON.Parser FilesSpec
+parseFilePaths =
+  JSON.withObject "FilesSpec" $ \object -> FilePathsSpec <$> object .: "etc/filepaths"
+
+parseFileSpec :: JSON.Value -> JSON.Parser (Maybe FilesSpec)
+parseFileSpec json@(JSON.Object object) = do
+  mFiles     <- object .:? "etc/files"
+  mFilePaths <- object .:? "etc/filepaths"
+  if isJust (mFiles :: Maybe JSON.Value) && isJust (mFilePaths :: Maybe JSON.Value)
+    then fail "either the `etc/files` or `etc/filepaths` key can be used; not both"
+    else if isJust mFiles
+      then Just <$> parseFiles json
+      else if isJust mFilePaths then Just <$> parseFilePaths json else pure Nothing
+parseFileSpec _ = pure Nothing
+
 instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec cmd) where
-  parseJSON json  =
+  parseJSON json =
     case json of
       JSON.Object object ->
         ConfigSpec
-        <$> (fromMaybe [] <$> (object .:?  "etc/filepaths"))
+        <$> parseFileSpec json
         <*> (object .:? "etc/cli")
         <*> (fromMaybe HashMap.empty <$> (object .:? "etc/entries"))
       _ ->

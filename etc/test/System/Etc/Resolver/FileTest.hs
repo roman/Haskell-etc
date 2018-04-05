@@ -16,12 +16,30 @@ import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 import qualified Data.Aeson as JSON
 import           Paths_etc  (getDataFileName)
 
-import System.Etc
+import System.Environment (setEnv)
 
+import System.Etc
+import System.Etc.Internal.Types (FileSource (..))
 
 tests :: TestTree
 tests = testGroup
-  "file"
+  "files"
+  [ testCase "fail if using both `etc/files` and `etc/filepaths`" $ do
+    let input = "{\"etc/files\": {}, \"etc/filepaths\": []}"
+
+    (espec :: Either ConfigurationError (ConfigSpec ())) <- try $ parseConfigSpec input
+    case espec of
+      Left (InvalidConfiguration _ _) -> return ()
+      _ ->
+        assertFailure ("Expecting InvalidConfigurationError; got instead " <> show espec)
+  , filePathsTests
+  , filesTest
+  ]
+
+
+filePathsTests :: TestTree
+filePathsTests = testGroup
+  "etc/filepaths"
   [ testCase "supports json, yaml and yml extensions" $ do
     jsonFilepath <- getDataFileName "test/fixtures/config.json"
 #ifdef WITH_YAML
@@ -47,14 +65,14 @@ tests = testGroup
         ("expecting to get entries for greeting (check fixtures)\n" <> show config)
       Just aSet -> assertBool
         ("expecting to see entry from json config file " <> show aSet)
-        (Set.member (File 1 (Text.pack jsonFilepath) "hello json") aSet)
+        (Set.member (File 1 (FilePathSource $ Text.pack jsonFilepath) "hello json") aSet)
 
 #ifdef WITH_YAML
        >> assertBool ("expecting to see entry from yaml config file " <> show aSet)
-                     (Set.member (File 2 (Text.pack jsonFilepath) "hello yaml") aSet)
+                     (Set.member (File 2 (FilePathSource $ Text.pack jsonFilepath) "hello yaml") aSet)
 
        >> assertBool ("expecting to see entry from yml config file " <> show aSet)
-                     (Set.member (File 3 (Text.pack jsonFilepath) "hello yml") aSet)
+                     (Set.member (File 3 (FilePathSource $ Text.pack jsonFilepath) "hello yml") aSet)
 #endif
   , testCase "does not support any other file extension" $ do
     fooFilepath <- getDataFileName "test/fixtures/config.foo"
@@ -69,9 +87,11 @@ tests = testGroup
     if Vector.null errs
       then assertFailure "expecting one error, got none"
       else
-        let err = Vector.head errs
+        let err = do
+              e <- errs Vector.!? 0
+              fromException e
         in
-          case fromException err of
+          case err of
             Just (InvalidConfiguration _ _) -> return ()
             _                               -> assertFailure
               ("Expecting InvalidConfigurationError; got instead " <> show err)
@@ -92,14 +112,16 @@ tests = testGroup
         ("expecting to get entries for greeting (check fixtures)\n" <> show config)
       Just aSet -> assertBool
         ("expecting to see entry from json config file " <> show aSet)
-        (Set.member (File 1 (Text.pack jsonFilepath) "hello json") aSet)
+        (Set.member (File 1 (FilePathSource $ Text.pack jsonFilepath) "hello json") aSet)
 
     if Vector.null errs
       then assertFailure "expecting one error, got none"
       else
-        let err = Vector.head errs
+        let err = do
+              e <- errs Vector.!? 0
+              fromException e
         in
-          case fromException err of
+          case err of
             Just (ConfigurationFileNotFound _) -> return ()
             _ -> assertFailure
               ("Expecting ConfigurationFileNotFound; got instead " <> show err)
@@ -137,4 +159,50 @@ tests = testGroup
                                    ("hola" :: Text)
                                    greeting
       Nothing -> assertFailure "Expecting config value, but got nothing"
+  ]
+
+filesTest :: TestTree
+filesTest = testGroup
+  "etc/files"
+  [ testCase "at least the `env` or `paths` keys must be present" $ do
+    let input = "{\"etc/files\": {}}"
+
+    (espec :: Either ConfigurationError (ConfigSpec ())) <- try $ parseConfigSpec input
+    case espec of
+      Left (InvalidConfiguration _ _) -> return ()
+      _ ->
+        assertFailure ("Expecting InvalidConfigurationError; got instead " <> show espec)
+  , testCase "environment variable has precedence over all others" $ do
+    jsonFilepath <- getDataFileName "test/fixtures/config.json"
+    envFilePath  <- getDataFileName "test/fixtures/config.env.json"
+    let input = mconcat
+          [ "{\"etc/files\": {"
+          , "  \"env\": \"ENV_FILE_TEST\","
+          , "  \"paths\": [\"" <> Text.pack jsonFilepath <> "\"]"
+          , "}}"
+          ]
+
+        envFileTest = "ENV_FILE_TEST"
+
+    setEnv (Text.unpack envFileTest) envFilePath
+
+    (spec :: ConfigSpec ()) <- parseConfigSpec input
+    (config, _)             <- resolveFiles spec
+
+    case getAllConfigSources ["greeting"] config of
+      Nothing -> assertFailure
+        ("expecting to get entries for greeting (check fixtures)\n" <> show config)
+      Just aSet -> do
+        assertBool
+          ("expecting to see entry from env config file " <> show aSet)
+          (Set.member
+            (File 1
+                  (EnvVarFileSource envFileTest $ Text.pack envFilePath)
+                  "hello environment"
+            )
+            aSet
+          )
+        assertBool
+          ("expecting to see entry from json config file " <> show aSet)
+          (Set.member (File 2 (FilePathSource $ Text.pack jsonFilepath) "hello json") aSet)
   ]
