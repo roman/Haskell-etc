@@ -25,10 +25,10 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: build-cache-{{ checksum "package.yaml" }}-sdist
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-sdist
       - run: "make -f make/solver.make fix-solver && make test"
       - save_cache:
-          key: build-cache-{{ checksum "package.yaml" }}-sdist
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-sdist
           paths:
             - /root/.stack
             - /root/.cabal
@@ -43,10 +43,10 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: build-cache-{{ checksum "package.yaml" }}-lts11
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-lts11
       - run: "make -f make/solver.make fix-solver && make test"
       - save_cache:
-          key: build-cache-{{ checksum "package.yaml" }}-lts11
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-lts11
           paths:
             - /root/.stack
             - /root/.ghc
@@ -61,10 +61,10 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: build-cache-{{ checksum "package.yaml" }}-lts9
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-lts9
       - run: "make -f make/solver.make fix-solver && make test"
       - save_cache:
-          key: build-cache-{{ checksum "package.yaml" }}-lts9
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-lts9
           paths:
             - /root/.stack
             - /root/.ghc
@@ -79,10 +79,10 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: build-cache-{{ checksum "package.yaml" }}-lts7
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-lts7
       - run: "make -f make/solver.make fix-solver && make test"
       - save_cache:
-          key: build-cache-{{ checksum "package.yaml" }}-lts7
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-lts7
           paths:
             - /root/.stack
             - /root/.ghc
@@ -97,10 +97,10 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: build-cache-{{ checksum "package.yaml" }}-nightly
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-nightly
       - run: "make -f make/solver.make fix-solver && make test"
       - save_cache:
-          key: build-cache-{{ checksum "package.yaml" }}-nightly
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-nightly
           paths:
             - /root/.stack
             - /root/.ghc
