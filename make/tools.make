@@ -1,7 +1,7 @@
 # -*- mode: Makefile; -*-
 ################################################################################
 
-TOOLS_DIR := ./tools/bin
+TOOLS_DIR ?= ./tools/bin
 
 BRITTANY_BIN := $(TOOLS_DIR)/brittany
 STYLISH_BIN := $(TOOLS_DIR)/stylish-haskell
@@ -24,7 +24,7 @@ $(STYLISH_BIN):
 $(REFACTOR_BIN):
 	$(STACK) install apply-refact
 
-$(HLINT_BIN): $(REFACTOR_BIN)
+$(HLINT_BIN):
 	$(STACK) install hlint
 
 ################################################################################
@@ -34,9 +34,13 @@ format: $(STYLISH_BIN) $(BRITTANY_BIN) ## Normalize style on source files
 	git diff --exit-code
 .PHONY: format
 
-lint: $(HLINT_BIN) ## Execute linter on source files
-	for f in $$($(FIND_HASKELL_FILES)); do echo $$f; $(HLINT_BIN) --with-refactor=$$(pwd)/$(REFACTOR_BIN) --refactor --refactor-options -i $$f; done
+remove-lint: $(HLINT_BIN) $(REFACTOR_BIN) ## Fix lint on source files automatically
+	for f in $$($(FIND_HASKELL_FILES)); do echo $$f; $(HLINT_BIN) --hint=./.hlint.yml --with= --with-refactor=$(REFACTOR_BIN) --refactor --refactor-options -i $$f; done
 	git diff --exit-code
+.PHONY: remove-lint
+
+lint: $(HLINT_BIN) ## Execute linter on source files
+	for f in $$($(FIND_HASKELL_FILES)); do echo $$f; $(HLINT_BIN) --hint=./.hlint.yml --with= $$f; done
 .PHONY: lint
 
 help:	## Display this message
