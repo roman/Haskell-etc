@@ -47,6 +47,13 @@
 
 # Ignore some builtin hints
 - ignore: {name: Use String}
+- ignore: {name: Use lambda-case}
+- ignore:
+    name: Use camelCase
+    within:
+    - System.Etc.SpecTest
+    - System.Etc.Resolver.Cli.PlainTest
+    - System.Etc.Resolver.Cli.CommandTest
 # - ignore: {name: Use let}
 # - ignore: {name: Use const, within: SpecialModule} # Only within certain modules
 

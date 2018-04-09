@@ -87,22 +87,22 @@ settingsToJsonCli sensitive specSettings =
   in
     requiredCombinator $ case specSettings of
       Spec.Opt{} -> case Spec.optValueType specSettings of
-        Spec.StringOpt -> (boolToValue sensitive . JSON.String . Text.pack)
-          <$> Opt.strOption (specToCliVarFieldMod specSettings)
+        Spec.StringOpt -> boolToValue sensitive . JSON.String . Text.pack <$> Opt.strOption
+          (specToCliVarFieldMod specSettings)
 
-        Spec.NumberOpt ->
-          (boolToValue sensitive . JSON.Number . fromInteger)
-            <$> Opt.option Opt.auto (specToCliVarFieldMod specSettings)
+        Spec.NumberOpt -> boolToValue sensitive . JSON.Number . fromInteger <$> Opt.option
+          Opt.auto
+          (specToCliVarFieldMod specSettings)
 
-        Spec.SwitchOpt -> (boolToValue sensitive . JSON.Bool)
-          <$> Opt.switch (specToCliSwitchFieldMod specSettings)
+        Spec.SwitchOpt -> boolToValue sensitive . JSON.Bool <$> Opt.switch
+          (specToCliSwitchFieldMod specSettings)
 
       Spec.Arg{} -> case Spec.argValueType specSettings of
         Spec.StringArg ->
-          (boolToValue sensitive . JSON.String . Text.pack) <$> Opt.strArgument
+          boolToValue sensitive . JSON.String . Text.pack <$> Opt.strArgument
             (specSettings & Spec.argMetavar & maybe Opt.idm (Opt.metavar . Text.unpack))
         Spec.NumberArg ->
-          (boolToValue sensitive . JSON.Number . fromInteger) <$> Opt.argument
+          boolToValue sensitive . JSON.Number . fromInteger <$> Opt.argument
             Opt.auto
             (specSettings & Spec.argMetavar & maybe Opt.idm (Opt.metavar . Text.unpack))
 

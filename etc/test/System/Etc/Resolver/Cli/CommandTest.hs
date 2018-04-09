@@ -106,7 +106,7 @@ with_command_option_tests = testGroup
           , "    \"desc\": \"\""
           , "  , \"header\": \"\""
           , "  , \"commands\": {"
-          , "      \"test\": {\"header\": \"\", \"desc\": \"\"}}}"
+          , "      \"test1\": {\"header\": \"\", \"desc\": \"\"}}}"
           , ", \"etc/entries\": {"
           , "    \"greeting\": {"
           , "      \"etc/spec\": {"
@@ -116,13 +116,13 @@ with_command_option_tests = testGroup
           , "        , \"long\": \"greeting\""
           , "        , \"type\": \"string\""
           , "        , \"required\": false"
-          , "        , \"commands\": [\"test\"]"
+          , "        , \"commands\": [\"test1\"]"
           , "}}}}}"
           ]
     (spec :: ConfigSpec Text) <- parseConfigSpec input
-    (cmd, config)             <- resolveCommandCliPure spec "program" ["test"]
+    (cmd, config)             <- resolveCommandCliPure spec "program" ["test1"]
 
-    assertEqual "invalid command output" "test" cmd
+    assertEqual "invalid command output" "test1" cmd
 
     case getConfigValue ["greeting"] config of
       Just aSet ->

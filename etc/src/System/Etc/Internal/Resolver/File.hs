@@ -146,7 +146,7 @@ processFilesSpec spec = case Spec.specConfigFilepaths spec of
           Just filePath -> do
             envFilePath <- lookupEnv (Text.unpack filePath)
             let envPath =
-                  maybeToList ((EnvVarFileSource filePath . Text.pack) <$> envFilePath)
+                  maybeToList (EnvVarFileSource filePath . Text.pack <$> envFilePath)
             return $ map FilePathSource paths0 ++ envPath
 
     paths <- getPaths

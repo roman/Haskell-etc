@@ -10,9 +10,13 @@ import qualified Data.Aeson       as JSON
 import           Test.Tasty       (TestTree, testGroup)
 import           Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
-
-
 import System.Etc
+
+assertDefaultValue :: Config -> [Text] -> Value JSON.Value -> IO ()
+assertDefaultValue config keys val = case getAllConfigSources keys config of
+  Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
+  Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
+                          (Set.member (Default val) aSet)
 
 tests :: TestTree
 tests = testGroup
@@ -20,26 +24,18 @@ tests = testGroup
   [ testCase "default is used when defined on spec" $ do
     let input = mconcat
           [ "{\"etc/entries\": {"
-          , " \"greeting\": { \"etc/spec\": { \"default\": \"hello default\" }}}}"
+          , " \"greeting\": { \"etc/spec\": { \"default\": \"hello default 1\" }}}}"
           ]
+
     (spec :: ConfigSpec ()) <- parseConfigSpec input
-
     let config = resolveDefault spec
-
-    case getAllConfigSources ["greeting"] config of
-      Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
-      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (Default "hello default") aSet)
+    assertDefaultValue config ["greeting"] "hello default 1"
   , testCase "default can be raw JSON value on entries spec" $ do
-    let input = mconcat ["{\"etc/entries\": {", " \"greeting\": \"hello default\"}}"]
+    let input = mconcat ["{\"etc/entries\": {", " \"greeting\": \"hello default 2\"}}"]
     (spec :: ConfigSpec ()) <- parseConfigSpec input
 
     let config = resolveDefault spec
-
-    case getAllConfigSources ["greeting"] config of
-      Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
-      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (Default "hello default") aSet)
+    assertDefaultValue config ["greeting"] "hello default 2"
   , testCase "default can be a null JSON value" $ do
     let input = mconcat ["{\"etc/entries\": {", " \"greeting\": null}}"]
     (spec :: ConfigSpec ()) <- parseConfigSpec input
