@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/roman/Haskell-etc.svg?branch=master)](https://travis-ci.org/roman/Haskell-etc)
+[![CircleCI](https://circleci.com/gh/roman/Haskell-etc.svg?style=svg)](https://circleci.com/gh/roman/Haskell-etc)
 [![Github](https://img.shields.io/github/commits-since/roman/haskell-etc/v0.3.1.0.svg)](https://img.shields.io/github/commits-since/roman/haskell-etc/v0.3.1.0.svg)
 [![Hackage](https://img.shields.io/hackage/v/etc.svg)](https://img.shields.io/hackage/v/etc.svg)
 [![Hackage Dependencies](https://img.shields.io/hackage-deps/v/etc.svg)](https://img.shields.io/hackage/v/etc.svg)
