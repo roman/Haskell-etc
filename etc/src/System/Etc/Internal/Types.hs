@@ -39,7 +39,7 @@ instance Functor Value where
       Sensitive a -> Sensitive (f a)
 
 instance Applicative Value where
-  pure a = Plain a
+  pure = Plain
   (<*>) vf va =
     case (vf, va) of
       (Plain f, Plain a)         -> Plain (f a)
