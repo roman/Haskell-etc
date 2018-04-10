@@ -60,8 +60,12 @@ instance Exception CliConfigError
 
 specToCliSwitchFieldMod specSettings =
   maybe Opt.idm (Opt.long . Text.unpack) (Spec.optLong specSettings)
-    `mappend` maybe Opt.idm (Opt.short . Text.head)  (Spec.optShort specSettings)
+    `mappend` maybe Opt.idm Opt.short                shortOption
     `mappend` maybe Opt.idm (Opt.help . Text.unpack) (Spec.optHelp specSettings)
+ where
+  shortOption = do
+    shortStr <- Spec.optShort specSettings
+    fst <$> Text.uncons shortStr
 
 specToCliVarFieldMod specSettings = specToCliSwitchFieldMod specSettings
   `mappend` maybe Opt.idm (Opt.metavar . Text.unpack) (Spec.optMetavar specSettings)

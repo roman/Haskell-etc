@@ -8,7 +8,7 @@ import           RIO
 import qualified RIO.Vector as Vector
 
 import Test.Tasty       (TestTree, testGroup)
-import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
+import Test.Tasty.HUnit (assertEqual, assertFailure, testCase)
 
 import System.Etc
 
@@ -23,11 +23,11 @@ tests = testGroup
 
       (spec :: ConfigSpec ()) <- parseConfigSpec input
 
-      let result = getEnvMisspellingsPure spec ["GREEING"]
+      let result0 = getEnvMisspellingsPure spec ["GREEING"]
 
-      assertBool "expecting to get a warning for typo" (not $ Vector.null result)
-
-      assertEqual "expecting to get typo for key GREETING"
-                  (EnvMisspell "GREEING" "GREETING")
-                  (Vector.head result)
+      case result0 Vector.!? 0 of
+        Nothing     -> assertFailure "expecting to get a warning for typo"
+        Just result -> assertEqual "expecting to get typo for key GREETING"
+                                   (EnvMisspell "GREEING" "GREETING")
+                                   result
   ]
