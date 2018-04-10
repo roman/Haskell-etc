@@ -9,11 +9,12 @@ module System.Etc.Internal.Extra.Printer (
   , hPrintPrettyConfig
   ) where
 
-import           RIO         hiding ((<>))
-import qualified RIO.HashMap as HashMap
-import           RIO.List    (intersperse, maximum)
-import qualified RIO.Set     as Set
-import qualified RIO.Text    as Text
+import           RIO              hiding ((<>))
+import qualified RIO.HashMap      as HashMap
+import           RIO.List         (intersperse)
+import           RIO.List.Partial (maximum)
+import qualified RIO.Set          as Set
+import qualified RIO.Text         as Text
 
 import qualified Data.Aeson as JSON
 
@@ -82,9 +83,13 @@ renderConfig' ColorFn { greenColor, blueColor } (Config configValue0) =
     renderSources :: Text -> [ConfigSource] -> Doc
     renderSources keys sources0 =
       let
+        -- NOTE: I've already checked for the list to not be empty,
+        -- so is safe to do this destructuring here
         sources@(((selValueDoc, _), selSourceDoc) : others) =
           map (renderSource keys) sources0
 
+        -- NOTE: I've already checked for the list to not be empty,
+        -- so is safe to use partial function maximum here
         fillingWidth  = sources & map (snd . fst) & maximum & max 10
 
         selectedValue = [greenColor $ fill fillingWidth selValueDoc <+> selSourceDoc]
