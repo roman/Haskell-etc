@@ -1,7 +1,7 @@
 0.3.2.0
 ----
 
-* Upgrade to `rio` to version `0.1.0.0`
+* Upgrade to `rio` to version `0.1.1.0`
 
 0.3.1.0
 ----
