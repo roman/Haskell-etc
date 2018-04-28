@@ -4,9 +4,11 @@
 
 * Add new `type` field to `etc/spec` with support for `string`, `number`, `bool`, `[string]`, `[number]` and `[bool]`
 * Remove `type` field in `cli` spec in favor of `type` on `etc/spec`
-* Allow ENV vars to accept supported types (only strings were allowed)
+* Allow ENV vars to accept supported types (only strings were allowed) (closes #30)
 * Allow CLI options to accept supported types (only strings and numbers were allowed)
 * Allow spec file to have array as default values
+* Return a warning and an empty config whenever configuration files contain
+  entries not defined in the spec (closes #26)
 
 0.3.2.0
 ----

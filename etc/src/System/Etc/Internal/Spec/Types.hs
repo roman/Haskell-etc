@@ -251,7 +251,7 @@ jsonToConfigValueType json = case json of
 
 matchesConfigValueType :: JSON.Value -> ConfigValueType -> Bool
 matchesConfigValueType json cvType = case (json, cvType) of
-  (JSON.Null, CVTSingle _) -> True
+  (JSON.Null    , CVTSingle _        ) -> True
   (JSON.String{}, CVTSingle CVTString) -> True
   (JSON.Number{}, CVTSingle CVTNumber) -> True
   (JSON.Bool{}  , CVTSingle CVTBool  ) -> True
@@ -267,10 +267,9 @@ assertMatchingConfigValueType json cvType
 getConfigValueType
   :: Maybe JSON.Value -> Maybe ConfigValueType -> JSON.Parser ConfigValueType
 getConfigValueType mdefValue mCvType = case (mdefValue, mCvType) of
-  (Just JSON.Null, Just cvType) ->
-    pure cvType
+  (Just JSON.Null, Just cvType) -> pure cvType
 
-  (Just defValue, Just cvType) -> do
+  (Just defValue , Just cvType) -> do
     assertMatchingConfigValueType defValue cvType
     return cvType
 

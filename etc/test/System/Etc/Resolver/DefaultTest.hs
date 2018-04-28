@@ -30,16 +30,17 @@ tests = testGroup
     (spec :: ConfigSpec ()) <- parseConfigSpec input
     let config = resolveDefault spec
     assertDefaultValue config ["greeting"] "hello default 1"
-
   , testCase "default can be raw JSON value on entries spec" $ do
     let input = mconcat ["{\"etc/entries\": {\"greeting\": \"hello default 2\"}}"]
     (spec :: ConfigSpec ()) <- parseConfigSpec input
 
     let config = resolveDefault spec
     assertDefaultValue config ["greeting"] "hello default 2"
-
   , testCase "default can be a null JSON value" $ do
-    let input = mconcat ["{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\":\"number\",\"default\":null}}}}"]
+    let
+      input = mconcat
+        [ "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\":\"number\",\"default\":null}}}}"
+        ]
     (spec :: ConfigSpec ()) <- parseConfigSpec input
 
     let config = resolveDefault spec
