@@ -46,7 +46,7 @@ _getConfigValueWith parser keys0 (Config configValue0) =
         Just (source, _) -> case JSON.iparse parser (fromValue $ value source) of
 
           JSON.IError path err ->
-            let key = keys0 & reverse & Text.intercalate "."
+            let key = keys0 & Text.intercalate "."
             in  JSON.formatError path err
                 & Text.pack
                 & InvalidConfiguration (Just key)
@@ -57,7 +57,7 @@ _getConfigValueWith parser keys0 (Config configValue0) =
       ([], innerConfigValue) ->
         case JSON.iparse parser (configValueToJsonObject innerConfigValue) of
           JSON.IError path err ->
-            let key = keys0 & reverse & Text.intercalate "."
+            let key = keys0 & Text.intercalate "."
             in  JSON.formatError path err
                 & Text.pack
                 & InvalidConfiguration (Just key)

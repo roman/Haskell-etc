@@ -18,7 +18,7 @@ tests = testGroup
   [ testCase "it warns when misspell is present" $ do
       let input = mconcat
             [ "{\"etc/entries\": {"
-            , " \"greeting\": { \"etc/spec\": { \"env\": \"GREETING\" }}}}"
+            , " \"greeting\": { \"etc/spec\":{\"type\":\"string\",\"env\": \"GREETING\"}}}}"
             ]
 
       (spec :: ConfigSpec ()) <- parseConfigSpec input

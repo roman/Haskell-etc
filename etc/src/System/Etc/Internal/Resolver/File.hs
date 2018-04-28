@@ -61,7 +61,7 @@ parseConfigValue mSpec fileIndex fileSource json = case json of
     let mToValue = do
           spec <- mSpec
           case spec of
-            Spec.ConfigValue{} -> return $ boolToValue (Spec.isSensitive spec)
+            Spec.ConfigValue{} -> return $ markAsSensitive (Spec.isSensitive spec)
             _ -> fail "configuration spec and configuration value are different"
 
         toValue = fromMaybe Plain mToValue

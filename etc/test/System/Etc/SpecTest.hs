@@ -7,6 +7,7 @@ module System.Etc.SpecTest (tests) where
 
 import           RIO
 import qualified RIO.HashMap as HashMap
+import qualified RIO.Vector  as Vector
 
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
@@ -44,6 +45,22 @@ general_tests = testGroup
     case parseConfigSpec input of
       Nothing -> assertFailure "should not fail if no etc/entries key is present"
       Just (_ :: ConfigSpec ()) -> assertBool "" True
+  , testCase "fails when default JSON value doesn't correspond to type entry" $ do
+    let
+      input
+        = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":[123],\"type\":\"[string]\"}}}}"
+
+    case parseConfigSpec input of
+      Left err -> case fromException err of
+        Just (InvalidConfiguration{}) -> assertBool "" True
+
+        _ ->
+          assertFailure
+            $  "expecting to get an InvalidConfiguration error; but got "
+            <> show err
+
+      Right (_ :: ConfigSpec ()) ->
+        assertFailure "Expecting config spec parsing to fail, but didn't"
   , testCase "entries cannot finish in an empty map" $ do
     let input = "{\"etc/entries\":{\"greeting\":{}}}"
 
@@ -63,13 +80,50 @@ general_tests = testGroup
         keys  = ["greeting"]
 
     config <- parseConfigSpec input
-
     case getConfigValue keys (specConfigValues config) of
       Nothing -> assertFailure
         (show keys ++ " should map to a config value, got sub config map instead")
       Just (value :: ConfigValue ()) -> assertEqual "should contain default value"
                                                     (Just (JSON.Number 123))
                                                     (defaultValue value)
+  , testCase "entries that finish with arrays sets them as default value" $ do
+    let input = "{\"etc/entries\":{\"greeting\":[123]}}"
+        keys  = ["greeting"]
+
+    config <- parseConfigSpec input
+
+    case getConfigValue keys (specConfigValues config) of
+      Nothing -> assertFailure
+        (show keys ++ " should map to a config value, got sub config map instead")
+      Just (value :: ConfigValue ()) -> assertEqual
+        "should contain default value"
+        (Just (JSON.Array (Vector.fromList [JSON.Number 123])))
+        (defaultValue value)
+  , testCase "entries with empty arrays as values fail because type cannot be infered" $ do
+    let input = "{\"etc/entries\":{\"greeting\": []}}"
+    case parseConfigSpec input of
+      Left err -> case fromException err of
+        Just (InvalidConfiguration{}) -> assertBool "" True
+        _ ->
+          assertFailure $ "expecting InvalidConfiguration error; got instead " <> show err
+
+      Right (_configSpec :: ConfigSpec ()) ->
+        assertFailure "expecting config spec parse to fail, but didn't"
+  , testCase "entries with empty arrays as default values and a type do not fail" $ do
+    let
+      input
+        = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":[],\"type\":\"[string]\"}}}}"
+      keys = ["greeting"]
+
+    config <- parseConfigSpec input
+    case getConfigValue keys (specConfigValues config) of
+      Nothing -> assertFailure
+        (show keys ++ " should map to an array config value, got sub config map instead")
+
+      Just (value :: ConfigValue ()) -> assertEqual
+        "should contain default array value"
+        (Just (JSON.Array (Vector.fromList [])))
+        (defaultValue value)
   , testCase "entries can have many levels of nesting" $ do
     let input = "{\"etc/entries\":{\"english\":{\"greeting\":\"hello\"}}}"
         keys  = ["english", "greeting"]
@@ -145,7 +199,7 @@ cli_tests =
 
   , testCase "cli option entry requires either short or long" $ do
       let
-        input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"cli\":{\"input\":\"option\"}}}}}"
+        input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\": \"string\", \"cli\":{\"input\":\"option\"}}}}}"
 
       case parseConfigSpec input of
         Just (result :: ConfigSpec ()) ->
@@ -155,7 +209,7 @@ cli_tests =
 
   , testCase "cli option entry works when setting short and type" $ do
       let
-        input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"cli\":{\"input\":\"option\",\"short\":\"g\",\"type\":\"string\"}}}}}"
+        input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\":\"string\",\"cli\":{\"input\":\"option\",\"short\":\"g\"}}}}}"
         keys  = ["greeting"]
 
       (config :: ConfigSpec ()) <- parseConfigSpec input
@@ -163,9 +217,9 @@ cli_tests =
       let
         result = do
           value    <- getConfigValue keys (specConfigValues config)
+          let valueType = configValueType value
           PlainEntry metadata <- cliEntry (configSources value)
           short <- optShort metadata
-          valueType <- pure $ optValueType metadata
           return (short, valueType)
 
       case result of
@@ -173,21 +227,21 @@ cli_tests =
           assertFailure (show keys ++ " should map to a config value, got sub config map instead")
         Just (short, valueType) -> do
           assertEqual "should contain short" "g" short
-          assertEqual "should contain option type" StringOpt valueType
+          assertEqual "should contain option type" (CVTSingle CVTString) valueType
 
   , testCase "cli option entry works when setting long and type" $ do
       let
-        input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"cli\":{\"input\":\"option\",\"long\":\"greeting\",\"type\":\"string\"}}}}}"
+        input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\": \"string\",\"cli\":{\"input\":\"option\",\"long\":\"greeting\"}}}}}"
         keys  = ["greeting"]
 
       (config :: ConfigSpec ()) <- parseConfigSpec input
 
       let
         result = do
-          value    <- getConfigValue keys (specConfigValues config)
+          value  <- getConfigValue keys (specConfigValues config)
+          let valueType = configValueType value
           PlainEntry metadata <- cliEntry (configSources value)
           long <- optLong metadata
-          valueType <- pure $ optValueType metadata
           return (long, valueType)
 
       case result of
@@ -195,11 +249,11 @@ cli_tests =
           assertFailure (show keys ++ " should map to a config value, got sub config map instead")
         Just (long, valueType) -> do
           assertEqual "should contain long" "greeting" long
-          assertEqual "should contain option type" StringOpt valueType
+          assertEqual "should contain option type" (CVTSingle CVTString) valueType
 
   , testCase "cli entry accepts command" $ do
       let
-        input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"cli\":{\"input\":\"option\",\"long\":\"greeting\",\"type\":\"string\",\"commands\":[\"foo\"]}}}}}"
+        input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\": \"string\",\"cli\":{\"input\":\"option\",\"long\":\"greeting\",\"commands\":[\"foo\"]}}}}}"
         keys  = ["greeting"]
 
       (config :: ConfigSpec Text) <- parseConfigSpec input
@@ -207,9 +261,9 @@ cli_tests =
       let
         result = do
           value <- getConfigValue keys (specConfigValues config)
+          let valueType = configValueType value
           CmdEntry cmd metadata <- cliEntry (configSources value)
           long <- optLong metadata
-          valueType <- pure $ optValueType metadata
           return (cmd, long, valueType)
 
       case result of
@@ -218,7 +272,7 @@ cli_tests =
         Just (cmd, long, valueType) -> do
           assertEqual "should contain cmd" ["foo"] cmd
           assertEqual "should contain long" "greeting" long
-          assertEqual "should contain option type" StringOpt valueType
+          assertEqual "should contain option type" (CVTSingle CVTString) valueType
 
   , testCase "cli entry does not accept unrecognized keys" $ do
       let
@@ -238,8 +292,10 @@ envvar_tests :: TestTree
 envvar_tests = testGroup
   "env"
   [ testCase "env key creates an ENV source" $ do
-      let input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"env\":\"GREETING\"}}}}"
-          keys  = ["greeting"]
+      let
+        input
+          = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\": \"string\",\"env\":\"GREETING\"}}}}"
+        keys = ["greeting"]
 
       (config :: ConfigSpec ()) <- parseConfigSpec input
 

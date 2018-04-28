@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module System.Etc.Internal.Resolver.Cli.Plain (PlainConfigSpec, resolvePlainCli, resolvePlainCliPure) where
@@ -23,23 +24,26 @@ type PlainConfigSpec =
 
 entrySpecToConfigValueCli
   :: (MonadThrow m)
-  => Bool
+  => Spec.ConfigValueType
+  -> Bool
   -> Spec.CliEntrySpec ()
   -> m (Opt.Parser (Maybe (Value JSON.Value)))
-entrySpecToConfigValueCli sensitive entrySpec = case entrySpec of
-  Spec.CmdEntry{}              -> throwM CommandKeyOnPlainCli
+entrySpecToConfigValueCli cvType isSensitive entrySpec = case entrySpec of
+  Spec.CmdEntry{} -> throwM CommandKeyOnPlainCli
 
-  Spec.PlainEntry specSettings -> return (settingsToJsonCli sensitive specSettings)
+  Spec.PlainEntry specSettings ->
+    return (settingsToJsonCli cvType isSensitive specSettings)
 
 
 configValueSpecToCli
   :: (MonadThrow m)
   => Text
+  -> Spec.ConfigValueType
   -> Bool
   -> Spec.ConfigSources ()
   -> Opt.Parser ConfigValue
   -> m (Opt.Parser ConfigValue)
-configValueSpecToCli specEntryKey sensitive sources acc =
+configValueSpecToCli specEntryKey cvType isSensitive sources acc =
   let updateAccConfigOptParser configValueParser accOptParser =
         (\configValue accSubConfig -> case accSubConfig of
             ConfigValue{} -> accSubConfig
@@ -53,7 +57,7 @@ configValueSpecToCli specEntryKey sensitive sources acc =
         Nothing        -> return acc
 
         Just entrySpec -> do
-          jsonOptParser <- entrySpecToConfigValueCli sensitive entrySpec
+          jsonOptParser <- entrySpecToConfigValueCli cvType isSensitive entrySpec
 
           let configValueParser = jsonToConfigValue <$> jsonOptParser
 
@@ -88,8 +92,8 @@ specToConfigValueCli
   -> (Text, Spec.ConfigValue ())
   -> m (Opt.Parser ConfigValue)
 specToConfigValueCli acc (specEntryKey, specConfigValue) = case specConfigValue of
-  Spec.ConfigValue _ sensitive sources ->
-    configValueSpecToCli specEntryKey sensitive sources acc
+  Spec.ConfigValue { Spec.configValueType, Spec.isSensitive, Spec.configSources } ->
+    configValueSpecToCli specEntryKey configValueType isSensitive configSources acc
 
   Spec.SubConfig subConfigSpec -> subConfigSpecToCli specEntryKey subConfigSpec acc
 

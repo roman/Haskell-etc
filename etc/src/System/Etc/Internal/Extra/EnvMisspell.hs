@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Extra.EnvMisspell (
@@ -33,8 +34,8 @@ data EnvMisspell
 lookupSpecEnvKeys :: ConfigSpec a -> Vector Text
 lookupSpecEnvKeys spec =
   let foldEnvSettings val acc = case val of
-        ConfigValue _defVal _sensitive sources ->
-          maybe acc (`Vector.cons` acc) (envVar sources)
+        ConfigValue { configSources } ->
+          maybe acc (`Vector.cons` acc) (envVar configSources)
         SubConfig hsh -> HashMap.foldr foldEnvSettings acc hsh
   in  foldEnvSettings (SubConfig $ specConfigValues spec) Vector.empty
 
