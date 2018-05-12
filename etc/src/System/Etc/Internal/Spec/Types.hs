@@ -77,16 +77,31 @@ data ConfigSources cmd
   }
   deriving (Generic, Show, Eq)
 
-data ConfigValuePrimitive
+data SingleConfigValueType
   = CVTString
   | CVTNumber
   | CVTBool
+  | CVTObject
   deriving (Generic, Show, Eq)
 
+instance Display SingleConfigValueType where
+  display value =
+    case value of
+      CVTString -> "string"
+      CVTNumber -> "number"
+      CVTBool   -> "bool"
+      CVTObject -> "object"
+
 data ConfigValueType
-  = CVTSingle ConfigValuePrimitive
-  | CVTArray  ConfigValuePrimitive
+  = CVTSingle !SingleConfigValueType
+  | CVTArray  !SingleConfigValueType
   deriving (Generic, Show, Eq)
+
+instance Display ConfigValueType where
+  display value =
+    case value of
+      CVTSingle singleVal -> display singleVal
+      CVTArray  singleVal -> display $ "[" <> display singleVal <> "]"
 
 data ConfigValue cmd
   = ConfigValue {
@@ -222,6 +237,7 @@ instance JSON.FromJSON ConfigValueType where
       "[string]" -> pure $ CVTArray CVTString
       "[number]" -> pure $ CVTArray CVTNumber
       "[bool]"   -> pure $ CVTArray CVTBool
+      "[object]" -> pure $ CVTArray CVTObject
       _  -> JSON.typeMismatch "ConfigValueType (string, number, bool)" (JSON.String tyText)
 
 inferErrorMsg :: String
@@ -255,6 +271,7 @@ matchesConfigValueType json cvType = case (json, cvType) of
   (JSON.String{}, CVTSingle CVTString) -> True
   (JSON.Number{}, CVTSingle CVTNumber) -> True
   (JSON.Bool{}  , CVTSingle CVTBool  ) -> True
+  (JSON.Object{}, CVTSingle CVTObject) -> True
   (JSON.Array arr, CVTArray inner) ->
     if null arr then True else all (flip matchesConfigValueType (CVTSingle inner)) arr
   _ -> False

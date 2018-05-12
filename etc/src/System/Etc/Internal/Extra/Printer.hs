@@ -9,12 +9,12 @@ module System.Etc.Internal.Extra.Printer (
   , hPrintPrettyConfig
   ) where
 
-import           RIO              hiding ((<>))
-import qualified RIO.HashMap      as HashMap
-import           RIO.List         (intersperse)
-import qualified RIO.Set          as Set
-import qualified RIO.Text         as Text
-import qualified RIO.Vector       as Vector
+import           RIO         hiding ((<>))
+import qualified RIO.HashMap as HashMap
+import           RIO.List    (intersperse)
+import qualified RIO.Set     as Set
+import qualified RIO.Text    as Text
+import qualified RIO.Vector  as Vector
 
 import qualified Data.Aeson as JSON
 
@@ -30,72 +30,68 @@ data ColorFn
 
 renderConfigValueJSON :: JSON.Value -> Either Text Doc
 renderConfigValueJSON value = case value of
-  JSON.Null -> Right $ text "null"
-  JSON.String str -> Right $ text $ Text.unpack str
+  JSON.Null              -> Right $ text "null"
+  JSON.String str        -> Right $ text $ Text.unpack str
   JSON.Number scientific -> Right $ text $ show scientific
-  JSON.Bool b -> Right $ if b then text "true" else text "false"
-  _ ->
-    Left $ "Trying to render Unsupported JSON value " `mappend` (tshow value)
+  JSON.Bool   b          -> Right $ if b then text "true" else text "false"
+  JSON.Object obj        -> do
+    values <- forM (HashMap.toList obj) $ \(k, v) -> do
+      v1 <- renderConfigValueJSON v
+      return $ text (Text.unpack k) <> ":" <+> v1
+    return $ align (vsep values)
+  _ -> Left $ "Trying to render Unsupported JSON value " `mappend` (tshow value)
 
-renderConfigValue :: (JSON.Value -> Either Text Doc) -> Value JSON.Value -> Either Text [Doc]
-renderConfigValue f value =
-  case value of
-    Plain (JSON.Array jsonArray) ->
-      fmap Vector.toList <$> forM jsonArray $ \jsonValue -> do
-        valueDoc <- f jsonValue
-        return $ text "-" <+> valueDoc
-    Plain jsonValue -> fmap return (f jsonValue)
-    Sensitive {} -> Right $ return $ text "<<sensitive>>"
+renderConfigValue
+  :: (JSON.Value -> Either Text Doc) -> Value JSON.Value -> Either Text [Doc]
+renderConfigValue f value = case value of
+  Plain (JSON.Array jsonArray) -> fmap Vector.toList <$> forM jsonArray $ \jsonValue -> do
+    valueDoc <- f jsonValue
+    return $ text "-" <+> valueDoc
+  Plain jsonValue -> fmap return (f jsonValue)
+  Sensitive{}     -> Right $ return $ text "<<sensitive>>"
 
-renderConfigSource :: (JSON.Value -> Either Text Doc) -> ConfigSource -> Either Text ([Doc], Doc)
-renderConfigSource f configSource =
-  case configSource of
-    Default value -> do
-      let sourceDoc = text "Default"
-      valueDoc <- renderConfigValue f value
-      return (valueDoc, sourceDoc)
+renderConfigSource
+  :: (JSON.Value -> Either Text Doc) -> ConfigSource -> Either Text ([Doc], Doc)
+renderConfigSource f configSource = case configSource of
+  Default value -> do
+    let sourceDoc = text "Default"
+    valueDoc <- renderConfigValue f value
+    return (valueDoc, sourceDoc)
 
-    File _index fileSource value ->
-      let
-        sourceDoc =
-          case fileSource of
-            FilePathSource filepath ->
-              text "File:" <+> text (Text.unpack filepath)
-            EnvVarFileSource envVar filepath ->
-              text "File:"
-              <+> text (Text.unpack envVar) <> "=" <> text (Text.unpack filepath)
-      in do
-        valueDoc <- renderConfigValue f value
-        return (valueDoc, sourceDoc)
+  File _index fileSource value ->
+    let sourceDoc = case fileSource of
+          FilePathSource filepath -> text "File:" <+> text (Text.unpack filepath)
+          EnvVarFileSource envVar filepath ->
+            text "File:" <+> text (Text.unpack envVar) <> "=" <> text (Text.unpack filepath)
+    in  do
+          valueDoc <- renderConfigValue f value
+          return (valueDoc, sourceDoc)
 
-    Env varname value -> do
-      let sourceDoc = text "Env:" <+> text (Text.unpack varname)
-      valueDoc <- renderConfigValue f value
-      return (valueDoc, sourceDoc)
+  Env varname value -> do
+    let sourceDoc = text "Env:" <+> text (Text.unpack varname)
+    valueDoc <- renderConfigValue f value
+    return (valueDoc, sourceDoc)
 
-    Cli value -> do
-      let sourceDoc = text "Cli"
-      valueDoc <- renderConfigValue f value
-      return (valueDoc, sourceDoc)
+  Cli value -> do
+    let sourceDoc = text "Cli"
+    valueDoc <- renderConfigValue f value
+    return (valueDoc, sourceDoc)
 
-    None ->
-      return (mempty, mempty)
+  None -> return (mempty, mempty)
 
 renderConfig_ :: MonadThrow m => ColorFn -> Config -> m Doc
 renderConfig_ ColorFn { blueColor } (Config configMap) =
   let
     renderSources :: MonadThrow m => Text -> [ConfigSource] -> m Doc
     renderSources keyPath sources =
-      let
-        eSourceDocs =
-          mapM (renderConfigSource renderConfigValueJSON) sources
+      let eSourceDocs = mapM (renderConfigSource renderConfigValueJSON) sources
 
-        brackets' = enclose (lbracket <> space) (space <> rbracket)
+          brackets'   = enclose (lbracket <> space) (space <> rbracket)
 
-        layoutSourceValueDoc valueDocs sourceDoc =
-          case valueDocs of
-            [] ->
-              throwM $ InvalidConfiguration (Just keyPath) "Trying to render config entry with no values"
+          layoutSourceValueDoc valueDocs sourceDoc = case valueDocs of
+            [] -> throwM $ InvalidConfiguration
+              (Just keyPath)
+              "Trying to render config entry with no values"
 
             [singleValueDoc] ->
               -- [Default]
@@ -110,27 +106,25 @@ renderConfig_ ColorFn { blueColor } (Config configMap) =
               --   - Value 3
               --
               return $ sourceDoc <$$> (indent 2 $ align (vsep multipleValues))
-      in
-        case eSourceDocs of
-          Left err ->
-            throwM $ InvalidConfiguration (Just keyPath) err
+      in  case eSourceDocs of
+            Left  err -> throwM $ InvalidConfiguration (Just keyPath) err
 
-          Right [] ->
-              throwM $ InvalidConfiguration (Just keyPath) "Trying to render config entry with no values"
+            Right []  -> throwM $ InvalidConfiguration
+              (Just keyPath)
+              "Trying to render config entry with no values"
 
-          -- [ (*) CLI ]
-          --   - Value 1
-          -- [ Default ]
-          --   - Value
-          Right ((selectedValueDoc, selectedSourceDoc) : otherSourceDocs) -> do
-            selectedDoc <-
-              layoutSourceValueDoc selectedValueDoc
-              $ brackets' (parens (text "*") <+> selectedSourceDoc)
+            -- [ (*) CLI ]
+            --   - Value 1
+            -- [ Default ]
+            --   - Value
+            Right ((selectedValueDoc, selectedSourceDoc) : otherSourceDocs) -> do
+              selectedDoc <- layoutSourceValueDoc selectedValueDoc
+                $ brackets' (parens (text "*") <+> selectedSourceDoc)
 
-            othersDoc <- forM otherSourceDocs $ \(value, source) ->
-              layoutSourceValueDoc value $ brackets' source
+              othersDoc <- forM otherSourceDocs
+                $ \(value, source) -> layoutSourceValueDoc value $ brackets' source
 
-            return $ indent 2 $ vsep $ selectedDoc : othersDoc
+              return $ indent 2 $ vsep $ selectedDoc : othersDoc
 
     renderConfigEntry :: MonadThrow m => [Text] -> [Doc] -> Text -> ConfigValue -> m [Doc]
     renderConfigEntry keyPath accDoc configKey configValue = do
@@ -139,25 +133,22 @@ renderConfig_ ColorFn { blueColor } (Config configMap) =
 
     loop :: MonadThrow m => [Text] -> ConfigValue -> m [Doc]
     loop keys configValue = case configValue of
-      SubConfig subConfigm ->
-        foldM (\acc (k,v) -> renderConfigEntry keys acc k v)
-              mempty
-              (HashMap.toList subConfigm)
+      SubConfig subConfigm -> foldM (\acc (k, v) -> renderConfigEntry keys acc k v)
+                                    mempty
+                                    (HashMap.toList subConfigm)
 
       ConfigValue sources0 ->
-        let
-          keyPathText = Text.intercalate "." $ reverse keys
-          sources     = Set.toDescList sources0
-        in
-          if null sources
-          then
-            return []
-          else do
-            configSources <- renderSources keyPathText sources
-            return [ blueColor (text $ Text.unpack keyPathText) <$$> configSources ]
-  in do
-    result <- loop [] configMap
-    return $ (hcat $ intersperse (linebreak <> linebreak) $ result) <> linebreak
+        let keyPathText = Text.intercalate "." $ reverse keys
+            sources     = Set.toDescList sources0
+        in  if null sources
+              then return []
+              else do
+                configSources <- renderSources keyPathText sources
+                return [blueColor (text $ Text.unpack keyPathText) <$$> configSources]
+  in
+    do
+      result <- loop [] configMap
+      return $ (hcat $ intersperse (linebreak <> linebreak) $ result) <> linebreak
 
 
 renderConfigColor :: MonadThrow m => Config -> m Doc

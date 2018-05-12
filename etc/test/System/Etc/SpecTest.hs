@@ -124,6 +124,23 @@ general_tests = testGroup
         "should contain default array value"
         (Just (JSON.Array (Vector.fromList [])))
         (defaultValue value)
+  , testCase "entries with array of objects do not fail" $ do
+    let
+      input
+        = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":[{\"hello\":\"world\"}],\"type\":\"[object]\"}}}}"
+      keys = ["greeting"]
+
+    config <- parseConfigSpec input
+    case getConfigValue keys (specConfigValues config) of
+      Nothing -> assertFailure
+        (show keys ++ " should map to an array config value, got sub config map instead")
+
+      Just (value :: ConfigValue ()) -> assertEqual
+        "should contain default array value"
+        (Just
+          (JSON.Array (Vector.fromList [JSON.object ["hello" JSON..= ("world" :: Text)]]))
+        )
+        (defaultValue value)
   , testCase "entries can have many levels of nesting" $ do
     let input = "{\"etc/entries\":{\"english\":{\"greeting\":\"hello\"}}}"
         keys  = ["english", "greeting"]
