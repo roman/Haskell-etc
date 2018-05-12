@@ -2,7 +2,8 @@
 ----
 **BREAKING CHANGES**
 
-* Add new `type` field to `etc/spec` with support for `string`, `number`, `bool`, `[string]`, `[number]` and `[bool]`
+* Add new `type` field to `etc/spec` with support for `string`, `number`,
+  `bool`, `[string]`, `[number]` and `[bool]`, `[object]`
 * Remove `type` field in `cli` spec in favor of `type` on `etc/spec`
 * Allow ENV vars to accept supported types (only strings were allowed) (closes #30)
 * Allow CLI options to accept supported types (only strings and numbers were allowed)
