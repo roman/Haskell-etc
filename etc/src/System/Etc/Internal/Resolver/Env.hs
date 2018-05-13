@@ -1,5 +1,5 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-
 module System.Etc.Internal.Resolver.Env (resolveEnv, resolveEnvPure) where
 
 import           RIO
@@ -8,44 +8,54 @@ import qualified RIO.Set            as Set
 import qualified RIO.Text           as Text
 import           System.Environment (getEnvironment)
 
-import           Control.Arrow ((***))
-import qualified Data.Aeson    as JSON
+import Control.Arrow ((***))
 
 import qualified System.Etc.Internal.Spec.Types as Spec
 import           System.Etc.Internal.Types
 
 resolveEnvVarSource
-  :: (Text -> Maybe Text) -> Bool -> Spec.ConfigSources cmd -> Maybe ConfigSource
-resolveEnvVarSource lookupEnv sensitive specSources =
-  let toEnvSource varname envValue =
-        envValue & JSON.String & boolToValue sensitive & Env varname
+  :: (Text -> Maybe Text)
+  -> Spec.ConfigValueType
+  -> Bool
+  -> Spec.ConfigSources cmd
+  -> Maybe ConfigSource
+resolveEnvVarSource lookupEnv configValueType isSensitive specSources =
+  let envTextToJSON envValue = Spec.parseBytesToConfigValueJSON configValueType envValue
+
+      toEnvSource varname envValue =
+        Env varname . markAsSensitive isSensitive <$> envTextToJSON envValue
   in  do
         varname <- Spec.envVar specSources
-        toEnvSource varname <$> lookupEnv varname
+        envText <- lookupEnv varname
+        toEnvSource varname envText
 
 buildEnvVarResolver :: (Text -> Maybe Text) -> Spec.ConfigSpec cmd -> Maybe ConfigValue
 buildEnvVarResolver lookupEnv spec =
-  let resolverReducer
-        :: Text -> Spec.ConfigValue cmd -> Maybe ConfigValue -> Maybe ConfigValue
-      resolverReducer specKey specValue mConfig = case specValue of
-        Spec.ConfigValue _ sensitive sources ->
-          let updateConfig = do
-                envSource <- resolveEnvVarSource lookupEnv sensitive sources
-                writeInSubConfig specKey (ConfigValue $ Set.singleton envSource)
-                  <$> mConfig
-          in  updateConfig <|> mConfig
+  let
+    resolverReducer
+      :: Text -> Spec.ConfigValue cmd -> Maybe ConfigValue -> Maybe ConfigValue
+    resolverReducer specKey specValue mConfig = case specValue of
+      Spec.ConfigValue { Spec.isSensitive, Spec.configValueType, Spec.configSources } ->
+        let updateConfig = do
+              envSource <- resolveEnvVarSource lookupEnv
+                                               configValueType
+                                               isSensitive
+                                               configSources
+              writeInSubConfig specKey (ConfigValue $ Set.singleton envSource) <$> mConfig
+        in  updateConfig <|> mConfig
 
-        Spec.SubConfig specConfigMap ->
-          let mSubConfig =
-                specConfigMap
-                  & HashMap.foldrWithKey resolverReducer (Just emptySubConfig)
-                  & filterMaybe isEmptySubConfig
+      Spec.SubConfig specConfigMap ->
+        let mSubConfig =
+              specConfigMap
+                & HashMap.foldrWithKey resolverReducer (Just emptySubConfig)
+                & filterMaybe isEmptySubConfig
 
-              updateConfig = writeInSubConfig specKey <$> mSubConfig <*> mConfig
-          in  updateConfig <|> mConfig
-  in  Spec.specConfigValues spec
-      & HashMap.foldrWithKey resolverReducer (Just emptySubConfig)
-      & filterMaybe isEmptySubConfig
+            updateConfig = writeInSubConfig specKey <$> mSubConfig <*> mConfig
+        in  updateConfig <|> mConfig
+  in
+    Spec.specConfigValues spec
+    & HashMap.foldrWithKey resolverReducer (Just emptySubConfig)
+    & filterMaybe isEmptySubConfig
 {-|
 
 Gathers all OS Environment Variable values (@env@ entries) from the @etc/spec@
@@ -67,7 +77,7 @@ resolveEnvPure spec envMap0 =
 {-|
 
 Gathers all OS Environment Variable values (@env@ entries) from the @etc/spec@
-entries inside a @ConfigSpec@.
+entries inside a @ConfigSpec@
 
 -}
 resolveEnv

@@ -6,9 +6,10 @@
 module System.Etc.Resolver.FileTest (tests) where
 
 import           RIO
-import qualified RIO.Set    as Set
-import qualified RIO.Text   as Text
-import qualified RIO.Vector as Vector
+import qualified RIO.Set            as Set
+import qualified RIO.Text           as Text
+import qualified RIO.Vector         as Vector
+import qualified RIO.Vector.Partial as Vector (head)
 
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
@@ -32,6 +33,22 @@ tests = testGroup
       Left (InvalidConfiguration _ _) -> return ()
       _ ->
         assertFailure ("Expecting InvalidConfigurationError; got instead " <> show espec)
+  , testCase "fails when file has key not defined in spec" $ do
+    jsonFilepath <- getDataFileName "test/fixtures/config.json"
+    let input = "{\"etc/filepaths\": [\"" <> Text.pack jsonFilepath <> "\"]}"
+    (spec :: ConfigSpec ()) <- parseConfigSpec input
+    (_config, warnings)     <- resolveFiles spec
+    assertBool "There should be warnings" (not $ null warnings)
+    case fromException (Vector.head warnings) of
+      Just (InvalidConfiguration _ errMsg) -> assertEqual
+        "Expecting key not present in spec error"
+        "Configuration entry `greeting` is not present on spec"
+        errMsg
+
+      err ->
+        assertFailure
+          $  "Expecting InvalidConfigurationError; got other error instead: "
+          <> show err
   , filePathsTests
   , filesTest
   ]
@@ -54,7 +71,8 @@ filePathsTests = testGroup
             , ", \"" <> Text.pack yamlFilepath <> "\""
             , ", \"" <> Text.pack ymlFilepath <> "\""
 #endif
-          , "]}"
+          , "]"
+          , ", \"etc/entries\": {\"greeting\": \"hello default\"}}"
           ]
 
     (spec :: ConfigSpec ()) <- parseConfigSpec input
@@ -101,7 +119,9 @@ filePathsTests = testGroup
           [ "{\"etc/filepaths\": ["
           , "\"" <> Text.pack jsonFilepath <> "\""
           , ", \"unknown_file.json\""
-          , "]}"
+          , "]"
+          , ", \"etc/entries\":{\"greeting\":\"hello default\"}"
+          , "}"
           ]
 
     (spec :: ConfigSpec ()) <- parseConfigSpec input
@@ -176,10 +196,11 @@ filesTest = testGroup
     jsonFilepath <- getDataFileName "test/fixtures/config.json"
     envFilePath  <- getDataFileName "test/fixtures/config.env.json"
     let input = mconcat
-          [ "{\"etc/files\": {"
+          [ "{\"etc/files\":{"
           , "  \"env\": \"ENV_FILE_TEST\","
           , "  \"paths\": [\"" <> Text.pack jsonFilepath <> "\"]"
-          , "}}"
+          , "},"
+          , "\"etc/entries\":{\"greeting\":\"hello default\"}}"
           ]
 
         envFileTest = "ENV_FILE_TEST"

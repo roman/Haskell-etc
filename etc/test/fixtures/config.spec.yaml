@@ -1,4 +1,5 @@
 etc/entries:
   greeting:
     etc/spec:
+      type: string
       env: "GREETING"

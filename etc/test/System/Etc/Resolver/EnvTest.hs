@@ -22,7 +22,7 @@ tests = testGroup
   [ testCase "env entry is present when env var is defined" $ do
     let input = mconcat
           [ "{\"etc/entries\": {"
-          , " \"greeting\": { \"etc/spec\": { \"env\": \"GREETING\" }}}}"
+          , " \"greeting\":{\"etc/spec\":{\"type\":\"string\",\"env\":\"GREETING\"}}}}"
           ]
     (spec :: ConfigSpec ()) <- parseConfigSpec input
 
@@ -40,7 +40,7 @@ tests = testGroup
           , "\"" <> Text.pack jsonFilepath <> "\""
           , "],"
           , " \"etc/entries\": {"
-          , " \"greeting\": { \"etc/spec\": { \"env\": \"GREETING\" }}}}"
+          , " \"greeting\":{\"etc/spec\":{\"type\":\"string\",\"env\": \"GREETING\"}}}}"
           ]
     (spec :: ConfigSpec ()) <- parseConfigSpec input
     (configFile, _)         <- resolveFiles spec
@@ -56,10 +56,11 @@ tests = testGroup
                                  ("hello env" :: Text)
                                  result
   , testCase "does not add entries to config if env var is not present" $ do
-    let input = mconcat
-          [ "{\"etc/entries\": {"
-          , " \"nested\": {\"greeting\": { \"etc/spec\": { \"env\": \"GREETING\" }}}}}"
-          ]
+    let
+      input = mconcat
+        [ "{\"etc/entries\": {"
+        , " \"nested\":{\"greeting\":{ \"etc/spec\":{\"type\":\"string\",\"env\": \"GREETING\" }}}}}"
+        ]
     (spec :: ConfigSpec ()) <- parseConfigSpec input
 
     let config = resolveEnvPure spec []
@@ -71,4 +72,64 @@ tests = testGroup
     assertEqual "expecting to not have an entry for key"
                 (Nothing :: Maybe Text)
                 (getConfigValue ["nested", "greeting"] config)
+  , testCase "does parse numbers correctly" $ do
+    let
+      input = mconcat
+        [ "{\"etc/entries\": {\"greeting\":{ \"etc/spec\":{\"type\":\"number\",\"env\": \"GREETING\"}}}}"
+        ]
+    (spec :: ConfigSpec ()) <- parseConfigSpec input
+
+    let config = resolveEnvPure spec [("GREETING", "123")]
+
+    assertEqual "expecting to not have an entry for key"
+                (Just 123 :: Maybe Int)
+                (getConfigValue ["greeting"] config)
+  , testCase "does parse array of numbers correctly" $ do
+    let
+      input = mconcat
+        [ "{\"etc/entries\": {\"greeting\":{ \"etc/spec\":{\"type\":\"[number]\",\"env\": \"GREETING\"}}}}"
+        ]
+    (spec :: ConfigSpec ()) <- parseConfigSpec input
+
+    let config = resolveEnvPure spec [("GREETING", "[123, 456]")]
+
+    assertEqual "expecting to not have an entry for key"
+                (Just [123, 456] :: Maybe [Int])
+                (getConfigValue ["greeting"] config)
+  , testCase "does parse array of strings correctly" $ do
+    let
+      input = mconcat
+        [ "{\"etc/entries\": {\"greeting\":{ \"etc/spec\":{\"type\":\"[string]\",\"env\": \"GREETING\"}}}}"
+        ]
+    (spec :: ConfigSpec ()) <- parseConfigSpec input
+
+    let config = resolveEnvPure spec [("GREETING", "[\"hello\", \"world\"]")]
+
+    assertEqual "expecting to not have an entry for key"
+                (Just ["hello", "world"] :: Maybe [Text])
+                (getConfigValue ["greeting"] config)
+  , testCase "does parse array of bools correctly" $ do
+    let
+      input = mconcat
+        [ "{\"etc/entries\": {\"greeting\":{ \"etc/spec\":{\"type\":\"[bool]\",\"env\": \"GREETING\"}}}}"
+        ]
+    (spec :: ConfigSpec ()) <- parseConfigSpec input
+
+    let config = resolveEnvPure spec [("GREETING", "[false, true]")]
+
+    assertEqual "expecting to not have an entry for key"
+                (Just [False, True] :: Maybe [Bool])
+                (getConfigValue ["greeting"] config)
+  , testCase "does not add entries to config if env var value has invalid type" $ do
+    let
+      input = mconcat
+        [ "{\"etc/entries\": {\"greeting\":{ \"etc/spec\":{\"type\":\"number\",\"env\": \"GREETING\"}}}}"
+        ]
+    (spec :: ConfigSpec ()) <- parseConfigSpec input
+
+    let config = resolveEnvPure spec []
+
+    assertEqual "expecting to not have an entry for key"
+                (Nothing :: Maybe Int)
+                (getConfigValue ["greeting"] config)
   ]

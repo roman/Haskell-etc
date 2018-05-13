@@ -1,10 +1,14 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Spec.Types where
 
-import           Prelude     (fail)
+import Prelude (fail)
+
 import           RIO
-import qualified RIO.HashMap as HashMap
+import qualified RIO.HashMap        as HashMap
+import qualified RIO.Text           as Text
+import qualified RIO.Vector.Partial as Vector (head)
 
 import Data.Aeson ((.:), (.:?))
 
@@ -18,7 +22,7 @@ data ConfigurationError
   = InvalidConfiguration !(Maybe Text) !Text
   | InvalidConfigKeyPath ![Text]
   | ConfigurationFileNotFound !Text
-  deriving (Show)
+  deriving (Generic, Show)
 
 instance Exception ConfigurationError
 
@@ -28,28 +32,26 @@ data CliOptValueType
   = StringOpt
   | NumberOpt
   | SwitchOpt
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data CliArgValueType
   = StringArg
   | NumberArg
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data CliEntryMetadata
   = Opt {
-    optLong      :: !(Maybe Text)
-  , optShort     :: !(Maybe Text)
-  , optMetavar   :: !(Maybe Text)
-  , optHelp      :: !(Maybe Text)
-  , optRequired  :: !Bool
-  , optValueType :: !CliOptValueType
+    optLong     :: !(Maybe Text)
+  , optShort    :: !(Maybe Text)
+  , optMetavar  :: !(Maybe Text)
+  , optHelp     :: !(Maybe Text)
+  , optRequired :: !Bool
   }
   | Arg {
-    argMetavar   :: !(Maybe Text)
-  , optRequired  :: !Bool
-  , argValueType :: !CliArgValueType
+    argMetavar  :: !(Maybe Text)
+  , optRequired :: !Bool
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data CliEntrySpec cmd
   = CmdEntry {
@@ -59,32 +61,59 @@ data CliEntrySpec cmd
   | PlainEntry {
     cliEntryMetadata :: !CliEntryMetadata
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data CliCmdSpec
   = CliCmdSpec {
     cliCmdDesc   :: !Text
   , cliCmdHeader :: !Text
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data ConfigSources cmd
   = ConfigSources {
     envVar   :: !(Maybe Text)
   , cliEntry :: !(Maybe (CliEntrySpec cmd))
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
+
+data SingleConfigValueType
+  = CVTString
+  | CVTNumber
+  | CVTBool
+  | CVTObject
+  deriving (Generic, Show, Eq)
+
+instance Display SingleConfigValueType where
+  display value =
+    case value of
+      CVTString -> "string"
+      CVTNumber -> "number"
+      CVTBool   -> "bool"
+      CVTObject -> "object"
+
+data ConfigValueType
+  = CVTSingle !SingleConfigValueType
+  | CVTArray  !SingleConfigValueType
+  deriving (Generic, Show, Eq)
+
+instance Display ConfigValueType where
+  display value =
+    case value of
+      CVTSingle singleVal -> display singleVal
+      CVTArray  singleVal -> display $ "[" <> display singleVal <> "]"
 
 data ConfigValue cmd
   = ConfigValue {
-    defaultValue  :: !(Maybe JSON.Value)
-  , isSensitive   :: !Bool
-  , configSources :: !(ConfigSources cmd)
+    defaultValue    :: !(Maybe JSON.Value)
+  , configValueType :: !ConfigValueType
+  , isSensitive     :: !Bool
+  , configSources   :: !(ConfigSources cmd)
   }
   | SubConfig {
     subConfig :: !(HashMap Text (ConfigValue cmd))
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
 
 data CliProgramSpec
   = CliProgramSpec {
@@ -143,24 +172,7 @@ cliArgTypeParser object = do
 
 cliArgParser :: JSON.Object -> JSON.Parser CliEntryMetadata
 cliArgParser object =
-  Arg
-    <$> (object .:? "metavar")
-    <*> (fromMaybe True <$> (object .:? "required"))
-    <*> cliArgTypeParser object
-
-cliOptTypeParser :: JSON.Object -> JSON.Parser CliOptValueType
-cliOptTypeParser object = do
-  mvalue <- object .:? "type"
-  case mvalue of
-    Just value@(JSON.String typeName)
-      | typeName == "string" -> return StringOpt
-      | typeName == "number" -> return NumberOpt
-      | typeName == "switch" -> return SwitchOpt
-      | otherwise -> JSON.typeMismatch "CliOptValueType (string, number, switch)" value
-
-    Just value -> JSON.typeMismatch "CliOptValueType" value
-
-    Nothing    -> fail "CLI Option type is required"
+  Arg <$> (object .:? "metavar") <*> (fromMaybe True <$> (object .:? "required"))
 
 cliOptParser :: JSON.Object -> JSON.Parser CliEntryMetadata
 cliOptParser object = do
@@ -175,10 +187,9 @@ cliOptParser object = do
       <*> (object .:? "metavar")
       <*> (object .:? "help")
       <*> (fromMaybe True <$> (object .:? "required"))
-      <*> cliOptTypeParser object
 
 cliArgKeys :: [Text]
-cliArgKeys = ["input", "commands", "metavar", "required", "type"]
+cliArgKeys = ["input", "commands", "metavar", "required"]
 
 cliOptKeys :: [Text]
 cliOptKeys = ["short", "long", "help"] ++ cliArgKeys
@@ -217,33 +228,104 @@ instance JSON.FromJSON cmd => JSON.FromJSON (CliEntrySpec cmd) where
         _ ->
           JSON.typeMismatch "CliEntryMetadata" json
 
+instance JSON.FromJSON ConfigValueType where
+  parseJSON = JSON.withText "ConfigValueType (string, number, bool)" $ \tyText ->
+    case Text.toLower tyText of
+      "string"   -> pure $ CVTSingle CVTString
+      "number"   -> pure $ CVTSingle CVTNumber
+      "bool"     -> pure $ CVTSingle CVTBool
+      "[string]" -> pure $ CVTArray CVTString
+      "[number]" -> pure $ CVTArray CVTNumber
+      "[bool]"   -> pure $ CVTArray CVTBool
+      "[object]" -> pure $ CVTArray CVTObject
+      _  -> JSON.typeMismatch "ConfigValueType (string, number, bool)" (JSON.String tyText)
+
+inferErrorMsg :: String
+inferErrorMsg = "could not infer type from given default value"
+
+parseBytesToConfigValueJSON :: ConfigValueType -> Text -> Maybe JSON.Value
+parseBytesToConfigValueJSON cvType content = do
+  case JSON.eitherDecodeStrict' (Text.encodeUtf8 content) of
+    Right value | matchesConfigValueType value cvType -> return value
+                | otherwise                           -> Nothing
+    Left _err
+      | matchesConfigValueType (JSON.String content) cvType -> return (JSON.String content)
+      | otherwise -> Nothing
+
+jsonToConfigValueType :: JSON.Value -> Either String ConfigValueType
+jsonToConfigValueType json = case json of
+  JSON.String{} -> Right $ CVTSingle CVTString
+  JSON.Number{} -> Right $ CVTSingle CVTNumber
+  JSON.Bool{}   -> Right $ CVTSingle CVTBool
+  JSON.Array arr
+    | null arr -> Left inferErrorMsg
+    | otherwise -> case jsonToConfigValueType (Vector.head arr) of
+      Right (CVTArray{}  ) -> Left "nested arrays values are not supported"
+      Right (CVTSingle ty) -> Right $ CVTArray ty
+      Left  err            -> Left err
+  _ -> Left inferErrorMsg
+
+matchesConfigValueType :: JSON.Value -> ConfigValueType -> Bool
+matchesConfigValueType json cvType = case (json, cvType) of
+  (JSON.Null    , CVTSingle _        ) -> True
+  (JSON.String{}, CVTSingle CVTString) -> True
+  (JSON.Number{}, CVTSingle CVTNumber) -> True
+  (JSON.Bool{}  , CVTSingle CVTBool  ) -> True
+  (JSON.Object{}, CVTSingle CVTObject) -> True
+  (JSON.Array arr, CVTArray inner) ->
+    if null arr then True else all (flip matchesConfigValueType (CVTSingle inner)) arr
+  _ -> False
+
+assertMatchingConfigValueType :: Monad m => JSON.Value -> ConfigValueType -> m ()
+assertMatchingConfigValueType json cvType
+  | matchesConfigValueType json cvType = return ()
+  | otherwise = fail $ "JSON value type does not match specified type " <> show cvType
+
+getConfigValueType
+  :: Maybe JSON.Value -> Maybe ConfigValueType -> JSON.Parser ConfigValueType
+getConfigValueType mdefValue mCvType = case (mdefValue, mCvType) of
+  (Just JSON.Null, Just cvType) -> pure cvType
+
+  (Just defValue , Just cvType) -> do
+    assertMatchingConfigValueType defValue cvType
+    return cvType
+
+  (Nothing      , Just cvType) -> pure cvType
+
+  (Just defValue, Nothing    ) -> either fail pure $ jsonToConfigValueType defValue
+
+  (Nothing      , Nothing    ) -> fail inferErrorMsg
+
 instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
   parseJSON json  =
     case json of
-      JSON.Array _ ->
-        fail "Entries cannot have arrays as values"
       JSON.Object object ->
         case HashMap.lookup "etc/spec" object of
           -- normal object
           Nothing -> do
-            result <- foldM
-                        (\result (key, value) -> do
+            subConfigMap <- foldM
+                        (\subConfigMap (key, value) -> do
                             innerValue <- JSON.parseJSON value
-                            return $ HashMap.insert key innerValue result)
+                            return $ HashMap.insert key innerValue subConfigMap)
                         HashMap.empty
                         (HashMap.toList object)
-            if HashMap.null result then
+            if HashMap.null subConfigMap then
               fail "Entries cannot have empty maps as values"
             else
-              return (SubConfig result)
+              return (SubConfig subConfigMap)
 
           -- etc spec value object
           Just (JSON.Object fieldSpec) ->
             if HashMap.size object == 1 then do
-              mSensitive <- fieldSpec .:? "sensitive"
+              -- NOTE: not using .:? here as it casts JSON.Null to Nothing, we
+              -- want (Just JSON.Null) returned
+              mDefaultValue <- pure $ maybe Nothing Just $ HashMap.lookup "default" fieldSpec
+              mSensitive    <- fieldSpec .:? "sensitive"
+              mCvType       <- fieldSpec .:? "type"
               let sensitive = fromMaybe False mSensitive
               ConfigValue
-                <$> fieldSpec .:? "default"
+                <$> pure mDefaultValue
+                <*> getConfigValueType mDefaultValue mCvType
                 <*> pure sensitive
                 <*> (ConfigSources <$> fieldSpec .:? "env"
                                    <*> fieldSpec .:? "cli")
@@ -254,13 +336,15 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
           Just _ ->
             fail "etc/spec value must be a JSON object"
 
-      _ ->
+      _ -> do
+        cvType <- either fail pure $ jsonToConfigValueType json
         return
           ConfigValue
           {
-            defaultValue = Just json
-          , isSensitive = False
-          , configSources = ConfigSources Nothing Nothing
+            defaultValue    = Just json
+          , configValueType = cvType
+          , isSensitive     = False
+          , configSources   = ConfigSources Nothing Nothing
           }
 
 

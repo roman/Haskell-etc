@@ -16,10 +16,11 @@ tests :: TestTree
 tests = testGroup
   "env misspells"
   [ testCase "it warns when misspell is present" $ do
-      let input = mconcat
-            [ "{\"etc/entries\": {"
-            , " \"greeting\": { \"etc/spec\": { \"env\": \"GREETING\" }}}}"
-            ]
+      let
+        input = mconcat
+          [ "{\"etc/entries\": {"
+          , " \"greeting\": { \"etc/spec\":{\"type\":\"string\",\"env\": \"GREETING\"}}}}"
+          ]
 
       (spec :: ConfigSpec ()) <- parseConfigSpec input
 

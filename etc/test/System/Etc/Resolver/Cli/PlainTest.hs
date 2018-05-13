@@ -7,9 +7,34 @@ import           RIO
 import qualified RIO.Set as Set
 
 import Test.Tasty       (TestTree, testGroup)
-import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
+import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
 import qualified System.Etc as SUT
+
+resolver_tests :: TestTree
+resolver_tests = testGroup
+  "resolver"
+  [ testCase "throws an error when input type does not match with spec type" $ do
+      let input = mconcat
+            [ "{ \"etc/entries\": {"
+            , "    \"greeting\": {"
+            , "      \"etc/spec\": {"
+            , "        \"type\": \"[number]\""
+            , "        , \"cli\": {"
+            , "            \"input\": \"option\""
+            , "          , \"short\": \"g\""
+            , "          , \"long\": \"greeting\""
+            , "          , \"required\": true"
+            , "}}}}}"
+            ]
+      (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+      eConfig <- try $ SUT.resolvePlainCliPure spec "program" ["-g", "hello world"]
+
+      case eConfig of
+        Left (SUT.CliEvalExited{}) -> assertBool "" True
+        _ ->
+          assertFailure $ "Expecting CliEvalExited error; got this instead " <> show eConfig
+  ]
 
 option_tests :: TestTree
 option_tests = testGroup
@@ -19,11 +44,11 @@ option_tests = testGroup
           [ "{ \"etc/entries\": {"
           , "    \"greeting\": {"
           , "      \"etc/spec\": {"
-          , "        \"cli\": {"
-          , "          \"input\": \"option\""
-          , "        , \"short\": \"g\""
-          , "        , \"long\": \"greeting\""
-          , "        , \"type\": \"string\""
+          , "        \"type\": \"string\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"option\""
+          , "          , \"short\": \"g\""
+          , "          , \"long\": \"greeting\""
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
@@ -38,11 +63,11 @@ option_tests = testGroup
           [ "{ \"etc/entries\": {"
           , "    \"greeting\": {"
           , "      \"etc/spec\": {"
-          , "        \"cli\": {"
-          , "          \"input\": \"option\""
-          , "        , \"short\": \"g\""
-          , "        , \"long\": \"greeting\""
-          , "        , \"type\": \"string\""
+          , "        \"type\": \"string\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"option\""
+          , "          , \"short\": \"g\""
+          , "          , \"long\": \"greeting\""
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
@@ -57,11 +82,11 @@ option_tests = testGroup
           [ "{ \"etc/entries\": {"
           , "    \"greeting\": {"
           , "      \"etc/spec\": {"
-          , "        \"cli\": {"
-          , "          \"input\": \"option\""
-          , "        , \"short\": \"g\""
-          , "        , \"long\": \"greeting\""
-          , "        , \"type\": \"number\""
+          , "        \"type\": \"number\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"option\""
+          , "          , \"short\": \"g\""
+          , "          , \"long\": \"greeting\""
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
@@ -79,12 +104,12 @@ option_tests = testGroup
           [ "{ \"etc/entries\": {"
           , "    \"greeting\": {"
           , "      \"etc/spec\": {"
-          , "        \"cli\": {"
-          , "          \"input\": \"option\""
-          , "        , \"short\": \"g\""
-          , "        , \"long\": \"greeting\""
-          , "        , \"type\": \"string\""
-          , "        , \"required\": false"
+          , "        \"type\": \"string\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"option\""
+          , "          , \"short\": \"g\""
+          , "          , \"long\": \"greeting\""
+          , "          , \"required\": false"
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
@@ -100,12 +125,12 @@ option_tests = testGroup
           [ "{ \"etc/entries\": {"
           , "    \"greeting\": {"
           , "      \"etc/spec\": {"
-          , "        \"cli\": {"
-          , "          \"input\": \"option\""
-          , "        , \"short\": \"g\""
-          , "        , \"long\": \"greeting\""
-          , "        , \"type\": \"string\""
-          , "        , \"required\": true"
+          , "        \"type\": \"string\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"option\""
+          , "          , \"short\": \"g\""
+          , "          , \"long\": \"greeting\""
+          , "          , \"required\": true"
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
@@ -117,6 +142,26 @@ option_tests = testGroup
           assertFailure ("Expecting required validation to work on cli; got " <> show err)
 
       Right _ -> assertFailure "Expecting required option to fail cli resolving"
+  , testCase "does parse array of numbers correctly" $ do
+    let input = mconcat
+          [ "{ \"etc/entries\": {"
+          , "    \"greeting\": {"
+          , "      \"etc/spec\": {"
+          , "        \"type\": \"[number]\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"option\""
+          , "          , \"short\": \"g\""
+          , "          , \"long\": \"greeting\""
+          , "          , \"required\": true"
+          , "}}}}}"
+          ]
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+    config                      <- SUT.resolvePlainCliPure spec "program" ["-g", "[1,2,3]"]
+
+    case SUT.getConfigValue ["greeting"] config of
+      Right arr  -> assertEqual "did not parse an array" ([1, 2, 3] :: [Int]) arr
+
+      (Left err) -> assertFailure ("expecting to parse an array, but didn't " <> show err)
   ]
 
 argument_tests :: TestTree
@@ -127,10 +172,10 @@ argument_tests = testGroup
           [ "{ \"etc/entries\": {"
           , "    \"greeting\": {"
           , "      \"etc/spec\": {"
-          , "        \"cli\": {"
-          , "          \"input\": \"argument\""
-          , "        , \"type\": \"number\""
-          , "        , \"metavar\": \"GREETING\""
+          , "        \"type\": \"number\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"argument\""
+          , "          , \"metavar\": \"GREETING\""
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
@@ -147,11 +192,11 @@ argument_tests = testGroup
           [ "{ \"etc/entries\": {"
           , "    \"greeting\": {"
           , "      \"etc/spec\": {"
-          , "        \"cli\": {"
-          , "          \"input\": \"argument\""
-          , "        , \"type\": \"string\""
-          , "        , \"metavar\": \"GREETING\""
-          , "        , \"required\": false"
+          , "        \"type\": \"string\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"argument\""
+          , "          , \"metavar\": \"GREETING\""
+          , "          , \"required\": false"
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
@@ -167,11 +212,11 @@ argument_tests = testGroup
           [ "{ \"etc/entries\": {"
           , "    \"greeting\": {"
           , "      \"etc/spec\": {"
-          , "        \"cli\": {"
-          , "          \"input\": \"argument\""
-          , "        , \"type\": \"string\""
-          , "        , \"metavar\": \"GREETING\""
-          , "        , \"required\": true"
+          , "        \"type\": \"string\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"argument\""
+          , "          , \"metavar\": \"GREETING\""
+          , "          , \"required\": true"
           , "}}}}}"
           ]
     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
@@ -186,4 +231,4 @@ argument_tests = testGroup
   ]
 
 tests :: TestTree
-tests = testGroup "plain" [option_tests, argument_tests]
+tests = testGroup "plain" [resolver_tests, option_tests, argument_tests]

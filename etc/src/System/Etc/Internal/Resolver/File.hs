@@ -35,37 +35,55 @@ data ConfigFile
 
 parseConfigValue
   :: Monad m
-  => Maybe (Spec.ConfigValue cmd)
+  => [Text]
+  -> Maybe (Spec.ConfigValue cmd)
   -> Int
   -> FileSource
   -> JSON.Value
   -> m ConfigValue
-parseConfigValue mSpec fileIndex fileSource json = case json of
-  JSON.Object object -> SubConfig <$> foldM
-    (\acc (key, subConfigValue) -> do
-      let msubConfigSpec = do
-            spec <- mSpec
-            case spec of
-              Spec.SubConfig hsh -> HashMap.lookup key hsh
-              _ ->
-                -- TODO: This should be an error given the config doesn't match spec
-                fail "configuration spec and configuration value are different"
+parseConfigValue keys mSpec fileIndex fileSource json =
 
-      value1 <- parseConfigValue msubConfigSpec fileIndex fileSource subConfigValue
-      return $ HashMap.insert key value1 acc
-    )
-    HashMap.empty
-    (HashMap.toList object)
+  let currentKey = Text.intercalate "." $ reverse keys
+  in
+    case json of
+      JSON.Object object -> SubConfig <$> foldM
+        (\acc (key, subConfigValue) -> do
+          let msubConfigSpec = do
+                spec <- mSpec
+                case spec of
+                  Spec.SubConfig hsh -> HashMap.lookup key hsh
+                  _ ->
+                    -- TODO: This should be an error given the config doesn't match spec
+                    fail "configuration spec and configuration value are different"
 
-  _ ->
-    let mToValue = do
-          spec <- mSpec
-          case spec of
-            Spec.ConfigValue{} -> return $ boolToValue (Spec.isSensitive spec)
-            _ -> fail "configuration spec and configuration value are different"
+          value1 <- parseConfigValue (key : keys)
+                                     msubConfigSpec
+                                     fileIndex
+                                     fileSource
+                                     subConfigValue
+          return $ HashMap.insert key value1 acc
+        )
+        HashMap.empty
+        (HashMap.toList object)
 
-        toValue = fromMaybe Plain mToValue
-    in  return $ ConfigValue (Set.singleton $ File fileIndex fileSource (toValue json))
+      _ -> case mSpec of
+        Just Spec.ConfigValue { Spec.isSensitive, Spec.configValueType } -> do
+          Spec.assertMatchingConfigValueType json configValueType
+          return $ ConfigValue
+            (Set.singleton $ File fileIndex fileSource $ markAsSensitive isSensitive json)
+        Just _ ->
+          fail
+            $  Text.unpack
+            $  "Configuration entry `"
+            <> currentKey
+            <> "` does not follow spec"
+
+        Nothing ->
+          fail
+            $  Text.unpack
+            $  "Configuration entry `"
+            <> currentKey
+            <> "` is not present on spec"
 
 
 eitherDecode :: ConfigFile -> Either String JSON.Value
@@ -89,7 +107,7 @@ parseConfig spec fileIndex fileSource contents = case eitherDecode contents of
   Left err -> throwM $ InvalidConfiguration Nothing (Text.pack err)
 
   Right json ->
-    case JSON.iparse (parseConfigValue (Just spec) fileIndex fileSource) json of
+    case JSON.iparse (parseConfigValue [] (Just spec) fileIndex fileSource) json of
       JSON.IError _ err    -> throwM $ InvalidConfiguration Nothing (Text.pack err)
       JSON.ISuccess result -> return (Config result)
 

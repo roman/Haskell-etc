@@ -70,7 +70,6 @@ specToCliSwitchFieldMod specSettings =
 specToCliVarFieldMod specSettings = specToCliSwitchFieldMod specSettings
   `mappend` maybe Opt.idm (Opt.metavar . Text.unpack) (Spec.optMetavar specSettings)
 
-
 commandToKey :: (MonadThrow m, JSON.ToJSON cmd) => cmd -> m [Text]
 commandToKey cmd = case JSON.toJSON cmd of
   JSON.String commandStr -> return [commandStr]
@@ -84,31 +83,31 @@ commandToKey cmd = case JSON.toJSON cmd of
       & InvalidCliCommandKey
       & throwM
 
-settingsToJsonCli :: Bool -> Spec.CliEntryMetadata -> Opt.Parser (Maybe (Value JSON.Value))
-settingsToJsonCli sensitive specSettings =
+jsonOptReader :: Spec.ConfigValueType -> Bool -> String -> Either String (Value JSON.Value)
+jsonOptReader cvType isSensitive content =
+  let contentText = Text.pack content
+      jsonValue   = fromMaybe (JSON.String contentText)
+                              (JSON.decodeStrict' $ Text.encodeUtf8 contentText)
+  in  if Spec.matchesConfigValueType jsonValue cvType
+        then Right $ markAsSensitive isSensitive jsonValue
+        else Left "input is not valid"
+
+settingsToJsonCli
+  :: Spec.ConfigValueType
+  -> Bool
+  -> Spec.CliEntryMetadata
+  -> Opt.Parser (Maybe (Value JSON.Value))
+settingsToJsonCli cvType isSensitive specSettings =
   let requiredCombinator =
         if Spec.optRequired specSettings then (Just <$>) else Opt.optional
-  in
-    requiredCombinator $ case specSettings of
-      Spec.Opt{} -> case Spec.optValueType specSettings of
-        Spec.StringOpt -> boolToValue sensitive . JSON.String . Text.pack <$> Opt.strOption
-          (specToCliVarFieldMod specSettings)
+  in  requiredCombinator $ case specSettings of
+        Spec.Opt{} -> Opt.option (Opt.eitherReader $ jsonOptReader cvType isSensitive)
+                                 (specToCliVarFieldMod specSettings)
 
-        Spec.NumberOpt -> boolToValue sensitive . JSON.Number . fromInteger <$> Opt.option
-          Opt.auto
-          (specToCliVarFieldMod specSettings)
+        Spec.Arg{} -> Opt.argument
+          (Opt.eitherReader $ jsonOptReader cvType isSensitive)
+          (specSettings & Spec.argMetavar & maybe Opt.idm (Opt.metavar . Text.unpack))
 
-        Spec.SwitchOpt -> boolToValue sensitive . JSON.Bool <$> Opt.switch
-          (specToCliSwitchFieldMod specSettings)
-
-      Spec.Arg{} -> case Spec.argValueType specSettings of
-        Spec.StringArg ->
-          boolToValue sensitive . JSON.String . Text.pack <$> Opt.strArgument
-            (specSettings & Spec.argMetavar & maybe Opt.idm (Opt.metavar . Text.unpack))
-        Spec.NumberArg ->
-          boolToValue sensitive . JSON.Number . fromInteger <$> Opt.argument
-            Opt.auto
-            (specSettings & Spec.argMetavar & maybe Opt.idm (Opt.metavar . Text.unpack))
 
 parseCommandJsonValue :: (MonadThrow m, JSON.FromJSON a) => JSON.Value -> m a
 parseCommandJsonValue commandValue = case JSON.iparse JSON.parseJSON commandValue of

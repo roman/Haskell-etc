@@ -50,8 +50,8 @@ instance Applicative Value where
 instance IsString a => IsString (Value a) where
   fromString = Plain . fromString
 
-boolToValue :: Bool -> (a -> Value a)
-boolToValue = bool Plain Sensitive
+markAsSensitive :: Bool -> (a -> Value a)
+markAsSensitive = bool Plain Sensitive
 
 data FileSource
   = FilePathSource { fileSourcePath :: !Text }
