@@ -244,7 +244,7 @@ inferErrorMsg :: String
 inferErrorMsg = "could not infer type from given default value"
 
 parseBytesToConfigValueJSON :: ConfigValueType -> Text -> Maybe JSON.Value
-parseBytesToConfigValueJSON cvType content = do
+parseBytesToConfigValueJSON cvType content =
   case JSON.eitherDecodeStrict' (Text.encodeUtf8 content) of
     Right value | matchesConfigValueType value cvType -> return value
                 | otherwise                           -> Nothing
@@ -260,7 +260,7 @@ jsonToConfigValueType json = case json of
   JSON.Array arr
     | null arr -> Left inferErrorMsg
     | otherwise -> case jsonToConfigValueType (Vector.head arr) of
-      Right (CVTArray{}  ) -> Left "nested arrays values are not supported"
+      Right CVTArray{}     -> Left "nested arrays values are not supported"
       Right (CVTSingle ty) -> Right $ CVTArray ty
       Left  err            -> Left err
   _ -> Left inferErrorMsg
@@ -319,7 +319,7 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
             if HashMap.size object == 1 then do
               -- NOTE: not using .:? here as it casts JSON.Null to Nothing, we
               -- want (Just JSON.Null) returned
-              mDefaultValue <- pure $ maybe Nothing Just $ HashMap.lookup "default" fieldSpec
+              let mDefaultValue = maybe Nothing Just $ HashMap.lookup "default" fieldSpec
               mSensitive    <- fieldSpec .:? "sensitive"
               mCvType       <- fieldSpec .:? "type"
               let sensitive = fromMaybe False mSensitive

@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns      #-}
 module System.Etc.Internal.Extra.Printer (
     renderConfig
   , renderConfigColor
@@ -9,12 +10,13 @@ module System.Etc.Internal.Extra.Printer (
   , hPrintPrettyConfig
   ) where
 
-import           RIO         hiding ((<>))
-import qualified RIO.HashMap as HashMap
-import           RIO.List    (intersperse)
-import qualified RIO.Set     as Set
-import qualified RIO.Text    as Text
-import qualified RIO.Vector  as Vector
+import           RIO               hiding ((<>))
+import qualified RIO.HashMap       as HashMap
+import           RIO.List          (intersperse)
+import qualified RIO.Set           as Set
+import qualified RIO.Text          as Text
+import qualified RIO.Vector        as Vector
+import qualified RIO.Vector.Unsafe as Vector (unsafeHead)
 
 import qualified Data.Aeson as JSON
 
@@ -30,16 +32,73 @@ data ColorFn
 
 renderConfigValueJSON :: JSON.Value -> Either Text Doc
 renderConfigValueJSON value = case value of
-  JSON.Null              -> Right $ text "null"
-  JSON.String str        -> Right $ text $ Text.unpack str
-  JSON.Number scientific -> Right $ text $ show scientific
-  JSON.Bool   b          -> Right $ if b then text "true" else text "false"
-  JSON.Object obj        -> do
-    values <- forM (HashMap.toList obj) $ \(k, v) -> do
-      v1 <- renderConfigValueJSON v
-      return $ text (Text.unpack k) <> ":" <+> v1
+  JSON.Null                         -> Right $ text "null"
+  JSON.String str                   -> Right $ text $ Text.unpack str
+  JSON.Number scientific            -> Right $ text $ show scientific
+  JSON.Bool   b                     -> Right $ if b then text "true" else text "false"
+  JSON.Array  (Vector.null -> True) -> return $ text "[]"
+  JSON.Array  arr                   -> do
+    -- unsafeHead is not unsafe here because of previous check; also we are
+    -- assuming all values in the array are of the same type
+    let h = Vector.unsafeHead arr
+    case h of
+      -- When rendering Objects within Arrays; output:
+      --
+      -- - hello: world
+      --   hola: mundo
+      -- - foo: bar
+      --   baz: wat
+      --
+      JSON.Object{} -> do
+        values <- forM arr $ \v -> do
+          v1 <- renderConfigValueJSON v
+          return $ hang 2 ("-" <+> v1)
+
+        return $ align (vsep $ Vector.toList values)
+
+      -- When rendering primitive values:
+      --
+      -- - hello
+      -- - world
+      --
+      _ -> do
+        values <- forM arr $ \v -> do
+          v1 <- renderConfigValueJSON v
+          return $ "-" <+> v1
+
+        return $ align (vsep $ Vector.toList values)
+
+  JSON.Object obj -> do
+    values <- forM (HashMap.toList obj) $ \(k, v) -> case v of
+        -- When rendering Objects within Objects; output:
+        --
+        -- attr1:
+        --  attr2: hello
+        --
+      JSON.Object{} -> do
+        v1 <- renderConfigValueJSON v
+        return $ nest 2 (text (Text.unpack k) <> ":" <> hardline <> v1)
+
+      -- When rendering Arrays within Objects; output:
+      --
+      -- attr1:
+      -- - hello
+      --
+      JSON.Array{} -> do
+        v1 <- renderConfigValueJSON v
+        return $ text (Text.unpack k) <> ":" <> hardline <> v1
+
+      -- When rendering primitive values
+      --
+      -- hello: world
+      --
+      --
+      _ -> do
+        v1 <- renderConfigValueJSON v
+        return $ text (Text.unpack k) <> ":" <+> v1
+
     return $ align (vsep values)
-  _ -> Left $ "Trying to render Unsupported JSON value " `mappend` (tshow value)
+
 
 renderConfigValue
   :: (JSON.Value -> Either Text Doc) -> Value JSON.Value -> Either Text [Doc]
