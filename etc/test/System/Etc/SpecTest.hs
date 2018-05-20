@@ -52,7 +52,7 @@ general_tests = testGroup
 
     case parseConfigSpec input of
       Left err -> case fromException err of
-        Just (InvalidConfiguration{}) -> assertBool "" True
+        Just InvalidConfiguration{} -> assertBool "" True
 
         _ ->
           assertFailure
@@ -103,7 +103,7 @@ general_tests = testGroup
     let input = "{\"etc/entries\":{\"greeting\": []}}"
     case parseConfigSpec input of
       Left err -> case fromException err of
-        Just (InvalidConfiguration{}) -> assertBool "" True
+        Just InvalidConfiguration{} -> assertBool "" True
         _ ->
           assertFailure $ "expecting InvalidConfiguration error; got instead " <> show err
 

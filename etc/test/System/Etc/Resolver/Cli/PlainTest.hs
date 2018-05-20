@@ -31,7 +31,7 @@ resolver_tests = testGroup
       eConfig <- try $ SUT.resolvePlainCliPure spec "program" ["-g", "hello world"]
 
       case eConfig of
-        Left (SUT.CliEvalExited{}) -> assertBool "" True
+        Left SUT.CliEvalExited{} -> assertBool "" True
         _ ->
           assertFailure $ "Expecting CliEvalExited error; got this instead " <> show eConfig
   ]
