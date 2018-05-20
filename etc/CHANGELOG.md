@@ -1,3 +1,8 @@
+0.4.0.1
+----
+
+* Improve pretty printer for configuration values (closes #32)
+
 0.4.0.0
 ----
 **BREAKING CHANGES**
