@@ -6,6 +6,9 @@ module System.Etc.Resolver.Cli.PlainTest where
 import           RIO
 import qualified RIO.Set as Set
 
+import           Data.Aeson ((.:))
+import qualified Data.Aeson as JSON
+
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
@@ -15,25 +18,42 @@ resolver_tests :: TestTree
 resolver_tests = testGroup
   "resolver"
   [ testCase "throws an error when input type does not match with spec type" $ do
-      let input = mconcat
-            [ "{ \"etc/entries\": {"
-            , "    \"greeting\": {"
-            , "      \"etc/spec\": {"
-            , "        \"type\": \"[number]\""
-            , "        , \"cli\": {"
-            , "            \"input\": \"option\""
-            , "          , \"short\": \"g\""
-            , "          , \"long\": \"greeting\""
-            , "          , \"required\": true"
-            , "}}}}}"
-            ]
-      (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
-      eConfig <- try $ SUT.resolvePlainCliPure spec "program" ["-g", "hello world"]
+    let input = mconcat
+          [ "{ \"etc/entries\": {"
+          , "    \"greeting\": {"
+          , "      \"etc/spec\": {"
+          , "        \"type\": \"[number]\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"option\""
+          , "          , \"short\": \"g\""
+          , "          , \"long\": \"greeting\""
+          , "          , \"required\": true"
+          , "}}}}}"
+          ]
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+    eConfig <- try $ SUT.resolvePlainCliPure spec "program" ["-g", "hello world"]
 
-      case eConfig of
-        Left SUT.CliEvalExited{} -> assertBool "" True
+    case eConfig of
+      Left SUT.CliEvalExited{} -> assertBool "" True
+      _ ->
+        assertFailure $ "Expecting CliEvalExited error; got this instead " <> show eConfig
+  , testCase "throws an error when entry is not given and is requested" $ do
+    let
+      input
+        = "{\"etc/entries\":{\"database\":{\"username\": {\"etc/spec\": {\"type\": \"string\", \"cli\": {\"input\": \"option\", \"long\": \"username\", \"required\": false}}}, \"password\": \"abc-123\"}}}"
+
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+    config                      <- SUT.resolvePlainCliPure spec "program" []
+    let parseDb = JSON.withObject "Database"
+          $ \obj -> (,) <$> obj .: "username" <*> obj .: "password"
+
+    case SUT.getConfigValueWith parseDb ["database"] config of
+      Left err -> case fromException err of
+        Just (SUT.InvalidConfiguration key _) ->
+          assertEqual "expecting key to be database, but wasn't" (Just "database") key
         _ ->
-          assertFailure $ "Expecting CliEvalExited error; got this instead " <> show eConfig
+          assertFailure $ "expecting InvalidConfiguration; got something else: " <> show err
+      Right (_ :: (Text, Text)) -> assertFailure "expecting error; got none"
   ]
 
 option_tests :: TestTree
