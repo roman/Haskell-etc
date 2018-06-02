@@ -1,3 +1,9 @@
+0.4.0.2
+----
+
+* Improvement around unhelpful error being thrown when CLI Config Map didn't
+  contain a value on a required (by code) field
+
 0.4.0.1
 ----
 
