@@ -20,7 +20,7 @@ resolveEnvVarSource
   -> Spec.ConfigSources cmd
   -> Maybe ConfigSource
 resolveEnvVarSource lookupEnv configValueType isSensitive specSources =
-  let envTextToJSON envValue = Spec.parseBytesToConfigValueJSON configValueType envValue
+  let envTextToJSON = Spec.parseBytesToConfigValueJSON configValueType
 
       toEnvSource varname envValue =
         Env varname . markAsSensitive isSensitive <$> envTextToJSON envValue

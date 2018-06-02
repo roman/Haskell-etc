@@ -164,7 +164,7 @@ renderConfig_ ColorFn { blueColor } (Config configMap) =
               --   - Value 2
               --   - Value 3
               --
-              return $ sourceDoc <$$> (indent 2 $ align (vsep multipleValues))
+              return $ sourceDoc <$$> indent 2 (align (vsep multipleValues))
       in  case eSourceDocs of
             Left  err -> throwM $ InvalidConfiguration (Just keyPath) err
 
@@ -207,7 +207,7 @@ renderConfig_ ColorFn { blueColor } (Config configMap) =
   in
     do
       result <- loop [] configMap
-      return $ (hcat $ intersperse (linebreak <> linebreak) $ result) <> linebreak
+      return $ hcat (intersperse (linebreak <> linebreak) result) <> linebreak
 
 
 renderConfigColor :: MonadThrow m => Config -> m Doc

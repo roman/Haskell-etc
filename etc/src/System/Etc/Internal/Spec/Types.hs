@@ -273,7 +273,7 @@ matchesConfigValueType json cvType = case (json, cvType) of
   (JSON.Bool{}  , CVTSingle CVTBool  ) -> True
   (JSON.Object{}, CVTSingle CVTObject) -> True
   (JSON.Array arr, CVTArray inner) ->
-    if null arr then True else all (flip matchesConfigValueType (CVTSingle inner)) arr
+    if null arr then True else all (`matchesConfigValueType` (CVTSingle inner)) arr
   _ -> False
 
 assertMatchingConfigValueType :: Monad m => JSON.Value -> ConfigValueType -> m ()

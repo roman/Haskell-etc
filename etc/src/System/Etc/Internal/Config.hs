@@ -20,7 +20,7 @@ import System.Etc.Internal.Types
 configValueToJsonObject :: ConfigValue -> JSON.Value
 configValueToJsonObject configValue = case configValue of
   ConfigValue sources -> case Set.maxView sources of
-    Nothing          -> error "this should not happen"
+    Nothing          -> JSON.Null
 
     Just (source, _) -> fromValue $ value source
 
