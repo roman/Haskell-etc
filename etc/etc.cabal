@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           etc
-version:        0.4.0.2
+version:        0.4.0.3
 synopsis:       Declarative configuration spec for Haskell projects
 description:    `etc` gathers configuration values from multiple sources (cli options, OS
                 environment variables, files) using a declarative spec file that defines where

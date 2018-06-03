@@ -1,3 +1,9 @@
+0.4.0.3
+----
+
+* Remove bug that stop configuration to be rendered when a default
+  value was an empty array
+
 0.4.0.2
 ----
 

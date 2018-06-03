@@ -2,7 +2,7 @@
 ################################################################################
 
 PROJECT_NAME := etc
-PROJECT_VERSION := 0.4.0.2
+PROJECT_VERSION := 0.4.0.3
 
 STACK := stack --resolver nightly
 
