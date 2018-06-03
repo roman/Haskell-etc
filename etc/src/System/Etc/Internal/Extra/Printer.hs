@@ -148,9 +148,10 @@ renderConfig_ ColorFn { blueColor } (Config configMap) =
           brackets'   = enclose (lbracket <> space) (space <> rbracket)
 
           layoutSourceValueDoc valueDocs sourceDoc = case valueDocs of
-            [] -> throwM $ InvalidConfiguration
-              (Just keyPath)
-              "Trying to render config entry with no values"
+            [] ->
+              -- [Default]
+              --   [] (empty array)
+              return $ sourceDoc <$$> indent 2 "[] (empty array)"
 
             [singleValueDoc] ->
               -- [Default]
