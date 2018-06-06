@@ -82,7 +82,7 @@ etc/filepaths:
 # The program is going to have a Command Line interface
 etc/cli:
   desc: "Description of the program that reads this configuration spec"
-  header: "my-app - A program that has declarative configuration input",
+  header: "my-app - A program that has declarative configuration input"
 
   # The program is going to have 2 sub-commands
   commands:
