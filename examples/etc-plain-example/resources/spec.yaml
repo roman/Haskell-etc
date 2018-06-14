@@ -14,21 +14,21 @@ etc/entries:
       etc/spec:
         default: "root"
         env: "MY_APP_USERNAME"
+        type: "string"
         cli:
           input: "option"
           short: "u"
           metavar: "USERNAME"
           help: "Username of the system"
-          type: "string"
           required: false
     password:
       etc/spec:
         sensitive: true
         env: "MY_APP_PASSWORD"
+        type: "string"
         cli:
           input: "option"
           short: "p"
           metavar: "PASSWORD"
           help: "Password of user"
-          type: "string"
           required: true
