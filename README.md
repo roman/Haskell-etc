@@ -101,6 +101,7 @@ etc/entries:
     username:
       # Define the spec for ["credentials", "username"]
       etc/spec:
+        type: string
         # default value (least precedence)
         default: "root"
 
@@ -112,7 +113,6 @@ etc/entries:
           input: option
           metavar: USERNAME
           help: Username of the system
-          type: string
           required: false
           # option is going to be available only on run sub-command
           commands:
@@ -121,12 +121,12 @@ etc/entries:
     # Define the spec for ["credentials", "password"]
     password:
       etc/spec:
+        type: string
         env: "MY_APP_PASSWORD"
         cli:
           input: option
           metavar: PASSWORD
           help: "Password of user"
-          type: string
           required: true
           commands:
           - run
@@ -289,16 +289,12 @@ The `opt/cli` entry map must have the following keys:
 
 #### `cli` entries
 
-The `cli` entry map can have the following keys (`input` and `type` are
-required):
+The `cli` entry map can have the following keys (`input` is required):
 
 - `required`: specifies if the entry is required on the CLI
 
 - `input`: how you want to receive the input value, it can either be `argument`
   or `option`
-
-- `type`: the type of the input value, this could be `string`, `number` or
-  `switch` (only available on `option` inputs)
 
 - `metavar`: the name of the input argument on the example/documentation string
   of the CLI help
@@ -356,9 +352,9 @@ After the `cli` entry is defined in your spec, you must then call the
 parameter.
 
 This will return a tuple with the chosen sub-command and the configuration map;
-the command type needs to be an instance of the `Aeson.FromJSON`, `Aeson.ToJSON`
-and `Data.Hashable.Hashable` typeclasses for the command to be parsed/serialized
-effectively.
+the command Haskell type needs to be an instance of the `Aeson.FromJSON`,
+`Aeson.ToJSON` and `Data.Hashable.Hashable` typeclasses for the command to be
+parsed/serialized effectively.
 
 ##### Example
 
