@@ -1,0 +1,34 @@
+etc/files:
+  env: PLAIN_EXAMPLE_CONFIG
+  paths:
+    - "./resources/config.yaml"
+    - "/etc/etc-plain-example/config.yaml"
+
+etc/cli:
+  desc: "Description of the program that reads this configuration spec"
+  header: "example-app - A program that has declarative configuration input"
+
+etc/entries:
+  credentials:
+    username:
+      etc/spec:
+        default: "root"
+        env: "MY_APP_USERNAME"
+        type: "string"
+        cli:
+          input: "option"
+          short: "u"
+          metavar: "USERNAME"
+          help: "Username of the system"
+          required: false
+    password:
+      etc/spec:
+        sensitive: true
+        env: "MY_APP_PASSWORD"
+        type: "string"
+        cli:
+          input: "option"
+          short: "p"
+          metavar: "PASSWORD"
+          help: "Password of user"
+          required: true

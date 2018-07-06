@@ -40,6 +40,7 @@ packages:
 - 'examples/etc-command-example'
 - 'examples/etc-plain-example'
 - 'examples/etc-embedded-config-example'
+- 'examples/etc-compile-time-spec-check-example'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:

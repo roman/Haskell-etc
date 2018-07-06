@@ -5,12 +5,18 @@
 module System.Etc.Spec (
     module Types
   , parseConfigSpec
+  , readConfigSpecTH
   , readConfigSpec
   ) where
 
 import qualified Data.Text.IO as Text (readFile)
 import           RIO
 import qualified RIO.Text     as Text
+
+import Data.Proxy (Proxy)
+
+import Language.Haskell.TH        (ExpQ)
+import Language.Haskell.TH.Syntax (Lift)
 
 import System.Etc.Internal.Spec.Types as Types
     (ConfigSpec, ConfigValue, ConfigurationError (..))
@@ -20,9 +26,11 @@ import qualified Data.Aeson as JSON
 #endif
 
 #ifdef WITH_YAML
-import qualified System.Etc.Internal.Spec.YAML as YAML
+import qualified System.Etc.Internal.Spec.YAML    as YAML
+import qualified System.Etc.Internal.Spec.YAML.TH as YAML
 #else
-import qualified System.Etc.Internal.Spec.JSON as JSONSpec
+import qualified System.Etc.Internal.Spec.JSON    as JSONSpec
+import qualified System.Etc.Internal.Spec.JSON.TH as JSONSpec
 #endif
 
 {-|
@@ -68,3 +76,12 @@ readConfigSpec
 readConfigSpec filepath = do
   contents <- Text.readFile $ Text.unpack filepath
   parseConfigSpec contents
+
+
+-- | Reads a specified 'FilePath' and parses a 'ConfigSpec' at compilation time.
+readConfigSpecTH :: (Lift k, JSON.FromJSON k) => Proxy k -> Text -> ExpQ
+#ifdef WITH_YAML
+readConfigSpecTH = YAML.readConfigSpecTH
+#else
+readConfigSpecTH = JSONSpec.readConfigSpecTH
+#endif

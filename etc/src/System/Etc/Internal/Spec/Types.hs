@@ -1,4 +1,12 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 800
+{-# LANGUAGE TemplateHaskellQuotes #-}
+#else
+{-# LANGUAGE TemplateHaskell   #-}
+#endif
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DeriveLift        #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Spec.Types where
@@ -8,7 +16,10 @@ import Prelude (fail)
 import           RIO
 import qualified RIO.HashMap        as HashMap
 import qualified RIO.Text           as Text
+import qualified RIO.Vector         as Vector
 import qualified RIO.Vector.Partial as Vector (head)
+
+import Language.Haskell.TH.Syntax (Lift(..))
 
 import Data.Aeson ((.:), (.:?))
 
@@ -32,12 +43,12 @@ data CliOptValueType
   = StringOpt
   | NumberOpt
   | SwitchOpt
-  deriving (Generic, Show, Eq)
+  deriving (Generic, Show, Eq, Lift)
 
 data CliArgValueType
   = StringArg
   | NumberArg
-  deriving (Generic, Show, Eq)
+  deriving (Generic, Show, Eq, Lift)
 
 data CliEntryMetadata
   = Opt {
@@ -53,6 +64,25 @@ data CliEntryMetadata
   }
   deriving (Generic, Show, Eq)
 
+instance Lift CliEntryMetadata where
+  lift Opt {optLong, optShort, optMetavar, optHelp, optRequired} =
+    [| Opt { optLong = fmap Text.pack optLongStr
+           , optShort = fmap Text.pack optShortStr
+           , optMetavar = fmap Text.pack optMetavarStr
+           , optHelp = fmap Text.pack optHelpStr
+           , optRequired = optRequired }|]
+    where
+      optLongStr = fmap Text.unpack optLong
+      optShortStr = fmap Text.unpack optShort
+      optMetavarStr = fmap Text.unpack optMetavar
+      optHelpStr = fmap Text.unpack optHelp
+  lift Arg {argMetavar, optRequired} =
+    [| Arg { argMetavar = fmap Text.pack argMetavarStr
+           , optRequired = optRequired } |]
+    where
+      argMetavarStr = fmap Text.unpack argMetavar
+
+
 data CliEntrySpec cmd
   = CmdEntry {
     cliEntryCmdValue :: !(Vector cmd)
@@ -63,12 +93,31 @@ data CliEntrySpec cmd
   }
   deriving (Generic, Show, Eq)
 
+instance Lift cmd => Lift (CliEntrySpec cmd) where
+  lift CmdEntry {cliEntryCmdValue, cliEntryMetadata} =
+    [| CmdEntry { cliEntryCmdValue = Vector.fromList cliEntryCmdValueList
+                , cliEntryMetadata = cliEntryMetadata } |]
+    where
+      cliEntryCmdValueList = Vector.toList cliEntryCmdValue
+  lift PlainEntry {cliEntryMetadata} =
+    [| PlainEntry { cliEntryMetadata = cliEntryMetadata } |]
+
+
+
 data CliCmdSpec
   = CliCmdSpec {
     cliCmdDesc   :: !Text
   , cliCmdHeader :: !Text
   }
   deriving (Generic, Show, Eq)
+
+instance Lift CliCmdSpec where
+  lift CliCmdSpec {cliCmdDesc, cliCmdHeader} =
+    [| CliCmdSpec { cliCmdDesc = Text.pack cliCmdDescStr, cliCmdHeader = Text.pack cliCmdHeaderStr } |]
+    where
+      cliCmdDescStr = Text.unpack cliCmdDesc
+      cliCmdHeaderStr = Text.unpack cliCmdHeader
+
 
 data ConfigSources cmd
   = ConfigSources {
@@ -77,12 +126,18 @@ data ConfigSources cmd
   }
   deriving (Generic, Show, Eq)
 
+instance Lift cmd => Lift (ConfigSources cmd) where
+  lift ConfigSources {envVar, cliEntry} =
+    [| ConfigSources (fmap Text.pack envVarStr) cliEntry |]
+    where
+      envVarStr = fmap Text.unpack envVar
+
 data SingleConfigValueType
   = CVTString
   | CVTNumber
   | CVTBool
   | CVTObject
-  deriving (Generic, Show, Eq)
+  deriving (Generic, Show, Eq, Lift)
 
 instance Display SingleConfigValueType where
   display value =
@@ -95,7 +150,7 @@ instance Display SingleConfigValueType where
 data ConfigValueType
   = CVTSingle !SingleConfigValueType
   | CVTArray  !SingleConfigValueType
-  deriving (Generic, Show, Eq)
+  deriving (Generic, Show, Eq, Lift)
 
 instance Display ConfigValueType where
   display value =
@@ -115,18 +170,48 @@ data ConfigValue cmd
   }
   deriving (Generic, Show, Eq)
 
+instance Lift cmd => Lift (ConfigValue cmd) where
+  lift ConfigValue {defaultValue, configValueType, isSensitive, configSources} =
+    [| ConfigValue defaultValue configValueType isSensitive configSources |]
+  lift SubConfig {subConfig} =
+    [| SubConfig (HashMap.fromList $ map (first Text.pack) subConfigList) |]
+    where
+      subConfigList = map (first Text.unpack) $ HashMap.toList subConfig
+
 data CliProgramSpec
   = CliProgramSpec {
     cliProgramDesc   :: !Text
   , cliProgramHeader :: !Text
   , cliCommands      :: !(Maybe (HashMap Text CliCmdSpec))
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
+
+instance Lift CliProgramSpec where
+  lift CliProgramSpec {cliProgramDesc, cliProgramHeader, cliCommands} =
+    [| CliProgramSpec (Text.pack cliProgramDescStr)
+                      (Text.pack cliProgramHeaderStr)
+                      (fmap (HashMap.fromList . map (first Text.pack)) cliCommandList) |]
+    where
+      cliProgramDescStr   = Text.unpack cliProgramDesc
+      cliProgramHeaderStr = Text.unpack cliProgramHeader
+      cliCommandList      = fmap (map (first Text.unpack) . HashMap.toList) cliCommands
 
 data FilesSpec
   = FilePathsSpec ![Text]
   | FilesSpec { fileLocationEnvVar :: !(Maybe Text), fileLocationPaths :: ![Text] }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
+
+instance Lift FilesSpec where
+  lift (FilePathsSpec pathsList) =
+    [| FilePathsSpec $ map Text.pack pathsListStr |]
+    where
+      pathsListStr = map Text.unpack pathsList
+  lift FilesSpec { fileLocationEnvVar, fileLocationPaths } =
+    [| FilesSpec (fmap Text.pack fileLocationEnvVarStr)
+                 (fmap Text.pack fileLocationsPathsStr)  |]
+    where
+      fileLocationEnvVarStr = fmap Text.unpack fileLocationEnvVar
+      fileLocationsPathsStr = fmap Text.unpack fileLocationPaths
 
 data ConfigSpec cmd
   = ConfigSpec {
@@ -134,7 +219,15 @@ data ConfigSpec cmd
   , specCliProgramSpec  :: !(Maybe CliProgramSpec)
   , specConfigValues    :: !(HashMap Text (ConfigValue cmd))
   }
-  deriving (Show, Eq)
+  deriving (Generic, Show, Eq)
+
+instance Lift cmd => Lift (ConfigSpec cmd) where
+  lift ConfigSpec {specConfigFilepaths, specCliProgramSpec, specConfigValues} =
+    [| ConfigSpec specConfigFilepaths
+                  specCliProgramSpec
+                  (HashMap.fromList $ map (first Text.pack) configValuesList) |]
+    where
+      configValuesList = map (first Text.unpack) $ HashMap.toList specConfigValues
 
 --------------------------------------------------------------------------------
 -- JSON Parsers
@@ -275,7 +368,7 @@ coerceConfigValueType rawValue json cvType = case (json, cvType) of
   (JSON.Array{} , CVTArray{}         ) -> Just json
   (JSON.Number{}, CVTSingle CVTString) -> Just (JSON.String rawValue)
   (JSON.Bool{}  , CVTSingle CVTString) -> Just (JSON.String rawValue)
-  _                                    -> Nothing
+  _ -> Nothing
 
 matchesConfigValueType :: JSON.Value -> ConfigValueType -> Bool
 matchesConfigValueType json cvType = case (json, cvType) of
