@@ -265,6 +265,18 @@ jsonToConfigValueType json = case json of
       Left  err            -> Left err
   _ -> Left inferErrorMsg
 
+coerceConfigValueType :: Text -> JSON.Value -> ConfigValueType -> Maybe JSON.Value
+coerceConfigValueType rawValue json cvType = case (json, cvType) of
+  (JSON.Null    , CVTSingle _        ) -> Just JSON.Null
+  (JSON.String{}, CVTSingle CVTString) -> Just json
+  (JSON.Number{}, CVTSingle CVTNumber) -> Just json
+  (JSON.Bool{}  , CVTSingle CVTBool  ) -> Just json
+  (JSON.Object{}, CVTSingle CVTObject) -> Just json
+  (JSON.Array{} , CVTArray{}         ) -> Just json
+  (JSON.Number{}, CVTSingle CVTString) -> Just (JSON.String rawValue)
+  (JSON.Bool{}  , CVTSingle CVTString) -> Just (JSON.String rawValue)
+  _                                    -> Nothing
+
 matchesConfigValueType :: JSON.Value -> ConfigValueType -> Bool
 matchesConfigValueType json cvType = case (json, cvType) of
   (JSON.Null    , CVTSingle _        ) -> True
