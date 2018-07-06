@@ -1,4 +1,4 @@
-
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module System.Etc.Internal.Spec.YAML where
@@ -13,8 +13,16 @@ import qualified Data.Yaml          as YAML
 
 import System.Etc.Internal.Spec.Types
 
+decodeYaml :: JSON.FromJSON a => ByteString -> Either String a
+decodeYaml =
+#if MIN_VERSION_yaml(0,8,3)
+  mapLeft show . YAML.decodeEither'
+#else
+  YAML.decodeEither
+#endif
+
 parseConfigSpec :: (MonadThrow m, JSON.FromJSON cmd) => Text -> m (ConfigSpec cmd)
-parseConfigSpec input = case YAML.decodeEither (Text.encodeUtf8 input) of
+parseConfigSpec input = case decodeYaml (Text.encodeUtf8 input) of
   Left  err    -> throwM $ InvalidConfiguration Nothing (Text.pack err)
 
   Right result -> return result

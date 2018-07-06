@@ -17,7 +17,24 @@ import qualified System.Etc as SUT
 resolver_tests :: TestTree
 resolver_tests = testGroup
   "resolver"
-  [ testCase "throws an error when input type does not match with spec type" $ do
+  [ testCase "inputs with type string should accept numbers" $ do
+    let input = mconcat
+          [ "{ \"etc/entries\": {"
+          , "    \"greeting\": {"
+          , "      \"etc/spec\": {"
+          , "        \"type\": \"string\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"option\""
+          , "          , \"short\": \"g\""
+          , "          , \"long\": \"greeting\""
+          , "          , \"required\": true"
+          , "}}}}}"
+          ]
+    (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+    config                      <- SUT.resolvePlainCliPure spec "program" ["-g", "1234"]
+    str                         <- SUT.getConfigValue ["greeting"] config
+    assertEqual "Expected String; got something else" ("1234" :: Text) str
+  , testCase "throws an error when input type does not match with spec type" $ do
     let input = mconcat
           [ "{ \"etc/entries\": {"
           , "    \"greeting\": {"

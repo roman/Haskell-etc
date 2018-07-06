@@ -88,9 +88,12 @@ jsonOptReader cvType isSensitive content =
   let contentText = Text.pack content
       jsonValue   = fromMaybe (JSON.String contentText)
                               (JSON.decodeStrict' $ Text.encodeUtf8 contentText)
-  in  if Spec.matchesConfigValueType jsonValue cvType
-        then Right $ markAsSensitive isSensitive jsonValue
-        else Left "input is not valid"
+  in  case Spec.coerceConfigValueType contentText jsonValue cvType of
+        Nothing -> Left "input is not valid"
+        Just jsonValue1
+          | Spec.matchesConfigValueType jsonValue1 cvType -> Right
+          $ markAsSensitive isSensitive jsonValue1
+          | otherwise -> Left "input is not valid"
 
 settingsToJsonCli
   :: Spec.ConfigValueType
