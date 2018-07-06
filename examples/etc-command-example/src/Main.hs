@@ -10,7 +10,6 @@ import qualified RIO.Text as Text
 
 import qualified Data.Aeson       as JSON
 import qualified Data.Aeson.Types as JSON (typeMismatch)
-import           Data.Hashable    (Hashable)
 import           GHC.Generics     (Generic)
 import qualified System.Etc       as Etc
 

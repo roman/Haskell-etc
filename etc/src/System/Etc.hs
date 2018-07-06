@@ -19,6 +19,7 @@ module System.Etc (
   , ConfigurationError (..)
   , parseConfigSpec
   , readConfigSpec
+  , readConfigSpecTH
 
   -- ** Resolvers
   -- $resolvers
@@ -60,7 +61,12 @@ import System.Etc.Internal.Resolver.Default (resolveDefault)
 import System.Etc.Internal.Types
     (Config, ConfigSource (..), ConfigValue, IConfig (..), Value (..))
 import System.Etc.Spec
-    (ConfigSpec, ConfigurationError (..), parseConfigSpec, readConfigSpec)
+    ( ConfigSpec
+    , ConfigurationError (..)
+    , parseConfigSpec
+    , readConfigSpec
+    , readConfigSpecTH
+    )
 
 #ifdef WITH_CLI
 import System.Etc.Internal.Resolver.Cli.Command (resolveCommandCli, resolveCommandCliPure)

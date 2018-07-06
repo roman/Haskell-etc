@@ -14,8 +14,8 @@ import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
 import qualified Data.Aeson as JSON
 
-import System.Etc.Internal.Spec.Types
-import System.Etc.Spec
+import           System.Etc.Internal.Spec.Types
+import qualified System.Etc.Spec                as SUT
 
 #ifdef WITH_YAML
 import qualified Data.Yaml as YAML
@@ -42,7 +42,7 @@ general_tests = testGroup
   [ testCase "does not fail when etc/entries is not defined" $ do
     let input = "{}"
 
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Nothing -> assertFailure "should not fail if no etc/entries key is present"
       Just (_ :: ConfigSpec ()) -> assertBool "" True
   , testCase "fails when default JSON value doesn't correspond to type entry" $ do
@@ -50,7 +50,7 @@ general_tests = testGroup
       input
         = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":[123],\"type\":\"[string]\"}}}}"
 
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Left err -> case fromException err of
         Just InvalidConfiguration{} -> assertBool "" True
 
@@ -64,14 +64,14 @@ general_tests = testGroup
   , testCase "entries cannot finish in an empty map" $ do
     let input = "{\"etc/entries\":{\"greeting\":{}}}"
 
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Just (result :: ConfigSpec ()) ->
         assertFailure $ "entries should not accept empty maps as values " ++ show result
       Nothing -> assertBool "" True
   , testCase "entries cannot finish in an array" $ do
     let input = "{\"etc/entries\":{\"greeting\":[]}}"
 
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Just (result :: ConfigSpec ()) ->
         assertFailure $ "entries should not accept arrays as values " ++ show result
       Nothing -> assertBool "" True
@@ -79,7 +79,7 @@ general_tests = testGroup
     let input = "{\"etc/entries\":{\"greeting\":123}}"
         keys  = ["greeting"]
 
-    config <- parseConfigSpec input
+    config <- SUT.parseConfigSpec input
     case getConfigValue keys (specConfigValues config) of
       Nothing -> assertFailure
         (show keys ++ " should map to a config value, got sub config map instead")
@@ -90,7 +90,7 @@ general_tests = testGroup
     let input = "{\"etc/entries\":{\"greeting\":[123]}}"
         keys  = ["greeting"]
 
-    config <- parseConfigSpec input
+    config <- SUT.parseConfigSpec input
 
     case getConfigValue keys (specConfigValues config) of
       Nothing -> assertFailure
@@ -101,7 +101,7 @@ general_tests = testGroup
         (defaultValue value)
   , testCase "entries with empty arrays as values fail because type cannot be infered" $ do
     let input = "{\"etc/entries\":{\"greeting\": []}}"
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Left err -> case fromException err of
         Just InvalidConfiguration{} -> assertBool "" True
         _ ->
@@ -115,7 +115,7 @@ general_tests = testGroup
         = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":[],\"type\":\"[string]\"}}}}"
       keys = ["greeting"]
 
-    config <- parseConfigSpec input
+    config <- SUT.parseConfigSpec input
     case getConfigValue keys (specConfigValues config) of
       Nothing -> assertFailure
         (show keys ++ " should map to an array config value, got sub config map instead")
@@ -130,7 +130,7 @@ general_tests = testGroup
         = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":[{\"hello\":\"world\"}],\"type\":\"[object]\"}}}}"
       keys = ["greeting"]
 
-    config <- parseConfigSpec input
+    config <- SUT.parseConfigSpec input
     case getConfigValue keys (specConfigValues config) of
       Nothing -> assertFailure
         (show keys ++ " should map to an array config value, got sub config map instead")
@@ -145,7 +145,7 @@ general_tests = testGroup
     let input = "{\"etc/entries\":{\"english\":{\"greeting\":\"hello\"}}}"
         keys  = ["english", "greeting"]
 
-    config <- parseConfigSpec input
+    config <- SUT.parseConfigSpec input
 
     case getConfigValue keys (specConfigValues config) of
       Nothing -> assertFailure
@@ -156,35 +156,35 @@ general_tests = testGroup
   , testCase "spec map cannot be empty object" $ do
     let input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{}}}"
 
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Just (result :: ConfigSpec ()) ->
         assertFailure $ "etc/spec map should not be an empty object " ++ show result
       Nothing -> assertBool "" True
   , testCase "spec map cannot be a JSON array" $ do
     let input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":[]}}"
 
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Just (result :: ConfigSpec ()) ->
         assertFailure $ "etc/spec map should not be an array " ++ show result
       Nothing -> assertBool "" True
   , testCase "spec map cannot be a JSON bool" $ do
     let input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":true}}"
 
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Just (result :: ConfigSpec ()) ->
         assertFailure $ "etc/spec map should not be a boolean " ++ show result
       Nothing -> assertBool "" True
   , testCase "spec map cannot be a JSON string" $ do
     let input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":\"hello\"}}}"
 
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Just (result :: ConfigSpec ()) ->
         assertFailure $ "etc/spec map should not be a string " ++ show result
       Nothing -> assertBool "" True
   , testCase "spec map cannot be a JSON number" $ do
     let input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":123}}}"
 
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Just (result :: ConfigSpec ()) ->
         assertFailure $ "etc/spec map should not be a number " ++ show result
       Nothing -> assertBool "" True
@@ -193,7 +193,7 @@ general_tests = testGroup
       input
         = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":\"hello\"},\"foobar\":123}}}"
 
-    case parseConfigSpec input of
+    case SUT.parseConfigSpec input of
       Just (result :: ConfigSpec ()) ->
         assertFailure $ "etc/spec map should not contain more than one key " ++ show result
       Nothing -> assertBool "" True
@@ -208,7 +208,7 @@ cli_tests =
       let
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"cli\":{}}}}}"
 
-      case parseConfigSpec input of
+      case SUT.parseConfigSpec input of
         Just (result :: ConfigSpec ()) ->
           assertFailure $ "cli entry should require a type " ++ show result
         Nothing ->
@@ -218,7 +218,7 @@ cli_tests =
       let
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\": \"string\", \"cli\":{\"input\":\"option\"}}}}}"
 
-      case parseConfigSpec input of
+      case SUT.parseConfigSpec input of
         Just (result :: ConfigSpec ()) ->
           assertFailure $ "cli entry should require a type " ++ show result
         Nothing ->
@@ -229,7 +229,7 @@ cli_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\":\"string\",\"cli\":{\"input\":\"option\",\"short\":\"g\"}}}}}"
         keys  = ["greeting"]
 
-      (config :: ConfigSpec ()) <- parseConfigSpec input
+      (config :: ConfigSpec ()) <- SUT.parseConfigSpec input
 
       let
         result = do
@@ -251,7 +251,7 @@ cli_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\": \"string\",\"cli\":{\"input\":\"option\",\"long\":\"greeting\"}}}}}"
         keys  = ["greeting"]
 
-      (config :: ConfigSpec ()) <- parseConfigSpec input
+      (config :: ConfigSpec ()) <- SUT.parseConfigSpec input
 
       let
         result = do
@@ -273,7 +273,7 @@ cli_tests =
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\": \"string\",\"cli\":{\"input\":\"option\",\"long\":\"greeting\",\"commands\":[\"foo\"]}}}}}"
         keys  = ["greeting"]
 
-      (config :: ConfigSpec Text) <- parseConfigSpec input
+      (config :: ConfigSpec Text) <- SUT.parseConfigSpec input
 
       let
         result = do
@@ -296,7 +296,7 @@ cli_tests =
         -- error is a typo on key command (instead of command_s_)
         input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"cli\":{\"input\":\"option\",\"long\":\"greeting\",\"type\":\"string\",\"command\":[\"foo\"]}}}}}"
 
-      case parseConfigSpec input of
+      case SUT.parseConfigSpec input of
         Just (result :: ConfigSpec ()) ->
           assertFailure $ "cli entry should fail on invalid entry " ++ show result
         Nothing ->
@@ -314,7 +314,7 @@ envvar_tests = testGroup
           = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"type\": \"string\",\"env\":\"GREETING\"}}}}"
         keys = ["greeting"]
 
-      (config :: ConfigSpec ()) <- parseConfigSpec input
+      (config :: ConfigSpec ()) <- SUT.parseConfigSpec input
 
       case getConfigValue keys (specConfigValues config) of
         Nothing -> assertFailure

@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           etc
-version:        0.4.0.4
+version:        0.4.1.0
 synopsis:       Declarative configuration spec for Haskell projects
 description:    `etc` gathers configuration values from multiple sources (cli options, OS
                 environment variables, files) using a declarative spec file that defines where
@@ -24,6 +24,7 @@ data-files:
     test/fixtures/config.env.json
     test/fixtures/config.null.json
     test/fixtures/config.spec.yaml
+    test/fixtures/config.spec.invalid.yaml
     test/fixtures/config.yaml
     test/fixtures/config.yml
 extra-source-files:
@@ -53,21 +54,22 @@ library
   hs-source-dirs: src
   ghc-options: -Wall
   build-depends:
-      base          >=4.7 && <5
-    , aeson         >=0.11
-    , hashable      >=1.2
-    , rio           >=0.0.1.0
-    , text          >=0.0.1.0
+      base              >=4.7 && <5
+    , aeson             >=0.11
+    , rio               >=0.0.1.0
+    , text              >=0.0.1.0
     -- NOTE: bellow are rio dependencies that help the stack resolver, not
     -- really required by etc
-    , typed-process >=0.1.1
-    , unliftio      >=0.1.1.0
+    , typed-process     >=0.1.1
+    , unliftio          >=0.1.1.0
+    , template-haskell  >=2.11.0.0
 
   exposed-modules:
       System.Etc
       System.Etc.Spec
       System.Etc.Internal.Config
       System.Etc.Internal.Spec.JSON
+      System.Etc.Internal.Spec.JSON.TH
       System.Etc.Internal.Spec.Types
       System.Etc.Internal.Types
       System.Etc.Internal.Resolver.Default
@@ -105,6 +107,7 @@ library
       yaml >=0.8
     exposed-modules:
       System.Etc.Internal.Spec.YAML
+      System.Etc.Internal.Spec.YAML.TH
 
 test-suite etc-testsuite
   type: exitcode-stdio-1.0

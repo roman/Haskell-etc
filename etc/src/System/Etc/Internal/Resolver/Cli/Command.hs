@@ -8,7 +8,6 @@ import           RIO
 import qualified RIO.HashMap as HashMap
 import qualified RIO.Text    as Text
 
-import Data.Hashable      (Hashable)
 import System.Environment (getArgs, getProgName)
 
 import qualified Data.Aeson          as JSON
