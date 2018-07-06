@@ -15,8 +15,7 @@ import qualified Data.Aeson as JSON
 import System.Etc.Internal.Spec.Types (ConfigSpec)
 import System.Etc.Internal.Spec.YAML  (readConfigSpec)
 
-readConfigSpecTH_
-  :: (Lift k, JSON.FromJSON k) => Proxy k -> (Text -> IO (ConfigSpec k)) -> Text -> ExpQ
+readConfigSpecTH_ :: (Lift k) => Proxy k -> (Text -> IO (ConfigSpec k)) -> Text -> ExpQ
 readConfigSpecTH_ _ readSpec filepath = do
   configSpec <- runIO $ readSpec filepath
   [| configSpec |]

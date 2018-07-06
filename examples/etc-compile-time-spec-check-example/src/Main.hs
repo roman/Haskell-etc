@@ -5,16 +5,16 @@
 {-# LANGUAGE TemplateHaskell     #-}
 module Main where
 
-import           RIO
 import qualified Prelude
+import           RIO
 
-import           Data.Proxy (Proxy)
+import Data.Proxy (Proxy)
 
 import qualified System.Etc as Etc
 
 -- NOTE: Given TemplateHaskell restrictions, this need to be created
 -- in a different module
-import Types (Cmd(..))
+import Types (Cmd (..))
 
 main :: IO ()
 main = do
