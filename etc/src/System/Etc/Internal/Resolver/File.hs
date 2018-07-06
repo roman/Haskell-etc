@@ -12,7 +12,7 @@ import qualified RIO.Text      as Text
 import qualified RIO.Vector    as Vector
 
 #ifdef WITH_YAML
-import qualified Data.Yaml as YAML
+import System.Etc.Internal.Spec.YAML (decodeYaml)
 #endif
 
 import qualified Data.Aeson          as JSON
@@ -93,7 +93,7 @@ eitherDecode contents0 =
     JsonFile _ contents ->
       JSON.eitherDecode contents
     YamlFile _ contents ->
-      YAML.decodeEither (LB8.toStrict contents)
+      decodeYaml (LB8.toStrict contents)
 #else
 eitherDecode contents0 = case contents0 of
   JsonFile _        contents -> JSON.eitherDecode contents
