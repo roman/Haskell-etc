@@ -1,3 +1,10 @@
+0.4.0.4 (Release Candidate)
+----
+
+* Remove bug on CLI option parser, now it will coerce numbers and
+  booelans to string with specifying numbers and booleans over CLI
+  and the field type is a string (closes #48)
+
 0.4.0.3
 ----
 
