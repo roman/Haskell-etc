@@ -56,7 +56,6 @@ library
   build-depends:
       base              >=4.7 && <5
     , aeson             >=0.11
-    , hashable          >=1.2
     , rio               >=0.0.1.0
     , text              >=0.0.1.0
     -- NOTE: bellow are rio dependencies that help the stack resolver, not
