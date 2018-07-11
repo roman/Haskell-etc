@@ -1,7 +1,8 @@
-{-# LANGUAGE CPP               #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP                 #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.Internal.Resolver.File (resolveFiles) where
 
 import           RIO
@@ -15,8 +16,8 @@ import qualified RIO.Vector    as Vector
 import System.Etc.Internal.Spec.YAML (decodeYaml)
 #endif
 
-import qualified Data.Aeson          as JSON
-import qualified Data.Aeson.Internal as JSON (IResult (..), iparse)
+import qualified Data.Aeson as JSON
+-- import qualified Data.Aeson.Internal as JSON (IResult (..), iparse)
 import qualified RIO.ByteString.Lazy as LB8
 
 import System.Environment (lookupEnv)
@@ -34,56 +35,43 @@ data ConfigFile
 --------------------------------------------------------------------------------
 
 parseConfigValue
-  :: Monad m
+  :: (MonadThrow m, Monad m)
   => [Text]
-  -> Maybe (Spec.ConfigValue cmd)
+  -> Spec.ConfigValue cmd
   -> Int
   -> FileSource
   -> JSON.Value
   -> m ConfigValue
-parseConfigValue keys mSpec fileIndex fileSource json =
+parseConfigValue keys spec fileIndex fileSource json =
+  let parentKeys = reverse keys
+      currentKey = Text.intercalate "." parentKeys
+  in  case (spec, json) of
+        (Spec.SubConfig currentSpec, JSON.Object object) -> SubConfig <$> foldM
+          (\acc (key, subConfigValue) -> case HashMap.lookup key currentSpec of
+            Nothing -> throwM UnknownConfigKeyFound
+              { parentKeys
+              , keyName      = key
+              , possibleKeys = HashMap.keys currentSpec
+              }
+            Just subConfigSpec -> do
+              value1 <- parseConfigValue (key : keys)
+                                         subConfigSpec
+                                         fileIndex
+                                         fileSource
+                                         subConfigValue
+              return $ HashMap.insert key value1 acc
+          )
+          HashMap.empty
+          (HashMap.toList object)
 
-  let currentKey = Text.intercalate "." $ reverse keys
-  in
-    case json of
-      JSON.Object object -> SubConfig <$> foldM
-        (\acc (key, subConfigValue) -> do
-          let msubConfigSpec = do
-                spec <- mSpec
-                case spec of
-                  Spec.SubConfig hsh -> HashMap.lookup key hsh
-                  _ ->
-                    -- TODO: This should be an error given the config doesn't match spec
-                    fail "configuration spec and configuration value are different"
+        (Spec.SubConfig{}, _) ->
+          throwM SubConfigEntryExpected {keyName = currentKey, configValue = json}
 
-          value1 <- parseConfigValue (key : keys)
-                                     msubConfigSpec
-                                     fileIndex
-                                     fileSource
-                                     subConfigValue
-          return $ HashMap.insert key value1 acc
-        )
-        HashMap.empty
-        (HashMap.toList object)
-
-      _ -> case mSpec of
-        Just Spec.ConfigValue { Spec.isSensitive, Spec.configValueType } -> do
-          Spec.assertMatchingConfigValueType json configValueType
+        (Spec.ConfigValue { Spec.isSensitive, Spec.configValueType }, _) -> do
+          either throwM return $ Spec.assertMatchingConfigValueType json configValueType
           return $ ConfigValue
             (Set.singleton $ File fileIndex fileSource $ markAsSensitive isSensitive json)
-        Just _ ->
-          fail
-            $  Text.unpack
-            $  "Configuration entry `"
-            <> currentKey
-            <> "` does not follow spec"
 
-        Nothing ->
-          fail
-            $  Text.unpack
-            $  "Configuration entry `"
-            <> currentKey
-            <> "` is not present on spec"
 
 
 eitherDecode :: ConfigFile -> Either String JSON.Value
@@ -104,12 +92,17 @@ eitherDecode contents0 = case contents0 of
 parseConfig
   :: MonadThrow m => Spec.ConfigValue cmd -> Int -> FileSource -> ConfigFile -> m Config
 parseConfig spec fileIndex fileSource contents = case eitherDecode contents of
-  Left err -> throwM $ InvalidConfiguration Nothing (Text.pack err)
-
-  Right json ->
-    case JSON.iparse (parseConfigValue [] (Just spec) fileIndex fileSource) json of
-      JSON.IError _ err    -> throwM $ InvalidConfiguration Nothing (Text.pack err)
-      JSON.ISuccess result -> return (Config result)
+  Left err -> throwM $ ConfigInvalidSyntaxFound (fileSourcePath fileSource) (Text.pack err)
+  -- Right json ->
+  --   case JSON.iparse (parseConfigValue [] spec fileIndex fileSource) json of
+  --     JSON.IError _ err    ->
+  --       case readMaybe err of
+  --         Just (e :: ConfigError) ->
+  --           throwM e
+  --         _ ->
+  --           throwM $ InvalidConfiguration Nothing (Text.pack err)
+  --     JSON.ISuccess result -> return (Config result)
+  Right json -> Config <$> parseConfigValue [] spec fileIndex fileSource json
 
 readConfigFile :: MonadThrow m => Text -> IO (m ConfigFile)
 readConfigFile filepath =
@@ -126,8 +119,7 @@ readConfigFile filepath =
           else
             if (".yaml" `Text.isSuffixOf` filepath) || (".yml" `Text.isSuffixOf` filepath)
               then return $ return (YamlFile filepath contents)
-              else return
-                (throwM $ InvalidConfiguration Nothing "Unsupported file extension")
+              else return (throwM $ UnsupportedFileExtensionGiven filepath)
         else return $ throwM $ ConfigurationFileNotFound filepath
 
 readConfigFromFileSources
@@ -184,3 +176,8 @@ resolveFiles
 resolveFiles spec = do
   (config, exceptions) <- processFilesSpec spec
   return (config, Vector.fromList exceptions)
+
+
+-- validateConfigFiles :: Spec.ConfigSpec cmd -> Config -> IO ()
+-- validateConfigFiles Spec.ConfigSpec {Spec.specConfigFilepaths, Spec.specConfigValues} =
+--   undefined

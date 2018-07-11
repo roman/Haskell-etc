@@ -30,10 +30,49 @@ import qualified Data.Aeson.Types as JSON (Parser, typeMismatch)
 -- Error Types
 
 data ConfigurationError
-  = InvalidConfiguration !(Maybe Text) !Text
-  | InvalidConfigKeyPath ![Text]
-  | ConfigurationFileNotFound !Text
-  deriving (Generic, Show)
+  -- | Thrown when calling the 'getConfig' or 'getConfigWith' functions on a key
+  -- that does not exist in the configuration spec
+  = InvalidConfigKeyPath
+    { inputKeys :: ![Text]
+    }
+  -- | Thrown when there is a type mismatch in a JSON parser given via
+  -- 'getConfigWith'
+  | ConfigValueParserFailed
+    { inputKeys   :: ![Text]
+    , parserError :: !Text
+    }
+  -- | Thrown when the 'resolveFile' function finds a key on a configuration
+  -- file that is not specified in the given configuration spec
+  | UnknownConfigKeyFound
+    { parentKeys   :: ![Text]
+    , keyName      :: !Text
+    , possibleKeys :: ![Text]
+    }
+  -- | Thrown when there is a type mismatch on a configuration entry,
+  -- specifically, when there is a raw value instead of a sub-config in a
+  -- configuration file
+  | SubConfigEntryExpected
+    {
+      keyName     :: !Text
+    , configValue :: !JSON.Value
+    }
+  -- | This error is thrown when a type mismatch is found in a raw value when
+  -- calling 'resolveFile'
+  | ConfigValueTypeMismatchFound
+    { keyName                :: !Text
+    , configValue            :: !JSON.Value
+    , configInputSpecType    :: !ConfigValueType
+    }
+  -- | Thrown when a specified configuration file is not found in the system
+  | ConfigurationFileNotFound { configFilepath :: !Text }
+  -- | Thrown when an input configuration file contains an unsupported file
+  -- extension
+  | UnsupportedFileExtensionGiven { configFilepath :: !Text }
+  -- | Thrown when an input configuration file contains invalid syntax
+  | ConfigInvalidSyntaxFound { configFilepath :: !Text, syntaxError :: !Text }
+  -- | Thrown when an configuration spec file contains invalid syntax
+  | SpecInvalidSyntaxFound   { specFilepath :: !(Maybe Text), syntaxError :: !Text }
+  deriving (Generic, Show, Read, Eq)
 
 instance Exception ConfigurationError
 
@@ -102,8 +141,6 @@ instance Lift cmd => Lift (CliEntrySpec cmd) where
   lift PlainEntry {cliEntryMetadata} =
     [| PlainEntry { cliEntryMetadata = cliEntryMetadata } |]
 
-
-
 data CliCmdSpec
   = CliCmdSpec {
     cliCmdDesc   :: !Text
@@ -137,7 +174,7 @@ data SingleConfigValueType
   | CVTNumber
   | CVTBool
   | CVTObject
-  deriving (Generic, Show, Eq, Lift)
+  deriving (Generic, Show, Read, Eq, Lift)
 
 instance Display SingleConfigValueType where
   display value =
@@ -150,7 +187,7 @@ instance Display SingleConfigValueType where
 data ConfigValueType
   = CVTSingle !SingleConfigValueType
   | CVTArray  !SingleConfigValueType
-  deriving (Generic, Show, Eq, Lift)
+  deriving (Generic, Show, Read, Eq, Lift)
 
 instance Display ConfigValueType where
   display value =
@@ -381,10 +418,15 @@ matchesConfigValueType json cvType = case (json, cvType) of
     if null arr then True else all (`matchesConfigValueType` CVTSingle inner) arr
   _ -> False
 
-assertMatchingConfigValueType :: Monad m => JSON.Value -> ConfigValueType -> m ()
+assertMatchingConfigValueType
+  :: JSON.Value -> ConfigValueType -> Either ConfigurationError ()
 assertMatchingConfigValueType json cvType
-  | matchesConfigValueType json cvType = return ()
-  | otherwise = fail $ "JSON value type does not match specified type " <> show cvType
+  | matchesConfigValueType json cvType = Right ()
+  | otherwise = Left ConfigValueTypeMismatchFound
+    { keyName             = ""
+    , configValue         = json
+    , configInputSpecType = cvType
+    }
 
 getConfigValueType
   :: Maybe JSON.Value -> Maybe ConfigValueType -> JSON.Parser ConfigValueType
@@ -392,7 +434,7 @@ getConfigValueType mdefValue mCvType = case (mdefValue, mCvType) of
   (Just JSON.Null, Just cvType) -> pure cvType
 
   (Just defValue , Just cvType) -> do
-    assertMatchingConfigValueType defValue cvType
+    either (fail . show) return $ assertMatchingConfigValueType defValue cvType
     return cvType
 
   (Nothing      , Just cvType) -> pure cvType

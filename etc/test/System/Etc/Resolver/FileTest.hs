@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP                 #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -20,7 +21,7 @@ import           Paths_etc  (getDataFileName)
 import System.Environment (setEnv)
 
 import System.Etc
-import System.Etc.Internal.Types (FileSource (..))
+import System.Etc.Internal.Types (ConfigurationError (..), FileSource (..))
 
 tests :: TestTree
 tests = testGroup
@@ -30,7 +31,7 @@ tests = testGroup
 
     (espec :: Either ConfigurationError (ConfigSpec ())) <- try $ parseConfigSpec input
     case espec of
-      Left (InvalidConfiguration _ _) -> return ()
+      Left SpecInvalidSyntaxFound{} -> return ()
       _ ->
         assertFailure ("Expecting InvalidConfigurationError; got instead " <> show espec)
   , testCase "fails when file has key not defined in spec" $ do
@@ -40,12 +41,31 @@ tests = testGroup
     (_config, warnings)     <- resolveFiles spec
     assertBool "There should be warnings" (not $ null warnings)
     case fromException (Vector.head warnings) of
-      Just (InvalidConfiguration _ errMsg) -> assertEqual
-        "Expecting key not present in spec error"
-        "Configuration entry `greeting` is not present on spec"
-        errMsg
+      Just UnknownConfigKeyFound { keyName } ->
+        assertEqual "Expecting key not present in spec error" "greeting" keyName
 
       err ->
+        assertFailure
+          $  "Expecting InvalidConfigurationError; got other error instead: "
+          <> show err
+  , testCase "fails when file has key with value different from spec" $ do
+    jsonFilepath <- getDataFileName "test/fixtures/config.json"
+    let
+      input =
+        "{\"etc/filepaths\": [\""
+          <> Text.pack jsonFilepath
+          <> "\"], \"etc/entries\": { \"greeting\": {\"etc/spec\": { \"type\": \"number\" }}}}"
+    (spec :: ConfigSpec ()) <- parseConfigSpec input
+    (_config, warnings)     <- resolveFiles spec
+    assertBool "Expecting warnings in the resolveFiles call" (Vector.length warnings > 0)
+    let err = Vector.head warnings
+    case fromException err of
+      Just ConfigValueTypeMismatchFound { keyName } ->
+        assertEqual "Expecting config value type mismatch error"
+        -- TODO: This should return "greeting" instead
+                                                                 "" keyName
+
+      _ ->
         assertFailure
           $  "Expecting InvalidConfigurationError; got other error instead: "
           <> show err
@@ -110,9 +130,9 @@ filePathsTests = testGroup
               fromException e
         in
           case err of
-            Just (InvalidConfiguration _ _) -> return ()
-            _                               -> assertFailure
-              ("Expecting InvalidConfigurationError; got instead " <> show err)
+            Just UnsupportedFileExtensionGiven{} -> return ()
+            _ -> assertFailure
+              ("Expecting UnsupportedFileExtensionGiven; got instead " <> show err)
   , testCase "does not fail if file doesn't exist" $ do
     jsonFilepath <- getDataFileName "test/fixtures/config.json"
     let input = mconcat
@@ -189,9 +209,8 @@ filesTest = testGroup
 
     (espec :: Either ConfigurationError (ConfigSpec ())) <- try $ parseConfigSpec input
     case espec of
-      Left (InvalidConfiguration _ _) -> return ()
-      _ ->
-        assertFailure ("Expecting InvalidConfigurationError; got instead " <> show espec)
+      Left SpecInvalidSyntaxFound{} -> return ()
+      _ -> assertFailure ("Expecting SpecInvalidSyntaxFound; got instead " <> show espec)
   , testCase "environment variable has precedence over all others" $ do
     jsonFilepath <- getDataFileName "test/fixtures/config.json"
     envFilePath  <- getDataFileName "test/fixtures/config.env.json"

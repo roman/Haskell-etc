@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -13,18 +14,18 @@ import qualified System.Etc as SUT
 tests :: TestTree
 tests = testGroup
   "System.Etc.Config"
-  [ testCase "InvalidConfiguration error contains key when types don't match" $ do
+  [ testCase "ConfigValueParserFailed error contains key when types don't match" $ do
       let input = "{\"etc/entries\":{\"greeting\":123}}"
 
       (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
       let config = SUT.resolveDefault spec
       case SUT.getConfigValue ["greeting"] config of
         Left err -> case fromException err of
-          Just (SUT.InvalidConfiguration key _) ->
-            assertEqual "expecting key to be greeting, but wasn't" (Just "greeting") key
+          Just SUT.ConfigValueParserFailed { SUT.inputKeys } ->
+            assertEqual "expecting key to be greeting, but wasn't" ["greeting"] inputKeys
           _ ->
             assertFailure
-              $  "expecting InvalidConfiguration; got something else: "
+              $  "expecting ConfigValueParserFailed; got something else: "
               <> show err
         Right (_ :: Text) -> assertFailure "expecting error; got none"
   ]

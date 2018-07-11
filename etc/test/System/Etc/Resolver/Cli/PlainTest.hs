@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -66,10 +67,12 @@ resolver_tests = testGroup
 
     case SUT.getConfigValueWith parseDb ["database"] config of
       Left err -> case fromException err of
-        Just (SUT.InvalidConfiguration key _) ->
-          assertEqual "expecting key to be database, but wasn't" (Just "database") key
+        Just SUT.ConfigValueParserFailed { SUT.inputKeys } ->
+          assertEqual "expecting key to be database, but wasn't" ["database"] inputKeys
         _ ->
-          assertFailure $ "expecting InvalidConfiguration; got something else: " <> show err
+          assertFailure
+            $  "expecting ConfigValueParserFailed; got something else: "
+            <> show err
       Right (_ :: (Text, Text)) -> assertFailure "expecting error; got none"
   ]
 

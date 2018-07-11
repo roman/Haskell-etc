@@ -52,11 +52,11 @@ general_tests = testGroup
 
     case SUT.parseConfigSpec input of
       Left err -> case fromException err of
-        Just InvalidConfiguration{} -> assertBool "" True
+        Just SpecInvalidSyntaxFound{} -> assertBool "" True
 
         _ ->
           assertFailure
-            $  "expecting to get an InvalidConfiguration error; but got "
+            $  "expecting to get an SpecInvalidSyntaxFound error; but got "
             <> show err
 
       Right (_ :: ConfigSpec ()) ->
@@ -103,9 +103,9 @@ general_tests = testGroup
     let input = "{\"etc/entries\":{\"greeting\": []}}"
     case SUT.parseConfigSpec input of
       Left err -> case fromException err of
-        Just InvalidConfiguration{} -> assertBool "" True
+        Just SpecInvalidSyntaxFound{} -> assertBool "" True
         _ ->
-          assertFailure $ "expecting InvalidConfiguration error; got instead " <> show err
+          assertFailure $ "expecting SpecInvalidSyntaxFound error; got instead " <> show err
 
       Right (_configSpec :: ConfigSpec ()) ->
         assertFailure "expecting config spec parse to fail, but didn't"

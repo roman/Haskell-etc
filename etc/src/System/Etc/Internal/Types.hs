@@ -18,7 +18,7 @@ import qualified Data.Semigroup as Semigroup
 import qualified Data.Aeson       as JSON
 import qualified Data.Aeson.Types as JSON (Parser)
 
-import System.Etc.Internal.Spec.Types (ConfigurationError (..))
+import System.Etc.Internal.Spec.Types (ConfigValueType, ConfigurationError (..))
 
 --------------------
 -- Configuration Types
