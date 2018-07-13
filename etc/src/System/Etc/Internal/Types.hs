@@ -18,16 +18,7 @@ import qualified Data.Semigroup as Semigroup
 import qualified Data.Aeson       as JSON
 import qualified Data.Aeson.Types as JSON (Parser)
 
-import System.Etc.Internal.Spec.Types
-    ( ConfigInvalidSyntaxFound (..)
-    , ConfigValueParserFailed (..)
-    , ConfigValueType
-    , ConfigurationFileNotFound (..)
-    , InvalidConfigKeyPath (..)
-    , SubConfigEntryExpected (..)
-    , UnknownConfigKeyFound (..)
-    , UnsupportedFileExtensionGiven (..)
-    )
+import System.Etc.Internal.Spec.Types (ConfigValueType)
 
 --------------------
 -- Configuration Types

@@ -11,6 +11,8 @@ import qualified Data.Text.Encoding as Text (encodeUtf8)
 import qualified Data.Text.IO       as Text (readFile)
 import qualified Data.Yaml          as YAML
 
+import System.Etc.Internal.Errors
+import System.Etc.Internal.Spec.Parser ()
 import System.Etc.Internal.Spec.Types
 
 decodeYaml :: JSON.FromJSON a => ByteString -> Either String a

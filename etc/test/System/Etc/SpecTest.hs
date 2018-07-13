@@ -52,7 +52,7 @@ general_tests = testGroup
 
     case SUT.parseConfigSpec input of
       Left err -> case fromException err of
-        Just SpecInvalidSyntaxFound{} -> assertBool "" True
+        Just SUT.SpecInvalidSyntaxFound{} -> assertBool "" True
 
         _ ->
           assertFailure
@@ -103,7 +103,7 @@ general_tests = testGroup
     let input = "{\"etc/entries\":{\"greeting\": []}}"
     case SUT.parseConfigSpec input of
       Left err -> case fromException err of
-        Just SpecInvalidSyntaxFound{} -> assertBool "" True
+        Just SUT.SpecInvalidSyntaxFound{} -> assertBool "" True
         _ ->
           assertFailure $ "expecting SpecInvalidSyntaxFound error; got instead " <> show err
 

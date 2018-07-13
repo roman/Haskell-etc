@@ -13,6 +13,7 @@ import qualified Data.Aeson          as JSON
 import qualified Data.Aeson.Internal as JSON (IResult (..), formatError, iparse)
 import qualified Data.Aeson.Types    as JSON (Parser)
 
+import System.Etc.Internal.Errors
 import System.Etc.Internal.Types
 
 --------------------------------------------------------------------------------

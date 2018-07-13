@@ -22,8 +22,10 @@ import qualified RIO.ByteString.Lazy as LB8
 
 import System.Environment (lookupEnv)
 
-import qualified System.Etc.Internal.Spec.Types as Spec
-import           System.Etc.Internal.Types      hiding (filepath)
+import           System.Etc.Internal.Errors
+import qualified System.Etc.Internal.Spec.Parser as Spec
+import qualified System.Etc.Internal.Spec.Types  as Spec
+import           System.Etc.Internal.Types       hiding (filepath)
 
 --------------------------------------------------------------------------------
 

@@ -9,6 +9,8 @@ import qualified RIO.Text            as Text
 
 import qualified Data.Aeson as JSON
 
+import System.Etc.Internal.Errors
+import System.Etc.Internal.Spec.Parser ()
 import System.Etc.Internal.Spec.Types
 
 parseConfigSpec_

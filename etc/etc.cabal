@@ -68,9 +68,11 @@ library
       System.Etc
       System.Etc.Spec
       System.Etc.Internal.Config
+      System.Etc.Internal.Errors
       System.Etc.Internal.Spec.JSON
       System.Etc.Internal.Spec.JSON.TH
       System.Etc.Internal.Spec.Types
+      System.Etc.Internal.Spec.Parser
       System.Etc.Internal.Types
       System.Etc.Internal.Resolver.Default
       System.Etc.Internal.Resolver.File
