@@ -48,11 +48,8 @@ parseConfigValue keys spec fileIndex fileSource json =
   in  case (spec, json) of
         (Spec.SubConfig currentSpec, JSON.Object object) -> SubConfig <$> foldM
           (\acc (key, subConfigValue) -> case HashMap.lookup key currentSpec of
-            Nothing -> throwM UnknownConfigKeyFound
-              { parentKeys
-              , keyName      = key
-              , possibleKeys = HashMap.keys currentSpec
-              }
+            Nothing ->
+              throwM $ UnknownConfigKeyFound parentKeys key (HashMap.keys currentSpec)
             Just subConfigSpec -> do
               value1 <- parseConfigValue (key : keys)
                                          subConfigSpec
@@ -64,8 +61,7 @@ parseConfigValue keys spec fileIndex fileSource json =
           HashMap.empty
           (HashMap.toList object)
 
-        (Spec.SubConfig{}, _) ->
-          throwM SubConfigEntryExpected {keyName = currentKey, configValue = json}
+        (Spec.SubConfig{}, _) -> throwM $ SubConfigEntryExpected currentKey json
 
         (Spec.ConfigValue { Spec.isSensitive, Spec.configValueType }, _) -> do
           either throwM return $ Spec.assertMatchingConfigValueType json configValueType

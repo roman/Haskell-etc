@@ -21,7 +21,7 @@ tests = testGroup
       let config = SUT.resolveDefault spec
       case SUT.getConfigValue ["greeting"] config of
         Left err -> case fromException err of
-          Just SUT.ConfigValueParserFailed { SUT.inputKeys } ->
+          Just (SUT.ConfigValueParserFailed inputKeys _) ->
             assertEqual "expecting key to be greeting, but wasn't" ["greeting"] inputKeys
           _ ->
             assertFailure

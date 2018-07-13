@@ -21,7 +21,7 @@ import           Paths_etc  (getDataFileName)
 import System.Environment (setEnv)
 
 import System.Etc
-import System.Etc.Internal.Types (ConfigurationError (..), FileSource (..))
+import System.Etc.Internal.Types (FileSource (..))
 
 tests :: TestTree
 tests = testGroup
@@ -29,9 +29,9 @@ tests = testGroup
   [ testCase "fail if using both `etc/files` and `etc/filepaths`" $ do
     let input = "{\"etc/files\": {}, \"etc/filepaths\": []}"
 
-    (espec :: Either ConfigurationError (ConfigSpec ())) <- try $ parseConfigSpec input
+    (espec :: Either SpecInvalidSyntaxFound (ConfigSpec ())) <- try $ parseConfigSpec input
     case espec of
-      Left SpecInvalidSyntaxFound{} -> return ()
+      Left _ -> return ()
       _ ->
         assertFailure ("Expecting InvalidConfigurationError; got instead " <> show espec)
   , testCase "fails when file has key not defined in spec" $ do
@@ -41,7 +41,7 @@ tests = testGroup
     (_config, warnings)     <- resolveFiles spec
     assertBool "There should be warnings" (not $ null warnings)
     case fromException (Vector.head warnings) of
-      Just UnknownConfigKeyFound { keyName } ->
+      Just (UnknownConfigKeyFound _ keyName _) ->
         assertEqual "Expecting key not present in spec error" "greeting" keyName
 
       err ->
@@ -60,10 +60,9 @@ tests = testGroup
     assertBool "Expecting warnings in the resolveFiles call" (Vector.length warnings > 0)
     let err = Vector.head warnings
     case fromException err of
-      Just ConfigValueTypeMismatchFound { keyName } ->
-        assertEqual "Expecting config value type mismatch error"
+      Just (ConfigValueTypeMismatchFound keyName _ _) ->
         -- TODO: This should return "greeting" instead
-                                                                 "" keyName
+        assertEqual "Expecting config value type mismatch error" "" keyName
 
       _ ->
         assertFailure
@@ -207,9 +206,9 @@ filesTest = testGroup
   [ testCase "at least the `env` or `paths` keys must be present" $ do
     let input = "{\"etc/files\": {}}"
 
-    (espec :: Either ConfigurationError (ConfigSpec ())) <- try $ parseConfigSpec input
+    (espec :: Either SpecInvalidSyntaxFound (ConfigSpec ())) <- try $ parseConfigSpec input
     case espec of
-      Left SpecInvalidSyntaxFound{} -> return ()
+      Left _ -> return ()
       _ -> assertFailure ("Expecting SpecInvalidSyntaxFound; got instead " <> show espec)
   , testCase "environment variable has precedence over all others" $ do
     jsonFilepath <- getDataFileName "test/fixtures/config.json"

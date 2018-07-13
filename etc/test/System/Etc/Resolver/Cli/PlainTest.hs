@@ -67,7 +67,7 @@ resolver_tests = testGroup
 
     case SUT.getConfigValueWith parseDb ["database"] config of
       Left err -> case fromException err of
-        Just SUT.ConfigValueParserFailed { SUT.inputKeys } ->
+        Just (SUT.ConfigValueParserFailed inputKeys _) ->
           assertEqual "expecting key to be database, but wasn't" ["database"] inputKeys
         _ ->
           assertFailure

@@ -4,6 +4,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.Spec (
     module Types
+  , InvalidConfigKeyPath (..)
+  , ConfigValueParserFailed (..)
+  , UnknownConfigKeyFound (..)
+  , SubConfigEntryExpected (..)
+  , ConfigValueTypeMismatchFound (..)
+  , ConfigurationFileNotFound (..)
+  , UnsupportedFileExtensionGiven (..)
+  , ConfigInvalidSyntaxFound (..)
+  , SpecInvalidSyntaxFound (..)
   , parseConfigSpec
   , readConfigSpecTH
   , readConfigSpec
@@ -19,7 +28,18 @@ import Language.Haskell.TH        (ExpQ)
 import Language.Haskell.TH.Syntax (Lift)
 
 import System.Etc.Internal.Spec.Types as Types
-    (ConfigSpec, ConfigValue, ConfigurationError (..))
+    ( ConfigInvalidSyntaxFound (..)
+    , ConfigSpec
+    , ConfigValue
+    , ConfigValueParserFailed (..)
+    , ConfigValueTypeMismatchFound (..)
+    , ConfigurationFileNotFound (..)
+    , InvalidConfigKeyPath (..)
+    , SpecInvalidSyntaxFound (..)
+    , SubConfigEntryExpected (..)
+    , UnknownConfigKeyFound (..)
+    , UnsupportedFileExtensionGiven (..)
+    )
 
 #ifdef WITH_CLI
 import qualified Data.Aeson as JSON
