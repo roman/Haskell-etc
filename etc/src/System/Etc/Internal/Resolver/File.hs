@@ -37,7 +37,7 @@ data ConfigFile
 --------------------------------------------------------------------------------
 
 parseConfigValue
-  :: (MonadThrow m, Monad m)
+  :: (MonadThrow m)
   => [Text]
   -> Spec.ConfigValue cmd
   -> Int
