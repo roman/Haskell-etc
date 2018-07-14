@@ -19,7 +19,8 @@ import qualified Options.Applicative as Opt
 
 import System.Exit
 
-import qualified System.Etc.Internal.Spec.Types as Spec
+import qualified System.Etc.Internal.Spec.Parser as Spec
+import qualified System.Etc.Internal.Spec.Types  as Spec
 import           System.Etc.Internal.Types
 
 --------------------------------------------------------------------------------

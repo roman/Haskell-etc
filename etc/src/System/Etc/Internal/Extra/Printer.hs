@@ -20,7 +20,7 @@ import qualified RIO.Vector.Unsafe as Vector (unsafeHead)
 
 import qualified Data.Aeson as JSON
 
-import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
+import Text.PrettyPrint.ANSI.Leijen
 
 import System.Etc.Internal.Types
 
@@ -30,13 +30,13 @@ data ColorFn
   , blueColor  :: !(Doc -> Doc)
   }
 
-renderConfigValueJSON :: JSON.Value -> Either Text Doc
+renderConfigValueJSON :: JSON.Value -> Doc
 renderConfigValueJSON value = case value of
-  JSON.Null                         -> Right $ text "null"
-  JSON.String str                   -> Right $ text $ Text.unpack str
-  JSON.Number scientific            -> Right $ text $ show scientific
-  JSON.Bool   b                     -> Right $ if b then text "true" else text "false"
-  JSON.Array  (Vector.null -> True) -> return $ text "[]"
+  JSON.Null                         -> text "null"
+  JSON.String str                   -> text $ Text.unpack str
+  JSON.Number scientific            -> text $ show scientific
+  JSON.Bool   b                     -> if b then text "true" else text "false"
+  JSON.Array  (Vector.null -> True) -> text "[]"
   JSON.Array  arr                   -> do
     -- unsafeHead is not unsafe here because of previous check; also we are
     -- assuming all values in the array are of the same type
@@ -49,104 +49,91 @@ renderConfigValueJSON value = case value of
       -- - foo: bar
       --   baz: wat
       --
-      JSON.Object{} -> do
-        values <- forM arr $ \v -> do
-          v1 <- renderConfigValueJSON v
-          return $ hang 2 ("-" <+> v1)
-
-        return $ align (vsep $ Vector.toList values)
+      JSON.Object{} -> align
+        (vsep $ Vector.toList $ Vector.map
+          (\v -> hang 2 ("-" <+> renderConfigValueJSON v))
+          arr
+        )
 
       -- When rendering primitive values:
       --
       -- - hello
       -- - world
       --
-      _ -> do
-        values <- forM arr $ \v -> do
-          v1 <- renderConfigValueJSON v
-          return $ "-" <+> v1
+      _ -> align
+        (vsep $ Vector.toList $ Vector.map (\v -> "-" <+> renderConfigValueJSON v) arr)
 
-        return $ align (vsep $ Vector.toList values)
-
-  JSON.Object obj -> do
-    values <- forM (HashMap.toList obj) $ \(k, v) -> case v of
+  JSON.Object obj -> align $ vsep $ map
+    (\(k, v) -> case v of
         -- When rendering Objects within Objects; output:
         --
         -- attr1:
         --  attr2: hello
         --
-      JSON.Object{} -> do
-        v1 <- renderConfigValueJSON v
-        return $ nest 2 (text (Text.unpack k) <> ":" <> hardline <> v1)
+      JSON.Object{} ->
+        nest 2 (text (Text.unpack k) <> ":" <> hardline <> renderConfigValueJSON v)
 
       -- When rendering Arrays within Objects; output:
       --
       -- attr1:
       -- - hello
       --
-      JSON.Array{} -> do
-        v1 <- renderConfigValueJSON v
-        return $ text (Text.unpack k) <> ":" <> hardline <> v1
+      JSON.Array{} -> text (Text.unpack k) <> ":" <> hardline <> renderConfigValueJSON v
 
       -- When rendering primitive values
       --
       -- hello: world
       --
       --
-      _ -> do
-        v1 <- renderConfigValueJSON v
-        return $ text (Text.unpack k) <> ":" <+> v1
-
-    return $ align (vsep values)
+      _            -> text (Text.unpack k) <> ":" <+> renderConfigValueJSON v
+    )
+    (HashMap.toList obj)
 
 
-renderConfigValue
-  :: (JSON.Value -> Either Text Doc) -> Value JSON.Value -> Either Text [Doc]
+renderConfigValue :: (JSON.Value -> Doc) -> Value JSON.Value -> [Doc]
 renderConfigValue f value = case value of
-  Plain (JSON.Array jsonArray) -> fmap Vector.toList <$> forM jsonArray $ \jsonValue -> do
-    valueDoc <- f jsonValue
-    return $ text "-" <+> valueDoc
-  Plain jsonValue -> fmap return (f jsonValue)
-  Sensitive{}     -> Right $ return $ text "<<sensitive>>"
+  Plain (JSON.Array jsonArray) ->
+    Vector.toList $ Vector.map (\jsonValue -> text "-" <+> f jsonValue) jsonArray
+  Plain jsonValue -> return $ f jsonValue
+  Sensitive{}     -> return $ text "<<sensitive>>"
 
-renderConfigSource
-  :: (JSON.Value -> Either Text Doc) -> ConfigSource -> Either Text ([Doc], Doc)
+renderConfigSource :: (JSON.Value -> Doc) -> ConfigSource -> ([Doc], Doc)
 renderConfigSource f configSource = case configSource of
-  Default value -> do
+  Default value ->
     let sourceDoc = text "Default"
-    valueDoc <- renderConfigValue f value
-    return (valueDoc, sourceDoc)
+        valueDoc  = renderConfigValue f value
+    in  (valueDoc, sourceDoc)
 
   File _index fileSource value ->
     let sourceDoc = case fileSource of
           FilePathSource filepath -> text "File:" <+> text (Text.unpack filepath)
           EnvVarFileSource envVar filepath ->
             text "File:" <+> text (Text.unpack envVar) <> "=" <> text (Text.unpack filepath)
-    in  do
-          valueDoc <- renderConfigValue f value
-          return (valueDoc, sourceDoc)
+        valueDoc = renderConfigValue f value
+    in  (valueDoc, sourceDoc)
 
-  Env varname value -> do
+  Env varname value ->
     let sourceDoc = text "Env:" <+> text (Text.unpack varname)
-    valueDoc <- renderConfigValue f value
-    return (valueDoc, sourceDoc)
+        valueDoc  = renderConfigValue f value
+    in  (valueDoc, sourceDoc)
 
-  Cli value -> do
+  Cli value ->
     let sourceDoc = text "Cli"
-    valueDoc <- renderConfigValue f value
-    return (valueDoc, sourceDoc)
+        valueDoc  = renderConfigValue f value
+    in  (valueDoc, sourceDoc)
 
-  None -> return (mempty, mempty)
+  None -> (mempty, mempty)
 
 renderConfig_ :: MonadThrow m => ColorFn -> Config -> m Doc
 renderConfig_ ColorFn { blueColor } (Config configMap) =
   let
-    renderSources :: MonadThrow m => Text -> [ConfigSource] -> m Doc
-    renderSources keyPath sources =
-      let eSourceDocs = mapM (renderConfigSource renderConfigValueJSON) sources
+    renderSources :: MonadThrow m => [ConfigSource] -> m Doc
+    renderSources sources =
+      let sourceDocs = map (renderConfigSource renderConfigValueJSON) sources
 
-          brackets'   = enclose (lbracket <> space) (space <> rbracket)
+          brackets'  = enclose (lbracket <> space) (space <> rbracket)
 
+          layoutSourceValueDoc :: MonadThrow m => [Doc] -> Doc -> m Doc
           layoutSourceValueDoc valueDocs sourceDoc = case valueDocs of
             [] ->
               -- [Default]
@@ -166,18 +153,15 @@ renderConfig_ ColorFn { blueColor } (Config configMap) =
               --   - Value 3
               --
               return $ sourceDoc <$$> indent 2 (align (vsep multipleValues))
-      in  case eSourceDocs of
-            Left  err -> throwM $ InvalidConfiguration (Just keyPath) err
-
-            Right []  -> throwM $ InvalidConfiguration
-              (Just keyPath)
-              "Trying to render config entry with no values"
+      in  case sourceDocs of
+            -- No Value Found
+            [] -> return $ indent 2 $ text "No Value Found"
 
             -- [ (*) CLI ]
             --   - Value 1
             -- [ Default ]
             --   - Value
-            Right ((selectedValueDoc, selectedSourceDoc) : otherSourceDocs) -> do
+            ((selectedValueDoc, selectedSourceDoc) : otherSourceDocs) -> do
               selectedDoc <- layoutSourceValueDoc selectedValueDoc
                 $ brackets' (parens (text "*") <+> selectedSourceDoc)
 
@@ -203,7 +187,7 @@ renderConfig_ ColorFn { blueColor } (Config configMap) =
         in  if null sources
               then return []
               else do
-                configSources <- renderSources keyPathText sources
+                configSources <- renderSources sources
                 return [blueColor (text $ Text.unpack keyPathText) <$$> configSources]
   in
     do

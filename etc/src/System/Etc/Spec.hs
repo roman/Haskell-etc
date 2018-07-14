@@ -4,6 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module System.Etc.Spec (
     module Types
+  , module Errors
   , parseConfigSpec
   , readConfigSpecTH
   , readConfigSpec
@@ -18,8 +19,8 @@ import Data.Proxy (Proxy)
 import Language.Haskell.TH        (ExpQ)
 import Language.Haskell.TH.Syntax (Lift)
 
-import System.Etc.Internal.Spec.Types as Types
-    (ConfigSpec, ConfigValue, ConfigurationError (..))
+import System.Etc.Internal.Errors     as Errors
+import System.Etc.Internal.Spec.Types as Types (ConfigSpec, ConfigValue)
 
 #ifdef WITH_CLI
 import qualified Data.Aeson as JSON

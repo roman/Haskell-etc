@@ -1,7 +1,7 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
 module System.Etc.Internal.Config where
 
 import           RIO
@@ -13,6 +13,7 @@ import qualified Data.Aeson          as JSON
 import qualified Data.Aeson.Internal as JSON (IResult (..), formatError, iparse)
 import qualified Data.Aeson.Types    as JSON (Parser)
 
+import System.Etc.Internal.Errors
 import System.Etc.Internal.Types
 
 --------------------------------------------------------------------------------
@@ -46,22 +47,14 @@ _getConfigValueWith parser keys0 (Config configValue0) =
         Just (source, _) -> case JSON.iparse parser (fromValue $ value source) of
 
           JSON.IError path err ->
-            let key = keys0 & Text.intercalate "."
-            in  JSON.formatError path err
-                & Text.pack
-                & InvalidConfiguration (Just key)
-                & throwM
+            JSON.formatError path err & Text.pack & ConfigValueParserFailed keys0 & throwM
 
           JSON.ISuccess result -> return result
 
       ([], innerConfigValue) ->
         case JSON.iparse parser (configValueToJsonObject innerConfigValue) of
           JSON.IError path err ->
-            let key = keys0 & Text.intercalate "."
-            in  JSON.formatError path err
-                & Text.pack
-                & InvalidConfiguration (Just key)
-                & throwM
+            JSON.formatError path err & Text.pack & ConfigValueParserFailed keys0 & throwM
 
           JSON.ISuccess result -> return result
 

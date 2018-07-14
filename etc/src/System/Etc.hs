@@ -16,10 +16,22 @@ module System.Etc (
   , ConfigSource (..)
   , ConfigValue
   , ConfigSpec
-  , ConfigurationError (..)
   , parseConfigSpec
   , readConfigSpec
   , readConfigSpecTH
+
+  -- * Exceptions
+  , InvalidConfigKeyPath (..)
+  , ConfigValueParserFailed (..)
+  , UnknownConfigKeyFound (..)
+  , SubConfigEntryExpected (..)
+  , ConfigValueTypeMismatchFound (..)
+  , ConfigurationFileNotFound (..)
+  , UnsupportedFileExtensionGiven (..)
+  , ConfigInvalidSyntaxFound (..)
+  , SpecInvalidSyntaxFound (..)
+
+
 
   -- ** Resolvers
   -- $resolvers
@@ -61,8 +73,16 @@ import System.Etc.Internal.Resolver.Default (resolveDefault)
 import System.Etc.Internal.Types
     (Config, ConfigSource (..), ConfigValue, IConfig (..), Value (..))
 import System.Etc.Spec
-    ( ConfigSpec
-    , ConfigurationError (..)
+    ( ConfigInvalidSyntaxFound (..)
+    , ConfigSpec
+    , ConfigValueParserFailed (..)
+    , ConfigValueTypeMismatchFound (..)
+    , ConfigurationFileNotFound (..)
+    , InvalidConfigKeyPath (..)
+    , SpecInvalidSyntaxFound (..)
+    , SubConfigEntryExpected (..)
+    , UnknownConfigKeyFound (..)
+    , UnsupportedFileExtensionGiven (..)
     , parseConfigSpec
     , readConfigSpec
     , readConfigSpecTH
