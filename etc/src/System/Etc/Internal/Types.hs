@@ -10,18 +10,20 @@ module System.Etc.Internal.Types
   , module System.Etc.Internal.Spec.Types
   ) where
 
-import           RIO
+import           RIO         hiding ((<>))
 import qualified RIO.HashMap as HashMap
 import qualified RIO.Set     as Set
 import qualified RIO.Text    as Text
-import qualified RIO.Vector  as Vector
 
 import           Text.PrettyPrint.ANSI.Leijen (Doc, (<+>))
 import qualified Text.PrettyPrint.ANSI.Leijen as Doc
 
+
+
 import Control.Exception (throw)
 
 import           Data.Bool      (bool)
+import           Data.Monoid    ((<>))
 import qualified Data.Semigroup as Semigroup
 import           Data.Typeable  (cast, typeOf)
 
@@ -73,10 +75,10 @@ data FileValueOrigin
 instance NFData FileValueOrigin
 
 class IConfigSource source where
-  sourceValue   :: source -> Value JSON.Value
-  sourcePretty  :: (JSON.Value -> Doc) -> source -> ([Doc], Doc)
-  compareValues :: source -> source -> Ordering
-  compareValues _ _ = EQ
+  sourceValue     :: source -> Value JSON.Value
+  sourcePrettyDoc :: source -> Doc
+  compareSources  :: source -> source -> Ordering
+  compareSources _ _ = EQ
 
 data SomeConfigSource =
   forall source. ( Show source
@@ -101,25 +103,16 @@ data InvalidConfigSourceComparison
 
 instance Exception InvalidConfigSourceComparison
 
-renderConfigValue :: (JSON.Value -> Doc) -> Value JSON.Value -> [Doc]
-renderConfigValue f value = case value of
-  Plain (JSON.Array jsonArray) ->
-    Vector.toList $ Vector.map (\jsonValue -> Doc.text "-" <+> f jsonValue) jsonArray
-  Plain jsonValue -> return $ f jsonValue
-  Sensitive{}     -> return $ Doc.text "<<sensitive>>"
-
 instance IConfigSource SomeConfigSource where
-  sourceValue (SomeConfigSource _ inner) =
-    sourceValue inner
-  sourcePretty f (SomeConfigSource _ inner) =
-    sourcePretty f inner
-  compareValues x@(SomeConfigSource ia a) y@(SomeConfigSource ib b)
+  sourcePrettyDoc (SomeConfigSource _ inner) = sourcePrettyDoc inner
+  sourceValue (SomeConfigSource _ inner) = sourceValue inner
+  compareSources x@(SomeConfigSource ia a) y@(SomeConfigSource ib b)
     | ia == ib =
       if fromValue (sourceValue a) == JSON.Null && fromValue (sourceValue b) == JSON.Null then
         EQ
       else if typeOf a == typeOf b then
         let b' = fromMaybe (throw (InvalidConfigSourceComparison x y)) (cast a)
-        in compareValues a b'
+        in compareSources a b'
       else
         throw (InvalidConfigSourceComparison x y)
     | fromValue (sourceValue a) == JSON.Null = LT
@@ -128,10 +121,10 @@ instance IConfigSource SomeConfigSource where
       compare ia ib
 
 instance Eq SomeConfigSource where
-  (==) a b = compareValues a b == EQ
+  (==) a b = compareSources a b == EQ
 
 instance Ord SomeConfigSource where
-  compare = compareValues
+  compare = compareSources
 
 data FileSource = FileSource
   { fsConfigIndex :: !Int
@@ -141,15 +134,13 @@ data FileSource = FileSource
 
 instance NFData FileSource
 instance IConfigSource FileSource where
+  compareSources = comparing fsConfigIndex
   sourceValue = fsValue
-  compareValues = comparing fsConfigIndex
-  sourcePretty f (FileSource _index origin value) =
-    let sourceDoc = case origin of
-          ConfigFileOrigin filepath -> Doc.text "File:" <+> Doc.text (Text.unpack filepath)
-          EnvFileOrigin envVar filepath ->
-            Doc.text "File:" <+> Doc.text (Text.unpack envVar) <> "=" <> Doc.text (Text.unpack filepath)
-        valueDoc = renderConfigValue f value
-    in (valueDoc, sourceDoc)
+  sourcePrettyDoc (FileSource _index origin _value) =
+    case origin of
+      ConfigFileOrigin filepath -> Doc.text "File:" <+> Doc.text (Text.unpack filepath)
+      EnvFileOrigin envVar filepath ->
+        Doc.text "File:" <+> Doc.text (Text.unpack envVar) <> "=" <> Doc.text (Text.unpack filepath)
 
 fileSource :: Int -> Int -> FileValueOrigin -> Value JSON.Value -> SomeConfigSource
 fileSource precedenceOrder index origin val =
@@ -165,10 +156,8 @@ data EnvSource = EnvSource
 instance NFData EnvSource
 instance IConfigSource EnvSource where
   sourceValue = esValue
-  sourcePretty f (EnvSource varname value) =
-    let sourceDoc = Doc.text "Env:" <+> Doc.text (Text.unpack varname)
-        valueDoc  = renderConfigValue f value
-    in  (valueDoc, sourceDoc)
+  sourcePrettyDoc (EnvSource varname _value) =
+    Doc.text "Env:" <+> Doc.text (Text.unpack varname)
 
 envSource :: Int -> Text -> Value JSON.Value -> SomeConfigSource
 envSource precedenceOrder varName val =
@@ -179,11 +168,8 @@ newtype DefaultSource =
   deriving (Generic, Typeable, Show, Eq, NFData)
 
 instance IConfigSource DefaultSource where
-  sourceValue (DefaultSource val) = val
-  sourcePretty f (DefaultSource value) =
-    let sourceDoc = Doc.text "Default"
-        valueDoc  = renderConfigValue f value
-    in  (valueDoc, sourceDoc)
+  sourceValue (DefaultSource value) = value
+  sourcePrettyDoc (DefaultSource _value) = Doc.text "Default"
 
 defaultSource :: Value JSON.Value -> SomeConfigSource
 defaultSource = SomeConfigSource 0 . DefaultSource
@@ -197,10 +183,7 @@ newtype CliSource
 
 instance IConfigSource CliSource where
   sourceValue (CliSource value) = value
-  sourcePretty f (CliSource value) =
-    let sourceDoc = Doc.text "Cli"
-        valueDoc  = renderConfigValue f value
-    in  (valueDoc, sourceDoc)
+  sourcePrettyDoc (CliSource _value) = Doc.text "Cli"
 
 cliSource :: Int -> Value JSON.Value -> SomeConfigSource
 cliSource precedenceOrder val = SomeConfigSource precedenceOrder $ CliSource val

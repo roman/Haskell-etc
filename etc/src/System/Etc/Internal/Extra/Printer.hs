@@ -89,8 +89,16 @@ renderConfigValueJSON value = case value of
     )
     (HashMap.toList obj)
 
+renderConfigValue :: (JSON.Value -> Doc) -> Value JSON.Value -> [Doc]
+renderConfigValue f value = case value of
+  Plain (JSON.Array jsonArray) ->
+    Vector.toList $ Vector.map (\jsonValue -> text "-" <+> f jsonValue) jsonArray
+  Plain jsonValue -> return $ f jsonValue
+  Sensitive{}     -> return $ text "<<sensitive>>"
+
 renderConfigSource :: (JSON.Value -> Doc) -> SomeConfigSource -> ([Doc], Doc)
-renderConfigSource = sourcePretty
+renderConfigSource f source =
+  (renderConfigValue f (sourceValue source), sourcePrettyDoc source)
 
 renderConfig_ :: MonadThrow m => ColorFn -> Config -> m Doc
 renderConfig_ ColorFn { blueColor } (Config configMap) =
