@@ -185,23 +185,29 @@ instance Display ConfigValueType where
       CVTSingle singleVal -> display singleVal
       CVTArray  singleVal -> display $ "[" <> display singleVal <> "]"
 
-data ConfigValue cmd
-  = ConfigValue {
+data ConfigValueData cmd =
+  ConfigValueData {
     defaultValue    :: !(Maybe JSON.Value)
   , configValueType :: !ConfigValueType
   , isSensitive     :: !Bool
   , configSources   :: !(ConfigSources cmd)
   , rawConfigValue  :: !JSON.Value
   }
-  | SubConfig {
-    subConfig :: !(HashMap Text (ConfigValue cmd))
-  }
+  deriving (Generic, Show, Eq)
+
+instance Lift cmd => Lift (ConfigValueData cmd) where
+  lift ConfigValueData {defaultValue, configValueType, isSensitive, configSources, rawConfigValue } =
+    [| ConfigValueData defaultValue configValueType isSensitive configSources rawConfigValue |]
+
+data ConfigValue cmd
+  = ConfigValue !(ConfigValueData cmd)
+  | SubConfig   !(HashMap Text (ConfigValue cmd))
   deriving (Generic, Show, Eq)
 
 instance Lift cmd => Lift (ConfigValue cmd) where
-  lift ConfigValue {defaultValue, configValueType, isSensitive, configSources, rawConfigValue } =
-    [| ConfigValue defaultValue configValueType isSensitive configSources rawConfigValue |]
-  lift SubConfig {subConfig} =
+  lift (ConfigValue configValueData) =
+    [| ConfigValue configValueData |]
+  lift (SubConfig subConfig) =
     [| SubConfig (HashMap.fromList $ map (first Text.pack) subConfigList) |]
     where
       subConfigList = map (first Text.unpack) $ HashMap.toList subConfig

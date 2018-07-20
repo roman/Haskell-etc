@@ -92,8 +92,8 @@ specToConfigValueCli
   -> (Text, Spec.ConfigValue ())
   -> m (Opt.Parser ConfigValue)
 specToConfigValueCli acc (specEntryKey, specConfigValue) = case specConfigValue of
-  Spec.ConfigValue { Spec.configValueType, Spec.isSensitive, Spec.configSources } ->
-    configValueSpecToCli specEntryKey configValueType isSensitive configSources acc
+  Spec.ConfigValue Spec.ConfigValueData { Spec.configValueType, Spec.isSensitive, Spec.configSources }
+    -> configValueSpecToCli specEntryKey configValueType isSensitive configSources acc
 
   Spec.SubConfig subConfigSpec -> subConfigSpecToCli specEntryKey subConfigSpec acc
 

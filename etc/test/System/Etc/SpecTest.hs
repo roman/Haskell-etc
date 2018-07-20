@@ -79,26 +79,26 @@ general_tests = testGroup
     let input = "{\"etc/entries\":{\"greeting\":123}}"
         keys  = ["greeting"]
 
-    config <- SUT.parseConfigSpec input
+    (config :: ConfigSpec ()) <- SUT.parseConfigSpec input
     case getConfigValue keys (specConfigValues config) of
-      Nothing -> assertFailure
+      Just (ConfigValue value) -> assertEqual "should contain default value"
+                                              (Just (JSON.Number 123))
+                                              (defaultValue value)
+      _ -> assertFailure
         (show keys ++ " should map to a config value, got sub config map instead")
-      Just (value :: ConfigValue ()) -> assertEqual "should contain default value"
-                                                    (Just (JSON.Number 123))
-                                                    (defaultValue value)
   , testCase "entries that finish with arrays sets them as default value" $ do
     let input = "{\"etc/entries\":{\"greeting\":[123]}}"
         keys  = ["greeting"]
 
-    config <- SUT.parseConfigSpec input
+    (config :: ConfigSpec ()) <- SUT.parseConfigSpec input
 
     case getConfigValue keys (specConfigValues config) of
-      Nothing -> assertFailure
-        (show keys ++ " should map to a config value, got sub config map instead")
-      Just (value :: ConfigValue ()) -> assertEqual
+      Just (ConfigValue value) -> assertEqual
         "should contain default value"
         (Just (JSON.Array (Vector.fromList [JSON.Number 123])))
         (defaultValue value)
+      _ -> assertFailure
+        (show keys ++ " should map to a config value, got sub config map instead")
   , testCase "entries with empty arrays as values fail because type cannot be infered" $ do
     let input = "{\"etc/entries\":{\"greeting\": []}}"
     case SUT.parseConfigSpec input of
@@ -115,44 +115,43 @@ general_tests = testGroup
         = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":[],\"type\":\"[string]\"}}}}"
       keys = ["greeting"]
 
-    config <- SUT.parseConfigSpec input
+    (config :: ConfigSpec ()) <- SUT.parseConfigSpec input
     case getConfigValue keys (specConfigValues config) of
-      Nothing -> assertFailure
-        (show keys ++ " should map to an array config value, got sub config map instead")
+      Just (ConfigValue value) -> assertEqual "should contain default array value"
+                                              (Just (JSON.Array (Vector.fromList [])))
+                                              (defaultValue value)
 
-      Just (value :: ConfigValue ()) -> assertEqual
-        "should contain default array value"
-        (Just (JSON.Array (Vector.fromList [])))
-        (defaultValue value)
+      _ -> assertFailure
+        (show keys ++ " should map to an array config value, got sub config map instead")
   , testCase "entries with array of objects do not fail" $ do
     let
       input
         = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{\"default\":[{\"hello\":\"world\"}],\"type\":\"[object]\"}}}}"
       keys = ["greeting"]
 
-    config <- SUT.parseConfigSpec input
+    (config :: ConfigSpec ()) <- SUT.parseConfigSpec input
     case getConfigValue keys (specConfigValues config) of
-      Nothing -> assertFailure
-        (show keys ++ " should map to an array config value, got sub config map instead")
-
-      Just (value :: ConfigValue ()) -> assertEqual
+      Just (ConfigValue value) -> assertEqual
         "should contain default array value"
         (Just
           (JSON.Array (Vector.fromList [JSON.object ["hello" JSON..= ("world" :: Text)]]))
         )
         (defaultValue value)
+
+      _ -> assertFailure
+        (show keys ++ " should map to an array config value, got sub config map instead")
   , testCase "entries can have many levels of nesting" $ do
     let input = "{\"etc/entries\":{\"english\":{\"greeting\":\"hello\"}}}"
         keys  = ["english", "greeting"]
 
-    config <- SUT.parseConfigSpec input
+    (config :: ConfigSpec ()) <- SUT.parseConfigSpec input
 
     case getConfigValue keys (specConfigValues config) of
-      Nothing -> assertFailure
+      Just (ConfigValue value) -> assertEqual "should contain default value"
+                                              (Just (JSON.String "hello"))
+                                              (defaultValue value)
+      _ -> assertFailure
         (show keys ++ " should map to a config value, got sub config map instead")
-      Just (value :: ConfigValue ()) -> assertEqual "should contain default value"
-                                                    (Just (JSON.String "hello"))
-                                                    (defaultValue value)
   , testCase "spec map cannot be empty object" $ do
     let input = "{\"etc/entries\":{\"greeting\":{\"etc/spec\":{}}}"
 
@@ -233,11 +232,15 @@ cli_tests =
 
       let
         result = do
-          value    <- getConfigValue keys (specConfigValues config)
-          let valueType = configValueType value
-          PlainEntry (Opt metadata) <- cliEntry (configSources value)
-          short <- optShort metadata
-          return (short, valueType)
+          configValue    <- getConfigValue keys (specConfigValues config)
+          case configValue of
+            ConfigValue value -> do
+              let valueType = configValueType value
+              PlainEntry (Opt metadata) <- cliEntry (configSources value)
+              short <- optShort metadata
+              return (short, valueType)
+            _ ->
+              Nothing
 
       case result of
         Nothing ->
@@ -255,11 +258,15 @@ cli_tests =
 
       let
         result = do
-          value  <- getConfigValue keys (specConfigValues config)
-          let valueType = configValueType value
-          PlainEntry (Opt metadata) <- cliEntry (configSources value)
-          long <- optLong metadata
-          return (long, valueType)
+          configValue  <- getConfigValue keys (specConfigValues config)
+          case configValue of
+            ConfigValue value -> do
+              let valueType = configValueType value
+              PlainEntry (Opt metadata) <- cliEntry (configSources value)
+              long <- optLong metadata
+              return (long, valueType)
+            _ ->
+              Nothing
 
       case result of
         Nothing ->
@@ -277,11 +284,15 @@ cli_tests =
 
       let
         result = do
-          value <- getConfigValue keys (specConfigValues config)
-          let valueType = configValueType value
-          CmdEntry cmd (Opt metadata) <- cliEntry (configSources value)
-          long <- optLong metadata
-          return (cmd, long, valueType)
+          configValue <- getConfigValue keys (specConfigValues config)
+          case configValue of
+            (ConfigValue value) -> do
+              let valueType = configValueType value
+              CmdEntry cmd (Opt metadata) <- cliEntry (configSources value)
+              long <- optLong metadata
+              return (cmd, long, valueType)
+            _ ->
+              Nothing
 
       case result of
         Nothing ->
@@ -317,11 +328,11 @@ envvar_tests = testGroup
       (config :: ConfigSpec ()) <- SUT.parseConfigSpec input
 
       case getConfigValue keys (specConfigValues config) of
-        Nothing -> assertFailure
+        Just (ConfigValue value) -> assertEqual "should contain EnvVar value"
+                                                (ConfigSources (Just "GREETING") Nothing)
+                                                (configSources value)
+        _ -> assertFailure
           (show keys ++ " should map to a config value, got sub config map instead")
-        Just value -> assertEqual "should contain EnvVar value"
-                                  (ConfigSources (Just "GREETING") Nothing)
-                                  (configSources value)
   ]
 
 #ifdef WITH_YAML
@@ -341,13 +352,13 @@ yaml_tests =
 
         Right (config :: ConfigSpec ()) ->
           case getConfigValue keys (specConfigValues config) of
-            Nothing ->
-              assertFailure (show keys ++ " should map to a config value, got sub config map instead")
-
-            Just value ->
+            Just (ConfigValue value) ->
               assertEqual "should contain EnvVar value"
                           (ConfigSources (Just "GREETING") Nothing)
                           (configSources value)
+            _ ->
+              assertFailure (show keys ++ " should map to a config value, got sub config map instead")
+
   ]
 #endif
 

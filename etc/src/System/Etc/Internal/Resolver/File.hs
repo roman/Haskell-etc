@@ -67,13 +67,14 @@ parseConfigValue keys spec fileIndex fileSource' json =
 
       (Spec.SubConfig{}, _) -> throwM $ SubConfigEntryExpected currentKey json
 
-      (Spec.ConfigValue { Spec.isSensitive, Spec.configValueType }, _) -> do
-        either throwM return $ Spec.assertMatchingConfigValueType json configValueType
-        return $ ConfigValue
-          (Set.singleton $ fileSource 1 fileIndex fileSource' $ markAsSensitive
-            isSensitive
-            json
-          )
+      (Spec.ConfigValue Spec.ConfigValueData { Spec.isSensitive, Spec.configValueType }, _)
+        -> do
+          either throwM return $ Spec.assertMatchingConfigValueType json configValueType
+          return $ ConfigValue
+            (Set.singleton $ fileSource 1 fileIndex fileSource' $ markAsSensitive
+              isSensitive
+              json
+            )
 
 
 
