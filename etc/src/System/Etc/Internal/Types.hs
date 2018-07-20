@@ -286,7 +286,7 @@ class IConfig config where
     -> config
     -> m (Set SomeConfigSource)
   getSelectedConfigSource
-    :: (MonadThrow m)
+    :: (MonadThrow m, Typeable source, IConfigSource source)
     => [Text]
     -> config
-    -> m SomeConfigSource
+    -> m source
