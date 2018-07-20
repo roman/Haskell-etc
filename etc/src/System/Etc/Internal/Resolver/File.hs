@@ -25,7 +25,7 @@ import System.Environment (lookupEnv)
 import           System.Etc.Internal.Errors
 import qualified System.Etc.Internal.Spec.Parser as Spec
 import qualified System.Etc.Internal.Spec.Types  as Spec
-import           System.Etc.Internal.Types       hiding (filepath)
+import           System.Etc.Internal.Types
 
 --------------------------------------------------------------------------------
 
@@ -41,34 +41,39 @@ parseConfigValue
   => [Text]
   -> Spec.ConfigValue cmd
   -> Int
-  -> FileSource
+  -> FileValueOrigin
   -> JSON.Value
   -> m ConfigValue
-parseConfigValue keys spec fileIndex fileSource json =
-  let parentKeys = reverse keys
-      currentKey = Text.intercalate "." parentKeys
-  in  case (spec, json) of
-        (Spec.SubConfig currentSpec, JSON.Object object) -> SubConfig <$> foldM
-          (\acc (key, subConfigValue) -> case HashMap.lookup key currentSpec of
-            Nothing ->
-              throwM $ UnknownConfigKeyFound parentKeys key (HashMap.keys currentSpec)
-            Just subConfigSpec -> do
-              value1 <- parseConfigValue (key : keys)
-                                         subConfigSpec
-                                         fileIndex
-                                         fileSource
-                                         subConfigValue
-              return $ HashMap.insert key value1 acc
+parseConfigValue keys spec fileIndex fileSource' json =
+  let
+    parentKeys = reverse keys
+    currentKey = Text.intercalate "." parentKeys
+  in
+    case (spec, json) of
+      (Spec.SubConfig currentSpec, JSON.Object object) -> SubConfig <$> foldM
+        (\acc (key, subConfigValue) -> case HashMap.lookup key currentSpec of
+          Nothing ->
+            throwM $ UnknownConfigKeyFound parentKeys key (HashMap.keys currentSpec)
+          Just subConfigSpec -> do
+            value1 <- parseConfigValue (key : keys)
+                                       subConfigSpec
+                                       fileIndex
+                                       fileSource'
+                                       subConfigValue
+            return $ HashMap.insert key value1 acc
+        )
+        HashMap.empty
+        (HashMap.toList object)
+
+      (Spec.SubConfig{}, _) -> throwM $ SubConfigEntryExpected currentKey json
+
+      (Spec.ConfigValue { Spec.isSensitive, Spec.configValueType }, _) -> do
+        either throwM return $ Spec.assertMatchingConfigValueType json configValueType
+        return $ ConfigValue
+          (Set.singleton $ fileSource 1 fileIndex fileSource' $ markAsSensitive
+            isSensitive
+            json
           )
-          HashMap.empty
-          (HashMap.toList object)
-
-        (Spec.SubConfig{}, _) -> throwM $ SubConfigEntryExpected currentKey json
-
-        (Spec.ConfigValue { Spec.isSensitive, Spec.configValueType }, _) -> do
-          either throwM return $ Spec.assertMatchingConfigValueType json configValueType
-          return $ ConfigValue
-            (Set.singleton $ File fileIndex fileSource $ markAsSensitive isSensitive json)
 
 
 
@@ -88,9 +93,15 @@ eitherDecode contents0 = case contents0 of
 
 
 parseConfig
-  :: MonadThrow m => Spec.ConfigValue cmd -> Int -> FileSource -> ConfigFile -> m Config
-parseConfig spec fileIndex fileSource contents = case eitherDecode contents of
-  Left err -> throwM $ ConfigInvalidSyntaxFound (fileSourcePath fileSource) (Text.pack err)
+  :: MonadThrow m
+  => Spec.ConfigValue cmd
+  -> Int
+  -> FileValueOrigin
+  -> ConfigFile
+  -> m Config
+parseConfig spec fileIndex fileSource' contents = case eitherDecode contents of
+  Left err ->
+    throwM $ ConfigInvalidSyntaxFound (fileSourcePath fileSource') (Text.pack err)
   -- Right json ->
   --   case JSON.iparse (parseConfigValue [] spec fileIndex fileSource) json of
   --     JSON.IError _ err    ->
@@ -100,7 +111,7 @@ parseConfig spec fileIndex fileSource contents = case eitherDecode contents of
   --         _ ->
   --           throwM $ InvalidConfiguration Nothing (Text.pack err)
   --     JSON.ISuccess result -> return (Config result)
-  Right json -> Config <$> parseConfigValue [] spec fileIndex fileSource json
+  Right json -> Config <$> parseConfigValue [] spec fileIndex fileSource' json
 
 readConfigFile :: MonadThrow m => Text -> IO (m ConfigFile)
 readConfigFile filepath =
@@ -121,18 +132,18 @@ readConfigFile filepath =
         else return $ throwM $ ConfigurationFileNotFound filepath
 
 readConfigFromFileSources
-  :: Spec.ConfigSpec cmd -> [FileSource] -> IO (Config, [SomeException])
+  :: Spec.ConfigSpec cmd -> [FileValueOrigin] -> IO (Config, [SomeException])
 readConfigFromFileSources spec fileSources =
   fileSources
     & zip [1 ..]
     & mapM
-        (\(fileIndex, fileSource) -> do
-          mContents <- readConfigFile (fileSourcePath fileSource)
+        (\(fileIndex, fileSource') -> do
+          mContents <- readConfigFile (fileSourcePath fileSource')
           return
             (   mContents
             >>= parseConfig (Spec.SubConfig $ Spec.specConfigValues spec)
                             fileIndex
-                            fileSource
+                            fileSource'
             )
         )
     & (foldl'
@@ -147,15 +158,14 @@ processFilesSpec :: Spec.ConfigSpec cmd -> IO (Config, [SomeException])
 processFilesSpec spec = case Spec.specConfigFilepaths spec of
   Nothing -> readConfigFromFileSources spec []
   Just (Spec.FilePathsSpec paths) ->
-    readConfigFromFileSources spec (map FilePathSource paths)
+    readConfigFromFileSources spec (map ConfigFileOrigin paths)
   Just (Spec.FilesSpec fileEnvVar paths0) -> do
     let getPaths = case fileEnvVar of
-          Nothing       -> return $ map FilePathSource paths0
+          Nothing       -> return $ map ConfigFileOrigin paths0
           Just filePath -> do
             envFilePath <- lookupEnv (Text.unpack filePath)
-            let envPath =
-                  maybeToList (EnvVarFileSource filePath . Text.pack <$> envFilePath)
-            return $ map FilePathSource paths0 ++ envPath
+            let envPath = maybeToList (EnvFileOrigin filePath . Text.pack <$> envFilePath)
+            return $ map ConfigFileOrigin paths0 ++ envPath
 
     paths <- getPaths
     readConfigFromFileSources spec paths

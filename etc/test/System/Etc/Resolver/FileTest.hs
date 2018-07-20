@@ -12,6 +12,8 @@ import qualified RIO.Text           as Text
 import qualified RIO.Vector         as Vector
 import qualified RIO.Vector.Partial as Vector (head)
 
+import Data.Typeable (cast)
+
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
@@ -21,7 +23,7 @@ import           Paths_etc  (getDataFileName)
 import System.Environment (setEnv)
 
 import System.Etc
-import System.Etc.Internal.Types (FileSource (..))
+import System.Etc.Internal.Types (FileSource (..), FileValueOrigin (..))
 
 tests :: TestTree
 tests = testGroup
@@ -102,14 +104,19 @@ filePathsTests = testGroup
         ("expecting to get entries for greeting (check fixtures)\n" <> show config)
       Just aSet -> assertBool
         ("expecting to see entry from json config file " <> show aSet)
-        (Set.member (File 1 (FilePathSource $ Text.pack jsonFilepath) "hello json") aSet)
+        (Set.member
+          ( SomeConfigSource 1
+          $ FileSource 1 (ConfigFileOrigin $ Text.pack jsonFilepath) "hello json"
+          )
+          aSet
+        )
 
 #ifdef WITH_YAML
        >> assertBool ("expecting to see entry from yaml config file " <> show aSet)
-                     (Set.member (File 2 (FilePathSource $ Text.pack jsonFilepath) "hello yaml") aSet)
+                     (Set.member (SomeConfigSource 1 $ FileSource 2 (ConfigFileOrigin $ Text.pack jsonFilepath) "hello yaml") aSet)
 
        >> assertBool ("expecting to see entry from yml config file " <> show aSet)
-                     (Set.member (File 3 (FilePathSource $ Text.pack jsonFilepath) "hello yml") aSet)
+                     (Set.member (SomeConfigSource 1 $ FileSource 3 (ConfigFileOrigin $ Text.pack jsonFilepath) "hello yml") aSet)
 #endif
   , testCase "does not support any other file extension" $ do
     fooFilepath <- getDataFileName "test/fixtures/config.foo"
@@ -151,7 +158,12 @@ filePathsTests = testGroup
         ("expecting to get entries for greeting (check fixtures)\n" <> show config)
       Just aSet -> assertBool
         ("expecting to see entry from json config file " <> show aSet)
-        (Set.member (File 1 (FilePathSource $ Text.pack jsonFilepath) "hello json") aSet)
+        (Set.member
+          ( SomeConfigSource 1
+          $ FileSource 1 (ConfigFileOrigin $ Text.pack jsonFilepath) "hello json"
+          )
+          aSet
+        )
 
     if Vector.null errs
       then assertFailure "expecting one error, got none"
@@ -186,9 +198,9 @@ filePathsTests = testGroup
       Nothing -> assertFailure ("expecting to get entries for greeting\n" <> show config)
       Just aSet ->
         let result = any
-              (\entry -> case entry of
-                File _ _ (Plain JSON.Null) -> True
-                _                          -> False
+              (\(SomeConfigSource _ source) -> case cast source of
+                Just (FileSource _ _ (Plain JSON.Null)) -> True
+                _                                       -> False
               )
               aSet
         in  assertBool ("expecting to see entry from env; got " <> show aSet) result
@@ -235,13 +247,19 @@ filesTest = testGroup
         assertBool
           ("expecting to see entry from env config file " <> show aSet)
           (Set.member
-            (File 1
-                  (EnvVarFileSource envFileTest $ Text.pack envFilePath)
-                  "hello environment"
+            (SomeConfigSource 1 $ FileSource
+              1
+              (EnvFileOrigin envFileTest $ Text.pack envFilePath)
+              "hello environment"
             )
             aSet
           )
         assertBool
           ("expecting to see entry from json config file " <> show aSet)
-          (Set.member (File 2 (FilePathSource $ Text.pack jsonFilepath) "hello json") aSet)
+          (Set.member
+            ( SomeConfigSource 1
+            $ FileSource 2 (ConfigFileOrigin $ Text.pack jsonFilepath) "hello json"
+            )
+            aSet
+          )
   ]

@@ -13,7 +13,7 @@ module System.Etc (
 
   -- * ConfigSpec
   -- $config_spec
-  , ConfigSource (..)
+  , SomeConfigSource (..)
   , ConfigValue
   , ConfigSpec
   , parseConfigSpec
@@ -71,7 +71,7 @@ module System.Etc (
 
 import System.Etc.Internal.Resolver.Default (resolveDefault)
 import System.Etc.Internal.Types
-    (Config, ConfigSource (..), ConfigValue, IConfig (..), Value (..))
+    (Config, ConfigValue, IConfig (..), SomeConfigSource (..), Value (..))
 import System.Etc.Spec
     ( ConfigInvalidSyntaxFound (..)
     , ConfigSpec

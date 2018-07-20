@@ -14,6 +14,7 @@ import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 import Paths_etc (getDataFileName)
 
 import System.Etc
+import System.Etc.Internal.Types (EnvSource (..))
 
 
 tests :: TestTree
@@ -31,8 +32,9 @@ tests = testGroup
     case getAllConfigSources ["greeting"] config of
       Nothing -> assertFailure
         ("expecting to get entries for greeting (check fixtures)\n" <> show config)
-      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (Env "GREETING" "hello env") aSet)
+      Just aSet -> assertBool
+        ("expecting to see entry from env; got " <> show aSet)
+        (Set.member (SomeConfigSource 2 $ EnvSource "GREETING" "hello env") aSet)
   , testCase "has precedence over default and file values" $ do
     jsonFilepath <- getDataFileName "test/fixtures/config.json"
     let input = mconcat

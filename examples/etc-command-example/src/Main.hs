@@ -58,6 +58,10 @@ main = do
 
   Etc.reportEnvMisspellingWarnings configSpec
 
+  -- in case source fetching fails with an IO error, you may want to fail fast (e.g. vault)
+  -- config <- Etc.resolve [defaultCli, defaultVault, defaultEnv] configSpec
+  -- cmd <- Etc.resolveCommandCli configSpec
+  -- fileWarnings <- Etc.resolveFiles configSpec
   (configFiles, _fileWarnings) <- Etc.resolveFiles configSpec
   (cmd        , configCli    ) <- Etc.resolveCommandCli configSpec
   configEnv                    <- Etc.resolveEnv configSpec

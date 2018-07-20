@@ -13,7 +13,7 @@ import           System.Etc.Internal.Types
 
 toDefaultConfigValue :: Bool -> JSON.Value -> ConfigValue
 toDefaultConfigValue sensitive =
-  ConfigValue . Set.singleton . Default . markAsSensitive sensitive
+  ConfigValue . Set.singleton . defaultSource . markAsSensitive sensitive
 
 buildDefaultResolver :: Spec.ConfigSpec cmd -> Maybe ConfigValue
 buildDefaultResolver spec =

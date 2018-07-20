@@ -11,6 +11,7 @@ import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
 
 import System.Etc
+import System.Etc.Internal.Types (CliSource (..))
 
 with_command_option_tests :: TestTree
 with_command_option_tests = testGroup
@@ -40,8 +41,9 @@ with_command_option_tests = testGroup
 
     case getAllConfigSources ["greeting"] config of
       Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
-      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (Cli "hello cli") aSet)
+      Just aSet -> assertBool
+        ("expecting to see entry from env; got " <> show aSet)
+        (Set.member (SomeConfigSource 3 $ CliSource "hello cli") aSet)
   , testCase "entry accepts long" $ do
     let input = mconcat
           [ "{ \"etc/cli\": {"
@@ -70,8 +72,9 @@ with_command_option_tests = testGroup
 
     case getAllConfigSources ["greeting"] config of
       Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
-      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (Cli "hello cli") aSet)
+      Just aSet -> assertBool
+        ("expecting to see entry from env; got " <> show aSet)
+        (Set.member (SomeConfigSource 3 $ CliSource "hello cli") aSet)
   , testCase "entry gets validated with a type" $ do
     let input = mconcat
           [ "{ \"etc/cli\": {"

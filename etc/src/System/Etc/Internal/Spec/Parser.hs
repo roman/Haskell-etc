@@ -247,6 +247,7 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
                 <*> pure sensitive
                 <*> (ConfigSources <$> fieldSpec .:? "env"
                                    <*> fieldSpec .:? "cli")
+                <*> pure json
             else
               fail "etc/spec object can only contain one key"
 
@@ -263,6 +264,7 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigValue cmd) where
           , configValueType = cvType
           , isSensitive     = False
           , configSources   = ConfigSources Nothing Nothing
+          , rawConfigValue  = json
           }
 
 parseFiles :: JSON.Value -> JSON.Parser FilesSpec
@@ -297,5 +299,6 @@ instance JSON.FromJSON cmd => JSON.FromJSON (ConfigSpec cmd) where
         <$> parseFileSpec json
         <*> (object .:? "etc/cli")
         <*> (fromMaybe HashMap.empty <$> (object .:? "etc/entries"))
+        <*> pure json
       _ ->
         JSON.typeMismatch "ConfigSpec" json

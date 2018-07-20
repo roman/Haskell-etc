@@ -11,12 +11,13 @@ import           Test.Tasty       (TestTree, testGroup)
 import           Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 
 import System.Etc
+import System.Etc.Internal.Types (DefaultSource (..))
 
 assertDefaultValue :: Config -> [Text] -> Value JSON.Value -> IO ()
 assertDefaultValue config keys val = case getAllConfigSources keys config of
   Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
   Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                          (Set.member (Default val) aSet)
+                          (Set.member (SomeConfigSource 0 $ DefaultSource val) aSet)
 
 tests :: TestTree
 tests = testGroup
@@ -47,6 +48,7 @@ tests = testGroup
 
     case getAllConfigSources ["greeting"] config of
       Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
-      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (Default $ Plain JSON.Null) aSet)
+      Just aSet -> assertBool
+        ("expecting to see entry from env; got " <> show aSet)
+        (Set.member (SomeConfigSource 0 $ DefaultSource $ Plain JSON.Null) aSet)
   ]

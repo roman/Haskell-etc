@@ -191,6 +191,7 @@ data ConfigValue cmd
   , configValueType :: !ConfigValueType
   , isSensitive     :: !Bool
   , configSources   :: !(ConfigSources cmd)
+  , rawConfigValue  :: !JSON.Value
   }
   | SubConfig {
     subConfig :: !(HashMap Text (ConfigValue cmd))
@@ -198,8 +199,8 @@ data ConfigValue cmd
   deriving (Generic, Show, Eq)
 
 instance Lift cmd => Lift (ConfigValue cmd) where
-  lift ConfigValue {defaultValue, configValueType, isSensitive, configSources} =
-    [| ConfigValue defaultValue configValueType isSensitive configSources |]
+  lift ConfigValue {defaultValue, configValueType, isSensitive, configSources, rawConfigValue } =
+    [| ConfigValue defaultValue configValueType isSensitive configSources rawConfigValue |]
   lift SubConfig {subConfig} =
     [| SubConfig (HashMap.fromList $ map (first Text.pack) subConfigList) |]
     where
@@ -245,13 +246,15 @@ data ConfigSpec cmd
     specConfigFilepaths :: !(Maybe FilesSpec)
   , specCliProgramSpec  :: !(Maybe CliProgramSpec)
   , specConfigValues    :: !(HashMap Text (ConfigValue cmd))
+  , rawSpec             :: !JSON.Value
   }
   deriving (Generic, Show, Eq)
 
 instance Lift cmd => Lift (ConfigSpec cmd) where
-  lift ConfigSpec {specConfigFilepaths, specCliProgramSpec, specConfigValues} =
+  lift ConfigSpec {specConfigFilepaths, specCliProgramSpec, specConfigValues, rawSpec } =
     [| ConfigSpec specConfigFilepaths
                   specCliProgramSpec
-                  (HashMap.fromList $ map (first Text.pack) configValuesList) |]
+                  (HashMap.fromList $ map (first Text.pack) configValuesList)
+                  rawSpec |]
     where
       configValuesList = map (first Text.unpack) $ HashMap.toList specConfigValues
