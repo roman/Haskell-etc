@@ -57,7 +57,12 @@ cliArgTypeParser object = do
 
 cliArgParser :: JSON.Object -> JSON.Parser CliEntryMetadata
 cliArgParser object =
-  Arg <$> (object .:? "metavar") <*> (fromMaybe True <$> (object .:? "required"))
+  Arg
+    <$> (   CliArgMetadata
+        <$> (object .:? "metavar")
+        <*> (object .:? "help")
+        <*> (fromMaybe True <$> (object .:? "required"))
+        )
 
 cliOptParser :: JSON.Object -> JSON.Parser CliEntryMetadata
 cliOptParser object = do
@@ -67,11 +72,18 @@ cliOptParser object = do
     then fail "'option' field input requires either 'long' or 'short' settings"
     else
       Opt
-      <$> pure long
-      <*> pure short
-      <*> (object .:? "metavar")
-      <*> (object .:? "help")
-      <*> (fromMaybe True <$> (object .:? "required"))
+        <$> (   CliOptMetadata
+            <$> pure long
+            <*> pure short
+            <*> (object .:? "metavar")
+            <*> (object .:? "help")
+            <*> (fromMaybe True <$> (object .:? "required"))
+            )
+
+cliSwitchParser :: JSON.Object -> JSON.Parser CliEntryMetadata
+cliSwitchParser object =
+  Switch <$> (CliSwitchMetadata <$> (object .: "long") <*> (object .:? "help"))
+
 
 cliArgKeys :: [Text]
 cliArgKeys = ["input", "commands", "metavar", "required"]
@@ -106,12 +118,19 @@ instance JSON.FromJSON cmd => JSON.FromJSON (CliEntrySpec cmd) where
 
                 optParseEntryCtor <$> cliArgParser object
 
+              | inputName == "switch" -> do
+                forM_ (HashMap.keys object) $ \key ->
+                  when (not (key `elem` cliOptKeys))
+                    (fail $ "cli option contains invalid key " ++ show key)
+
+                optParseEntryCtor <$> cliSwitchParser object
+
               | otherwise ->
-                JSON.typeMismatch "CliEntryMetadata (invalid input)" value
+                JSON.typeMismatch "Invalid input (option, argument, switch)" value
             _ ->
-              JSON.typeMismatch "CliEntryMetadata (invalid input)" value
+              JSON.typeMismatch "Invalid input (option, argument, switch)" value
         _ ->
-          JSON.typeMismatch "CliEntryMetadata" json
+          JSON.typeMismatch "Invalid input (option, argument, switch)" json
 
 --------------------------------------------------------------------------------
 

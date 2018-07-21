@@ -1,15 +1,16 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP                        #-}
 #if __GLASGOW_HASKELL__ >= 800
-{-# LANGUAGE TemplateHaskellQuotes #-}
+{-# LANGUAGE TemplateHaskellQuotes      #-}
 #else
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TemplateHaskell            #-}
 #endif
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE DeriveLift        #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveLift                 #-}
+{-# LANGUAGE NoImplicitPrelude          #-}
+{-# LANGUAGE OverloadedStrings          #-}
 module System.Etc.Internal.Spec.Types where
 
 
@@ -36,37 +37,79 @@ data CliArgValueType
   | NumberArg
   deriving (Generic, Show, Eq, Lift)
 
-data CliEntryMetadata
-  = Opt {
+data CliOptMetadata
+  = CliOptMetadata {
     optLong     :: !(Maybe Text)
   , optShort    :: !(Maybe Text)
   , optMetavar  :: !(Maybe Text)
   , optHelp     :: !(Maybe Text)
   , optRequired :: !Bool
   }
-  | Arg {
-    argMetavar  :: !(Maybe Text)
-  , optRequired :: !Bool
-  }
   deriving (Generic, Show, Eq)
 
-instance Lift CliEntryMetadata where
-  lift Opt {optLong, optShort, optMetavar, optHelp, optRequired} =
-    [| Opt { optLong = fmap Text.pack optLongStr
+instance Lift CliOptMetadata where
+  lift CliOptMetadata {optLong, optShort, optMetavar, optHelp, optRequired} =
+    [| CliOptMetadata
+           { optLong = fmap Text.pack optLongStr
            , optShort = fmap Text.pack optShortStr
            , optMetavar = fmap Text.pack optMetavarStr
            , optHelp = fmap Text.pack optHelpStr
-           , optRequired = optRequired }|]
+           , optRequired = optRequired
+           } |]
     where
       optLongStr = fmap Text.unpack optLong
       optShortStr = fmap Text.unpack optShort
       optMetavarStr = fmap Text.unpack optMetavar
       optHelpStr = fmap Text.unpack optHelp
-  lift Arg {argMetavar, optRequired} =
-    [| Arg { argMetavar = fmap Text.pack argMetavarStr
-           , optRequired = optRequired } |]
+
+data CliArgMetadata
+  = CliArgMetadata {
+    argMetavar  :: !(Maybe Text)
+  , argHelp     :: !(Maybe Text)
+  , argRequired :: !Bool
+  }
+  deriving (Generic, Show, Eq)
+
+instance Lift CliArgMetadata where
+  lift CliArgMetadata {argMetavar, argHelp, argRequired} =
+    [| CliArgMetadata {
+          argMetavar = fmap Text.pack argMetavarStr
+        , argHelp    = fmap Text.pack argHelpStr
+        , argRequired = argRequired
+        }
+     |]
     where
       argMetavarStr = fmap Text.unpack argMetavar
+      argHelpStr = fmap Text.unpack argHelp
+
+data CliSwitchMetadata
+  = CliSwitchMetadata {
+    switchLong     :: !Text
+  , switchHelp     :: !(Maybe Text)
+  }
+  deriving (Generic, Show, Eq)
+
+instance Lift CliSwitchMetadata where
+  lift CliSwitchMetadata {switchLong, switchHelp} =
+    [| CliSwitchMetadata
+           { switchLong = Text.pack switchLongStr
+           , switchHelp = fmap Text.pack switchHelpStr
+           } |]
+    where
+      switchLongStr = Text.unpack switchLong
+      switchHelpStr = fmap Text.unpack switchHelp
+
+
+data CliEntryMetadata
+  = Opt CliOptMetadata
+  | Arg CliArgMetadata
+  | Switch CliSwitchMetadata
+  deriving (Generic, Show, Eq)
+
+instance Lift CliEntryMetadata where
+  lift (Opt metadata)    = [| Opt metadata |]
+  lift (Arg metadata)    = [| Arg metadata |]
+  lift (Switch metadata) = [| Switch metadata |]
 
 data CliEntrySpec cmd
   = CmdEntry {
