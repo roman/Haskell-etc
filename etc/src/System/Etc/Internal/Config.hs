@@ -66,7 +66,7 @@ _getConfigValueWith parser keys0 (Config configValue0) =
   in  loop keys0 configValue0
 
 _getSelectedConfigSource
-  :: (MonadThrow m, Typeable result, IConfigSource result) => [Text] -> Config -> m result
+  :: (MonadThrow m, IConfigSource result) => [Text] -> Config -> m result
 _getSelectedConfigSource keys0 (Config configValue0) =
   let loop keys configValue = case (keys, configValue) of
         ([], ConfigValue sources) -> case Set.maxView sources of
