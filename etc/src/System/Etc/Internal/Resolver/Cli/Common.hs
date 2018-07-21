@@ -59,17 +59,23 @@ instance Exception CliConfigError
 
 --------------------------------------------------------------------------------
 
-specToCliSwitchFieldMod specSettings =
-  maybe Opt.idm (Opt.long . Text.unpack) (Spec.optLong specSettings)
+specToCliOptFieldMod :: Opt.HasName f => Spec.CliOptMetadata -> Opt.Mod f a
+specToCliOptFieldMod meta =
+  maybe Opt.idm (Opt.long . Text.unpack) (Spec.optLong meta)
     `mappend` maybe Opt.idm Opt.short                shortOption
-    `mappend` maybe Opt.idm (Opt.help . Text.unpack) (Spec.optHelp specSettings)
+    `mappend` maybe Opt.idm (Opt.help . Text.unpack) (Spec.optHelp meta)
  where
   shortOption = do
-    shortStr <- Spec.optShort specSettings
+    shortStr <- Spec.optShort meta
     fst <$> Text.uncons shortStr
 
-specToCliVarFieldMod specSettings = specToCliSwitchFieldMod specSettings
-  `mappend` maybe Opt.idm (Opt.metavar . Text.unpack) (Spec.optMetavar specSettings)
+specToCliSwitchFieldMod :: Opt.HasName f => Spec.CliSwitchMetadata -> Opt.Mod f a
+specToCliSwitchFieldMod meta =
+  Opt.long (Text.unpack $ Spec.switchLong meta)
+    `mappend` maybe Opt.idm (Opt.help . Text.unpack) (Spec.switchHelp meta)
+
+specToCliArgFieldMod :: Spec.CliArgMetadata -> Opt.Mod f a
+specToCliArgFieldMod meta = maybe Opt.idm (Opt.help . Text.unpack) (Spec.argHelp meta)
 
 commandToKey :: (MonadThrow m, JSON.ToJSON cmd) => cmd -> m [Text]
 commandToKey cmd = case JSON.toJSON cmd of
@@ -101,16 +107,23 @@ settingsToJsonCli
   -> Bool
   -> Spec.CliEntryMetadata
   -> Opt.Parser (Maybe (Value JSON.Value))
-settingsToJsonCli cvType isSensitive specSettings =
-  let requiredCombinator =
-        if Spec.optRequired specSettings then (Just <$>) else Opt.optional
-  in  requiredCombinator $ case specSettings of
-        Spec.Opt{} -> Opt.option (Opt.eitherReader $ jsonOptReader cvType isSensitive)
-                                 (specToCliVarFieldMod specSettings)
-
-        Spec.Arg{} -> Opt.argument
+settingsToJsonCli cvType isSensitive specSettings = case specSettings of
+  Spec.Opt meta ->
+    let requiredCombinator = if Spec.optRequired meta then (Just <$>) else Opt.optional
+    in  requiredCombinator $ Opt.option
           (Opt.eitherReader $ jsonOptReader cvType isSensitive)
-          (specSettings & Spec.argMetavar & maybe Opt.idm (Opt.metavar . Text.unpack))
+          (specToCliOptFieldMod meta)
+
+  Spec.Arg meta ->
+    let requiredCombinator = if Spec.argRequired meta then (Just <$>) else Opt.optional
+    in  requiredCombinator $ Opt.argument
+          (Opt.eitherReader $ jsonOptReader cvType isSensitive)
+          (specToCliArgFieldMod meta)
+
+  Spec.Switch meta ->
+    let requiredCombinator = fmap (Just . Plain . JSON.Bool)
+    in  requiredCombinator (Opt.switch (specToCliSwitchFieldMod meta)) <|> pure Nothing
+
 
 
 parseCommandJsonValue :: (MonadThrow m, JSON.FromJSON a) => JSON.Value -> m a

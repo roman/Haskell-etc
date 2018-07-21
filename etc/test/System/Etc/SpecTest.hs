@@ -235,7 +235,7 @@ cli_tests =
         result = do
           value    <- getConfigValue keys (specConfigValues config)
           let valueType = configValueType value
-          PlainEntry metadata <- cliEntry (configSources value)
+          PlainEntry (Opt metadata) <- cliEntry (configSources value)
           short <- optShort metadata
           return (short, valueType)
 
@@ -257,7 +257,7 @@ cli_tests =
         result = do
           value  <- getConfigValue keys (specConfigValues config)
           let valueType = configValueType value
-          PlainEntry metadata <- cliEntry (configSources value)
+          PlainEntry (Opt metadata) <- cliEntry (configSources value)
           long <- optLong metadata
           return (long, valueType)
 
@@ -279,7 +279,7 @@ cli_tests =
         result = do
           value <- getConfigValue keys (specConfigValues config)
           let valueType = configValueType value
-          CmdEntry cmd metadata <- cliEntry (configSources value)
+          CmdEntry cmd (Opt metadata) <- cliEntry (configSources value)
           long <- optLong metadata
           return (cmd, long, valueType)
 

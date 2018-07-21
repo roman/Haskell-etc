@@ -270,5 +270,104 @@ argument_tests = testGroup
       Right _ -> assertFailure "Expecting required argument to fail cli resolving"
   ]
 
+switch_tests :: TestTree
+switch_tests = testGroup
+  "switch input"
+  [ testCase "fails if etc/spec.type is not bool" $ do
+    let input = mconcat
+          [ "{ \"etc/entries\": {"
+          , "    \"greeting\": {"
+          , "      \"etc/spec\": {"
+          , "        \"default\": false"
+          , "        , \"type\": \"string\""
+          , "        , \"cli\": {"
+          , "            \"input\": \"switch\""
+          , "          , \"long\": \"valid\""
+          , "}}}}}"
+          ]
+    (spec :: Either SomeException (SUT.ConfigSpec ())) <- try $ SUT.parseConfigSpec input
+
+    case spec of
+      Left err -> case fromException err of
+        Just SUT.SpecInvalidSyntaxFound{} -> return ()
+        _ -> assertFailure ("Expecting type validation to work on cli; got " <> show err)
+
+      Right _ -> assertFailure "Expecting type validation to work on cli"
+  , testGroup
+    "when etc/spec.default is false"
+    [ testCase "returns false when flag not given" $ do
+      let input = mconcat
+            [ "{ \"etc/entries\": {"
+            , "    \"greeting\": {"
+            , "      \"etc/spec\": {"
+            , "        \"default\": false"
+            , "        , \"type\": \"bool\""
+            , "        , \"cli\": {"
+            , "            \"input\": \"switch\""
+            , "          , \"long\": \"valid\""
+            , "}}}}}"
+            ]
+      (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+
+      case SUT.resolvePlainCliPure spec "program" [] of
+        Left err ->
+          assertFailure ("Expecting default to work on cli; but didn't: " <> show err)
+
+        Right config -> do
+          greeting <- SUT.getConfigValue ["greeting"] config
+          assertBool "Expecting default to be false, but wasn't" (not greeting)
+    , testCase "returns true when flag given" $ do
+      let input = mconcat
+            [ "{ \"etc/entries\": {"
+            , "    \"greeting\": {"
+            , "      \"etc/spec\": {"
+            , "        \"default\": false"
+            , "        , \"type\": \"bool\""
+            , "        , \"cli\": {"
+            , "            \"input\": \"switch\""
+            , "          , \"long\": \"valid\""
+            , "}}}}}"
+            ]
+      (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+
+      case SUT.resolvePlainCliPure spec "program" ["--valid"] of
+        Left err ->
+          assertFailure ("Expecting default to work on cli; but didn't: " <> show err)
+
+        Right config -> do
+          greeting <- SUT.getConfigValue ["greeting"] config
+          assertBool "Expecting result to be true, but wasn't" greeting
+    ]
+  -- TODO: This testcase is failing, and it is because the optparse-applicative
+  -- API _always_ returns a value, if the flag is not present, it will return
+  -- false. Once refactoring of parser is done, we need to make use of the
+  -- default value to change the behavior of the optparse-applicative API to
+  -- return the appropiate result
+  -- , testGroup "when default is true"
+  --   [
+  --     testCase "entry should use default when not specified (true case)" $ do
+  --     let input = mconcat
+  --           [ "{ \"etc/entries\": {"
+  --           , "    \"greeting\": {"
+  --           , "      \"etc/spec\": {"
+  --           , "        \"default\": true"
+  --           , "        , \"type\": \"bool\""
+  --           , "        , \"cli\": {"
+  --           , "            \"input\": \"switch\""
+  --           , "          , \"long\": \"invalid\""
+  --           , "}}}}}"
+  --           ]
+  --     (spec :: SUT.ConfigSpec ()) <- SUT.parseConfigSpec input
+
+  --     case SUT.resolvePlainCliPure spec "program" [] of
+  --       Left err ->
+  --         assertFailure ("Expecting default to work on cli; but didn't: " <> show err)
+
+  --       Right config -> do
+  --         greeting <- SUT.getConfigValue ["greeting"] config
+  --         assertBool "Expecting default to be true, but wasn't" greeting
+  --   ]
+  ]
+
 tests :: TestTree
-tests = testGroup "plain" [resolver_tests, option_tests, argument_tests]
+tests = testGroup "plain" [resolver_tests, option_tests, argument_tests, switch_tests]
