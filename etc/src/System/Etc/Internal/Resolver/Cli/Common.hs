@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -59,7 +60,9 @@ instance Exception CliConfigError
 
 --------------------------------------------------------------------------------
 
+#if MIN_VERSION_optparse_applicative(0,14,0)
 specToCliOptFieldMod :: Opt.HasName f => Spec.CliOptMetadata -> Opt.Mod f a
+#endif
 specToCliOptFieldMod meta =
   maybe Opt.idm (Opt.long . Text.unpack) (Spec.optLong meta)
     `mappend` maybe Opt.idm Opt.short                shortOption
@@ -69,7 +72,9 @@ specToCliOptFieldMod meta =
     shortStr <- Spec.optShort meta
     fst <$> Text.uncons shortStr
 
+#if MIN_VERSION_optparse_applicative(0,14,0)
 specToCliSwitchFieldMod :: Opt.HasName f => Spec.CliSwitchMetadata -> Opt.Mod f a
+#endif
 specToCliSwitchFieldMod meta =
   Opt.long (Text.unpack $ Spec.switchLong meta)
     `mappend` maybe Opt.idm (Opt.help . Text.unpack) (Spec.switchHelp meta)
