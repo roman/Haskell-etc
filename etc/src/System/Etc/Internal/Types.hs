@@ -74,18 +74,16 @@ data FileValueOrigin
 
 instance NFData FileValueOrigin
 
-class IConfigSource source where
-  sourceValue     :: source -> Value JSON.Value
+class (Show source, Typeable source) =>
+      IConfigSource source
+  where
+  sourceValue :: source -> Value JSON.Value
   sourcePrettyDoc :: source -> Doc
-  compareSources  :: source -> source -> Ordering
+  compareSources :: source -> source -> Ordering
   compareSources _ _ = EQ
 
 data SomeConfigSource =
-  forall source. ( Show source
-                 , NFData source
-                 , Typeable source
-                 , IConfigSource source
-                 ) =>
+  forall source. (IConfigSource source) =>
                  SomeConfigSource !Int
                                   !source
 
