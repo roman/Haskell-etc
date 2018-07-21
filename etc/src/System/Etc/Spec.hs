@@ -22,9 +22,7 @@ import Language.Haskell.TH.Syntax (Lift)
 import System.Etc.Internal.Errors     as Errors
 import System.Etc.Internal.Spec.Types as Types (ConfigSpec, ConfigValue)
 
-#ifdef WITH_CLI
 import qualified Data.Aeson as JSON
-#endif
 
 #ifdef WITH_YAML
 import qualified System.Etc.Internal.Spec.YAML    as YAML
