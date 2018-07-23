@@ -1,0 +1,24 @@
+name: etc-spec
+author: open-source@roman-gonzalez.info
+
+dependencies:
+  - aeson
+  - aeson-better-errors
+  - base
+  - rio
+  - template-haskell
+  - prettyprinter
+
+library:
+  source-dirs: src
+
+tests:
+  etc-spec-tests:
+    main: TestSuite.hs
+    source-dirs: test
+    dependencies:
+      - base
+      - rio
+      - etc-spec
+      - aeson-qq
+      - hspec

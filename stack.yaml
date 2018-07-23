@@ -37,6 +37,7 @@ resolver: lts-11.11
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - 'etc'
+- 'etc-spec'
 - 'examples/etc-command-example'
 - 'examples/etc-plain-example'
 - 'examples/etc-embedded-config-example'
@@ -44,7 +45,7 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
-  - rio-0.1.2.0
+  - rio-0.1.4.0
   - typed-process-0.2.2.0
   - unliftio-0.2.6.0
   - unliftio-core-0.1.1.0
