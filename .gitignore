@@ -4,3 +4,4 @@
 out/
 tmp/
 tools/bin
+etc-spec/etc-spec.cabal

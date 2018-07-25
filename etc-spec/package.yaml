@@ -11,6 +11,10 @@ dependencies:
 
 library:
   source-dirs: src
+  exposed-modules:
+  - Etc.Spec
+  - Etc.Spec.Internal.Parser
+  - Etc.Spec.Internal.Types
 
 tests:
   etc-spec-tests:

@@ -10,13 +10,20 @@ import RIO
 -- import Language.Haskell.TH.Syntax (Lift(..))
 
 import qualified Data.Aeson as JSON
+import qualified Data.Aeson.BetterErrors as JSON
+
+data SpecError
+  = SpecParserError !(JSON.ParseError SpecParserError)
+  deriving (Show)
+
+instance Exception SpecError
 
 data SpecParserError
   = CannotInferTypeFromDefault ![Text] !JSON.Value
   | InferredNestedArrayOnDefault ![Text] !JSON.Value
   | InvalidConfigValueType ![Text] !Text
   | ConfigValueDefaultTypeMismatchFound ![Text] !ConfigValueType !JSON.Value
-  | RedundantKeysOnConfigValue ![Text] ![Text]
+  | RedundantKeysOnValueSpec ![Text] ![Text]
   | InvalidSpecEntries !ConfigValue
   deriving (Show)
 

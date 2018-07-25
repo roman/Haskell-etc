@@ -35,7 +35,6 @@ assertFieldTypeMatches ::
   -> JSON.ParseT SpecParserError m ()
 assertFieldTypeMatches fieldKeypath cvType json
   | matchesConfigValueType cvType json = return ()
-  -- TODO: Create Custom Type
   | otherwise = JSON.throwCustomError (ConfigValueDefaultTypeMismatchFound fieldKeypath cvType json)
 
 inferConfigValueTypeFromJSON ::
@@ -49,13 +48,11 @@ inferConfigValueTypeFromJSON fieldKeypath defaultJSON =
       JSON.Number{} -> Right $ CVTSingle CVTNumber
       JSON.Bool{}   -> Right $ CVTSingle CVTBool
       JSON.Array arr
-        -- TODO: Create Custom Type
         | null arr -> Left (CannotInferTypeFromDefault fieldKeypath json)
         | otherwise -> case inferJSON (Vector.head arr) of
           Right CVTArray{}     -> Left (InferredNestedArrayOnDefault fieldKeypath json)
           Right (CVTSingle ty) -> Right $ CVTArray ty
           Left  err            -> Left err
-      -- TODO: Create Custom Type
       _ -> Left (CannotInferTypeFromDefault fieldKeypath json)
 
 parseConfigValueType1 ::
@@ -70,7 +67,6 @@ parseConfigValueType1 fieldKeypath = do
       "[number]" -> Right $ CVTArray CVTNumber
       "[bool]"   -> Right $ CVTArray CVTBool
       "[object]" -> Right $ CVTArray CVTObject
-      -- TODO: Create Custom Type with friendly message
       -- TODO: Implement tests
       _ -> Left (InvalidConfigValueType fieldKeypath typeText)
 
@@ -122,7 +118,7 @@ parseConfigSpecEntries fieldKeypath = do
           -- an error and should be reported as soon as possible
           | HashMap.size object > 1 ->
             JSON.throwCustomError
-              (RedundantKeysOnConfigValue fieldKeypath $
+              (RedundantKeysOnValueSpec fieldKeypath $
                HashMap.keys $ HashMap.delete "etc/spec" object)
           | otherwise -> parseConfigValue
     _ -> do
@@ -142,11 +138,25 @@ parseConfigSpecEntries fieldKeypath = do
         (\key -> (,) key <$> parseConfigSpecEntries (key : fieldKeypath))
     parseConfigValue = ConfigValue <$> parseConfigValueData fieldKeypath
 
-parseConfigSpec :: Monad m => JSON.ParseT SpecParserError m ConfigSpec
-parseConfigSpec = do
+configSpecParser :: Monad m => JSON.ParseT SpecParserError m ConfigSpec
+configSpecParser = do
   result <- JSON.key "etc/entries" (parseConfigSpecEntries [])
   configSpecJSON <- HashMap.delete "etc/entries" <$> JSON.asObject
   case result of
     ConfigValue {} -> JSON.throwCustomError (InvalidSpecEntries result)
     SubConfig configSpecEntries ->
       return $ ConfigSpec {configSpecJSON, configSpecEntries}
+
+parseConfigSpec :: (Monad m, MonadThrow m) => ByteString -> m ConfigSpec
+parseConfigSpec bytes = do
+  result <- JSON.parseStrictM configSpecParser bytes
+  case result of
+    Left err -> throwM (SpecParserError err)
+    Right spec -> return spec
+
+parseConfigSpecJson :: (Monad m, MonadThrow m) => JSON.Value -> m ConfigSpec
+parseConfigSpecJson json = do
+  result <- JSON.parseValueM configSpecParser json
+  case result of
+    Left err -> throwM (SpecParserError err)
+    Right spec -> return spec
