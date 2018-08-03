@@ -1,17 +1,20 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module Etc.Spec.Internal.Parser where
 
-import RIO
-import qualified RIO.Map as Map
-import qualified RIO.HashMap as HashMap
+import           RIO
+import qualified RIO.HashMap        as HashMap
+import qualified RIO.Map            as Map
 import qualified RIO.Vector.Partial as Vector (head)
 
-import qualified Data.Aeson as JSON hiding (withText)
+import qualified Data.Aeson              as JSON hiding (withText)
 import qualified Data.Aeson.BetterErrors as JSON
 
+import Language.Haskell.TH        (ExpQ, runIO)
+
+import Etc.Spec.Internal.ErrorRender ()
 import Etc.Spec.Internal.Types
 
 --------------------------------------------------------------------------------
@@ -63,12 +66,13 @@ parseConfigValueType1 fieldKeypath = do
       "string"   -> Right $ CVTSingle CVTString
       "number"   -> Right $ CVTSingle CVTNumber
       "bool"     -> Right $ CVTSingle CVTBool
+      "object"   -> Right $ CVTSingle CVTObject
       "[string]" -> Right $ CVTArray CVTString
       "[number]" -> Right $ CVTArray CVTNumber
       "[bool]"   -> Right $ CVTArray CVTBool
       "[object]" -> Right $ CVTArray CVTObject
       -- TODO: Implement tests
-      _ -> Left (InvalidConfigValueType fieldKeypath typeText)
+      _          -> Left (InvalidConfigValueType fieldKeypath typeText)
 
 parseConfigValueType ::
      Monad m
@@ -147,16 +151,27 @@ configSpecParser = do
     SubConfig configSpecEntries ->
       return $ ConfigSpec {configSpecJSON, configSpecEntries}
 
+
 parseConfigSpec :: (Monad m, MonadThrow m) => ByteString -> m ConfigSpec
 parseConfigSpec bytes = do
   result <- JSON.parseStrictM configSpecParser bytes
   case result of
-    Left err -> throwM (SpecParserError err)
+    Left err   -> throwM (SpecParserError err)
     Right spec -> return spec
 
-parseConfigSpecJson :: (Monad m, MonadThrow m) => JSON.Value -> m ConfigSpec
-parseConfigSpecJson json = do
+parseConfigSpecValue :: (Monad m, MonadThrow m) => JSON.Value -> m ConfigSpec
+parseConfigSpecValue json = do
   result <- JSON.parseValueM configSpecParser json
   case result of
-    Left err -> throwM (SpecParserError err)
+    Left err   -> throwM (SpecParserError err)
     Right spec -> return spec
+
+readConfigSpec :: (MonadIO m, MonadThrow m) => FilePath -> m ConfigSpec
+readConfigSpec filepath = do
+  bytes <- readFileBinary filepath
+  parseConfigSpec bytes
+
+readConfigSpecTH :: FilePath -> ExpQ
+readConfigSpecTH filepath = do
+  configSpec <- runIO $ readConfigSpec filepath
+  [| configSpec |]

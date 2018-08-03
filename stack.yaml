@@ -37,11 +37,13 @@ resolver: lts-11.11
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - 'etc'
-- 'etc-spec'
 - 'examples/etc-command-example'
 - 'examples/etc-plain-example'
 - 'examples/etc-embedded-config-example'
 - 'examples/etc-compile-time-spec-check-example'
+
+- 'etc-spec'
+- 'examples/etc-spec-errors-example'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:

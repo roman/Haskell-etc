@@ -1,0 +1,22 @@
+name:                etc-spec-errors-example
+version:             0.0.0.0
+synopsis:            Project to showcase different error messages
+description:         Please see README.md
+homepage:            https://github.com/roman/Haskell-etc
+license:             MIT
+license-file:        LICENSE
+author:              "Roman Gonzalez"
+maintainer:          "open-source@roman-gonzalez.info"
+copyright:           "2016-2018 Roman Gonzalez"
+
+
+executables:
+  etc-spec-error1:
+    source-dirs: src
+    main:             Main.hs
+    ghc-options:      "-threaded -rtsopts -with-rtsopts=-N -Wall"
+    dependencies:
+    - base
+    - rio
+    - etc-spec
+    - file-embed

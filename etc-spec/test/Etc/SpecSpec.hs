@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
-module Etc.SpecSpec where
+module Etc.SpecSpec (spec) where
 
 import RIO
 
@@ -11,12 +11,22 @@ import qualified Data.Aeson.BetterErrors as JSON
 import           Data.Aeson.QQ
 
 import Test.Hspec
+import Test.Hspec.QuickCheck
 
+import Etc.Generators ()
+import Etc.Spec.Internal.Types (blankConfigValueJSON)
 import qualified Etc.Spec as SUT
 
 spec :: Spec
 spec =
   describe "Etc.Spec.configSpecParser" $ do
+    prop "handles encoding/parsing roundtrip" $ \configSpec -> do
+      let jsonVal = JSON.toJSON configSpec
+      case SUT.parseConfigSpecValue jsonVal of
+        Left err -> error (show err)
+        Right configSpec' ->
+            configSpec == blankConfigValueJSON configSpec'
+
     it "reports error on unknown type" $ do
       let specJSON =
             [aesonQQ|
@@ -30,7 +40,7 @@ spec =
                   }
                 }
                 |]
-      case SUT.parseConfigSpecJson specJSON of
+      case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
             Just (SUT.SpecParserError specErr) ->
@@ -53,7 +63,7 @@ spec =
                   "etc/entries": ["hello", "world"]
                 }
                 |]
-      case SUT.parseConfigSpecJson specJSON of
+      case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
             Just (SUT.SpecParserError specErr) ->
@@ -83,7 +93,7 @@ spec =
                   }
                 }
                 |]
-      case SUT.parseConfigSpecJson specJSON of
+      case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
             Just (SUT.SpecParserError specErr) ->
@@ -115,7 +125,7 @@ spec =
                   }
                 }
                 |]
-      case SUT.parseConfigSpecJson specJSON of
+      case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
             Just (SUT.SpecParserError specErr) ->

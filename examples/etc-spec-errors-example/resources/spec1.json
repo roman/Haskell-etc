@@ -1,0 +1,10 @@
+{"etc/entries": {
+    "database":{
+        "db": {
+            "etc/spec": {
+                "type": "string",
+                "default": 123
+            }
+        }
+    }
+}}
