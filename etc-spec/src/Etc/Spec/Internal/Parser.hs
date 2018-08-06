@@ -30,6 +30,15 @@ matchesConfigValueType cvType json = case (json, cvType) of
     if null arr then True else all (matchesConfigValueType (CVTSingle inner)) arr
   _ -> False
 
+assertFieldTypeMatchesE ::
+  [Text]
+  -> ConfigValueType
+  -> JSON.Value
+  -> Either SpecParserError ()
+assertFieldTypeMatchesE fieldKeypath cvType json
+  | matchesConfigValueType cvType json = Right ()
+  | otherwise = Left (ConfigValueTypeMismatchFound fieldKeypath cvType json)
+
 assertFieldTypeMatches ::
      Monad m
   => [Text]
@@ -38,7 +47,7 @@ assertFieldTypeMatches ::
   -> JSON.ParseT SpecParserError m ()
 assertFieldTypeMatches fieldKeypath cvType json
   | matchesConfigValueType cvType json = return ()
-  | otherwise = JSON.throwCustomError (ConfigValueDefaultTypeMismatchFound fieldKeypath cvType json)
+  | otherwise = JSON.throwCustomError (ConfigValueTypeMismatchFound fieldKeypath cvType json)
 
 inferConfigValueTypeFromJSON ::
      Monad m => [Text] -> JSON.Value -> JSON.ParseT SpecParserError m ConfigValueType
@@ -156,14 +165,14 @@ parseConfigSpec :: (Monad m, MonadThrow m) => ByteString -> m ConfigSpec
 parseConfigSpec bytes = do
   result <- JSON.parseStrictM configSpecParser bytes
   case result of
-    Left err   -> throwM (SpecParserError err)
+    Left err   -> throwM (SpecError err)
     Right spec -> return spec
 
 parseConfigSpecValue :: (Monad m, MonadThrow m) => JSON.Value -> m ConfigSpec
 parseConfigSpecValue json = do
   result <- JSON.parseValueM configSpecParser json
   case result of
-    Left err   -> throwM (SpecParserError err)
+    Left err   -> throwM (SpecError err)
     Right spec -> return spec
 
 readConfigSpec :: (MonadIO m, MonadThrow m) => FilePath -> m ConfigSpec

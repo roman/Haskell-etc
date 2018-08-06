@@ -1,3 +1,4 @@
+:set prompt "> "
 :seti -XNoImplicitPrelude
 :seti -XOverloadedStrings
 :seti -XScopedTypeVariables

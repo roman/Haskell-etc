@@ -182,19 +182,36 @@ badSchemaError ks0 errSpecifics =
         InvalidSpecEntries configVal -> invalidSpecEntries configVal
         InferredNestedArrayOnDefault ks val ->
           inferredNestedArrayOnDefault ks val
-        ConfigValueDefaultTypeMismatchFound ks cvt val ->
+        ConfigValueTypeMismatchFound ks cvt val ->
           configValueDefaultTypeMismatchFound ks cvt val
     _ ->
       renderErrorFormat2
         ("Found error: JSON parser failed in " <> pathPieces ks0)
         (Pretty.pretty $ show errSpecifics)
 
-instance Show SpecError where
-  show (SpecParserError err) =
-    "\n\n" <>
-    (docToString 80 $
+instance Exception SpecParserError where
+  displayException err =
+    docToString 80 $
       case err of
-        JSON.InvalidJSON msg -> invalidJsonError msg
-        JSON.BadSchema ks errSpecifics -> badSchemaError ks errSpecifics)
+        CannotInferTypeFromDefault ks val -> cannotInferTypeFromDefault ks val
+        InvalidConfigValueType ks tyName -> invalidConfigValueType ks tyName
+        RedundantKeysOnValueSpec ks other -> redundantKeysOnValueSpec ks other
+        InvalidSpecEntries configVal -> invalidSpecEntries configVal
+        InferredNestedArrayOnDefault ks val ->
+          inferredNestedArrayOnDefault ks val
+        ConfigValueTypeMismatchFound ks cvt val ->
+          configValueDefaultTypeMismatchFound ks cvt val
 
-instance Exception SpecError
+instance Exception err => Exception (SpecError err) where
+  displayException (SpecError specErr) =
+    "\n\n" <>
+    (case specErr of
+       JSON.InvalidJSON msg -> docToString 80 $ invalidJsonError msg
+       JSON.BadSchema ks errSpecifics ->
+         case errSpecifics of
+           JSON.CustomError err -> displayException err
+           _ ->
+             docToString 80 $
+             renderErrorFormat2
+               ("Found error: JSON parser failed in " <> pathPieces ks)
+               (Pretty.pretty $ show errSpecifics))

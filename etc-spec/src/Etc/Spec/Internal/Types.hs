@@ -17,19 +17,18 @@ import Language.Haskell.TH.Syntax (Lift (..))
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON
 
-data SpecError
-  = SpecParserError !(JSON.ParseError SpecParserError)
+data SpecError err
+  = SpecError !(JSON.ParseError err)
+  deriving (Show)
 
 data SpecParserError
   = CannotInferTypeFromDefault ![Text] !JSON.Value
   | InferredNestedArrayOnDefault ![Text] !JSON.Value
   | InvalidConfigValueType ![Text] !Text
-  | ConfigValueDefaultTypeMismatchFound ![Text] !ConfigValueType !JSON.Value
+  | ConfigValueTypeMismatchFound ![Text] !ConfigValueType !JSON.Value
   | RedundantKeysOnValueSpec ![Text] ![Text]
   | InvalidSpecEntries !ConfigValue
   deriving (Show)
-
-instance Exception SpecParserError
 
 -- |
 data SingleConfigValueType
@@ -100,6 +99,12 @@ instance Lift ConfigSpec where
             , configSpecEntries =
                 Map.fromList $ map (first Text.pack) entriesList
             }|]
+
+getConfigSpecJSON :: ConfigSpec -> JSON.Object
+getConfigSpecJSON = configSpecJSON
+
+getConfigSpecEntries :: ConfigSpec -> ConfigValue
+getConfigSpecEntries = SubConfig . configSpecEntries
 
 blankConfigValueJSON :: ConfigSpec -> ConfigSpec
 blankConfigValueJSON spec@(ConfigSpec {configSpecEntries}) =

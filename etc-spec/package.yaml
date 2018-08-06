@@ -5,9 +5,10 @@ dependencies:
   - aeson
   - aeson-better-errors
   - base
+  - directory
+  - prettyprinter
   - rio
   - template-haskell
-  - prettyprinter
 
 library:
   source-dirs: src

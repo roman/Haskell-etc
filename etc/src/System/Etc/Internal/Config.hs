@@ -1,6 +1,5 @@
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE NamedFieldPuns    #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 module System.Etc.Internal.Config where
 

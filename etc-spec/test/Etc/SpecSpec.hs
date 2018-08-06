@@ -98,7 +98,7 @@ spec =
           case fromException err of
             Just (SUT.SpecParserError specErr) ->
               case specErr of
-                JSON.BadSchema _ (JSON.CustomError (SUT.ConfigValueDefaultTypeMismatchFound keyPath cvType json))  -> do
+                JSON.BadSchema _ (JSON.CustomError (SUT.ConfigValueTypeMismatchFound keyPath cvType json))  -> do
                   keyPath `shouldBe` ["greeting"]
                   cvType `shouldBe` (SUT.CVTSingle SUT.CVTNumber)
                   json `shouldBe` (JSON.String "one")
