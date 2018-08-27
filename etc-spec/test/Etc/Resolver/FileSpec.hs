@@ -30,21 +30,21 @@ configSpecFilesPathsEntryIsEmpty (Spec.SpecError (JSON.BadSchema [JSON.ObjectKey
 configSpecFilesPathsEntryIsEmpty _ = False
 
 unsupportedFileExtensionGiven :: Text -> Selector SUT.FileResolverError
-unsupportedFileExtensionGiven filename (SUT.UnsupportedFileExtensionGiven otherFilename) = filename == otherFilename
+unsupportedFileExtensionGiven filename (SUT.UnsupportedFileExtensionGiven otherFilename _) = filename == otherFilename
 unsupportedFileExtensionGiven _ _ = False
 
 unknownConfigKeyFound :: [Text] -> Text -> [Text] -> Selector SUT.FileResolverError
-unknownConfigKeyFound keyPath k ks (SUT.UnknownConfigKeyFound keyPath' looking others) =
+unknownConfigKeyFound keyPath k ks (SUT.UnknownConfigKeyFound _ keyPath' looking others) =
   keyPath == keyPath' && k == looking && ks == others
 unknownConfigKeyFound _ _ _ _ = False
 
 configurationFileNotPresent :: Text -> Selector SUT.FileResolverError
-configurationFileNotPresent filepath (SUT.ConfigurationFileNotPresent path) = filepath == path
+configurationFileNotPresent filepath (SUT.ConfigFileNotPresent path) = filepath == path
 configurationFileNotPresent _ _ = False
 
-configValueTypeMismatchFound :: [Text] -> Selector Spec.SpecParserError
-configValueTypeMismatchFound keyPath (Spec.ConfigValueTypeMismatchFound ks _ _) = ks == keyPath
-configValueTypeMismatchFound _ _ = False
+configFileValueTypeMismatch :: [Text] -> Selector SUT.FileResolverError
+configFileValueTypeMismatch keyPath (SUT.ConfigFileValueTypeMismatch _ ks _ _) = ks == keyPath
+configFileValueTypeMismatch _ _ = False
 
 spec :: Spec
 spec = do
@@ -99,7 +99,7 @@ spec = do
         |]
       configSpec <- Spec.parseConfigSpecValue configSpecValue
       Resolver.resolveConfig configSpec [SUT.fileResolver]
-        `shouldThrow` configValueTypeMismatchFound ["greeting"]
+        `shouldThrow` configFileValueTypeMismatch ["greeting"]
 
       -- config <- Resolver.resolveConfig configSpec [SUT.fileResolver]
       -- expectationFailure "nope"

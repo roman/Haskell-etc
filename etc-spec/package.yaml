@@ -6,6 +6,7 @@ dependencies:
   - aeson-better-errors
   - base
   - directory
+  - filepath
   - prettyprinter
   - rio
   - template-haskell
@@ -17,6 +18,12 @@ library:
   - Etc.Spec.Internal.Parser
   - Etc.Spec.Internal.Serializer
   - Etc.Spec.Internal.Types
+  - Etc.Config
+  - Etc.Resolver
+  - Etc.Resolver.File
+  - Etc.Resolver.Internal.Types
+  - Etc.Resolver.Internal.File.Types
+  - Etc.Resolver.Internal.File.Error
 
 tests:
   etc-spec-tests:

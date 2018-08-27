@@ -20,7 +20,7 @@ module Etc.Spec
   )
   where
 
-import Etc.Spec.Internal.ErrorRender ()
+import Etc.Spec.Internal.Error ()
 import Etc.Spec.Internal.Serializer ()
 import qualified Etc.Spec.Internal.Parser as Parser
 import qualified Etc.Spec.Internal.Types as Types

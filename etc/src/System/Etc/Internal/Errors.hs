@@ -54,14 +54,14 @@ instance Exception SubConfigEntryExpected
 
 -- | This error is thrown when a type mismatch is found in a raw value when
 -- calling 'resolveFile'
-data ConfigValueTypeMismatchFound = ConfigValueTypeMismatchFound {
+data DefaultValueTypeMismatchFound = DefaultValueTypeMismatchFound {
       keyName              :: !Text -- ^ Key Name
     , configValueEntry     :: !JSON.Value -- ^ Config Value
     , configValueEntryType :: !ConfigValueType -- ^ Config Value Type
     }
   deriving (Generic, Show, Read, Eq)
 
-instance Exception ConfigValueTypeMismatchFound
+instance Exception DefaultValueTypeMismatchFound
 
 -- | Thrown when a specified configuration file is not found in the system
 newtype ConfigurationFileNotFound =

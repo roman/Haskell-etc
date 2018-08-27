@@ -25,7 +25,7 @@ module System.Etc (
   , ConfigValueParserFailed (..)
   , UnknownConfigKeyFound (..)
   , SubConfigEntryExpected (..)
-  , ConfigValueTypeMismatchFound (..)
+  , DefaultValueTypeMismatchFound (..)
   , ConfigurationFileNotFound (..)
   , UnsupportedFileExtensionGiven (..)
   , ConfigInvalidSyntaxFound (..)
@@ -76,7 +76,7 @@ import System.Etc.Spec
     ( ConfigInvalidSyntaxFound (..)
     , ConfigSpec
     , ConfigValueParserFailed (..)
-    , ConfigValueTypeMismatchFound (..)
+    , DefaultValueTypeMismatchFound (..)
     , ConfigurationFileNotFound (..)
     , InvalidConfigKeyPath (..)
     , SpecInvalidSyntaxFound (..)

@@ -17,15 +17,15 @@ import Language.Haskell.TH.Syntax (Lift (..))
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON
 
-data SpecError err
-  = SpecError !(JSON.ParseError err)
+newtype SpecError err
+  = SpecError (JSON.ParseError err)
   deriving (Show)
 
 data SpecParserError
   = CannotInferTypeFromDefault ![Text] !JSON.Value
   | InferredNestedArrayOnDefault ![Text] !JSON.Value
-  | InvalidConfigValueType ![Text] !Text
-  | ConfigValueTypeMismatchFound ![Text] !ConfigValueType !JSON.Value
+  | UnknownConfigValueType ![Text] !Text
+  | DefaultValueTypeMismatchFound ![Text] !ConfigValueType !JSON.Value
   | RedundantKeysOnValueSpec ![Text] ![Text]
   | InvalidSpecEntries !ConfigValue
   deriving (Show)

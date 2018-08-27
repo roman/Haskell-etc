@@ -197,7 +197,7 @@ matchesConfigValueType json cvType = case (json, cvType) of
 assertMatchingConfigValueType :: JSON.Value -> ConfigValueType -> Either SomeException ()
 assertMatchingConfigValueType json cvType
   | matchesConfigValueType json cvType = Right ()
-  | otherwise = Left $ toException $ ConfigValueTypeMismatchFound "" json cvType
+  | otherwise = Left $ toException $ DefaultValueTypeMismatchFound "" json cvType
 
 getConfigValueType
   :: Maybe JSON.Value -> Maybe ConfigValueType -> JSON.Parser ConfigValueType

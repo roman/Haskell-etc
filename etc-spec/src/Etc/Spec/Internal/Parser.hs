@@ -14,7 +14,7 @@ import qualified Data.Aeson.BetterErrors as JSON
 
 import Language.Haskell.TH        (ExpQ, runIO)
 
-import Etc.Spec.Internal.ErrorRender ()
+import Etc.Spec.Internal.Error ()
 import Etc.Spec.Internal.Types
 
 --------------------------------------------------------------------------------
@@ -31,23 +31,23 @@ matchesConfigValueType cvType json = case (json, cvType) of
   _ -> False
 
 assertFieldTypeMatchesE ::
-  [Text]
+  (ConfigValueType -> JSON.Value -> e)
   -> ConfigValueType
   -> JSON.Value
-  -> Either SpecParserError ()
-assertFieldTypeMatchesE fieldKeypath cvType json
+  -> Either e ()
+assertFieldTypeMatchesE errCtor cvType json
   | matchesConfigValueType cvType json = Right ()
-  | otherwise = Left (ConfigValueTypeMismatchFound fieldKeypath cvType json)
+  | otherwise = Left (errCtor cvType json)
 
 assertFieldTypeMatches ::
      Monad m
-  => [Text]
+  => (ConfigValueType -> JSON.Value -> e)
   -> ConfigValueType
   -> JSON.Value
-  -> JSON.ParseT SpecParserError m ()
-assertFieldTypeMatches fieldKeypath cvType json
+  -> JSON.ParseT e m ()
+assertFieldTypeMatches errCtor cvType json
   | matchesConfigValueType cvType json = return ()
-  | otherwise = JSON.throwCustomError (ConfigValueTypeMismatchFound fieldKeypath cvType json)
+  | otherwise = JSON.throwCustomError (errCtor cvType json)
 
 inferConfigValueTypeFromJSON ::
      Monad m => [Text] -> JSON.Value -> JSON.ParseT SpecParserError m ConfigValueType
@@ -81,7 +81,7 @@ parseConfigValueType1 fieldKeypath = do
       "[bool]"   -> Right $ CVTArray CVTBool
       "[object]" -> Right $ CVTArray CVTObject
       -- TODO: Implement tests
-      _          -> Left (InvalidConfigValueType fieldKeypath typeText)
+      _          -> Left (UnknownConfigValueType fieldKeypath typeText)
 
 parseConfigValueType ::
      Monad m
@@ -98,7 +98,7 @@ parseConfigValueType fieldKeypath mdefaultValue =
         Nothing ->
           inferConfigValueTypeFromJSON fieldKeypath defaultValue
         Just fieldType -> do
-          assertFieldTypeMatches fieldKeypath fieldType defaultValue
+          assertFieldTypeMatches (DefaultValueTypeMismatchFound fieldKeypath) fieldType defaultValue
           return fieldType
 
 parseConfigValueData ::

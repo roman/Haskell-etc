@@ -62,7 +62,7 @@ tests = testGroup
     assertBool "Expecting warnings in the resolveFiles call" (Vector.length warnings > 0)
     let err = Vector.head warnings
     case fromException err of
-      Just (ConfigValueTypeMismatchFound keyName _ _) ->
+      Just (DefaultValueTypeMismatchFound keyName _ _) ->
         -- TODO: This should return "greeting" instead
         assertEqual "Expecting config value type mismatch error" "" keyName
 
