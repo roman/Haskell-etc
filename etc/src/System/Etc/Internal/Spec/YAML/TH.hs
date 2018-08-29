@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell   #-}
 module System.Etc.Internal.Spec.YAML.TH where
 
-import RIO
+import           RIO
 import qualified RIO.Text as Text
 
 import Data.Proxy (Proxy)
