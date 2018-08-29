@@ -1,4 +1,4 @@
-0.4.1.0 (Release Candidate)
+0.4.1.0
 ----
 
 * Add `parseConfigSpecTH` functionality, now we can parse the `ConfigSpec`
