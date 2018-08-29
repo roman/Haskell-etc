@@ -34,6 +34,24 @@ jobs:
             - /root/.cabal
             - .stack-work
 
+  lts-12:
+    docker:
+      - image: romanandreg/stack:latest
+    environment:
+      - STACK_ARGS: '--resolver lts-12'
+      - CABAL_DIR: '/root/.local/bin'
+    steps:
+      - checkout
+      - restore_cache:
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-lts11
+      - run: "make -f make/solver.make fix-solver && make test"
+      - save_cache:
+          key: build-cache-{{ checksum "etc/etc.cabal" }}-lts11
+          paths:
+            - /root/.stack
+            - /root/.ghc
+            - .stack-work
+
   lts-11:
     docker:
       - image: romanandreg/stack:latest
@@ -70,24 +88,6 @@ jobs:
             - /root/.ghc
             - .stack-work
 
-  lts-7:
-    docker:
-      - image: romanandreg/stack:latest
-    environment:
-      - STACK_ARGS: '--resolver lts-7'
-      - CABAL_DIR: '/root/.local/bin'
-    steps:
-      - checkout
-      - restore_cache:
-          key: build-cache-{{ checksum "etc/etc.cabal" }}-lts7
-      - run: "make -f make/solver.make fix-solver && make test"
-      - save_cache:
-          key: build-cache-{{ checksum "etc/etc.cabal" }}-lts7
-          paths:
-            - /root/.stack
-            - /root/.ghc
-            - .stack-work
-
   nightly:
     docker:
       - image: romanandreg/stack:latest
@@ -98,7 +98,9 @@ jobs:
       - checkout
       - restore_cache:
           key: build-cache-{{ checksum "etc/etc.cabal" }}-nightly
-      - run: "make -f make/solver.make fix-solver && make test"
+      # allow failure, as sometimes the nightly solver is "too new" and the
+      # command doesn't work
+      - run: "( make -f make/solver.make fix-solver && make test ) || true"
       - save_cache:
           key: build-cache-{{ checksum "etc/etc.cabal" }}-nightly
           paths:
@@ -111,9 +113,9 @@ workflows:
   main:
     jobs:
       - sdist
+      - lts-12
       - lts-11
       - lts-9
-      - lts-7
       - nightly
       - lint
       - format
