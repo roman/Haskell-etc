@@ -1,3 +1,9 @@
+0.4.1.1
+----
+
+* Enhance the `parseConfigSpecTH` function to signal a re-compilation of the
+  project when the spec file changes
+
 0.4.1.0
 ----
 
