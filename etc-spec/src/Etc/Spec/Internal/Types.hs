@@ -16,9 +16,11 @@ import Language.Haskell.TH.Syntax (Lift (..))
 
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON
+import qualified Data.Yaml               as Yaml
 
-newtype SpecError err
-  = SpecError (JSON.ParseError err)
+data SpecError err
+  = SpecJsonError (JSON.ParseError err)
+  | SpecYamlError Yaml.ParseException
   deriving (Show)
 
 data SpecParserError

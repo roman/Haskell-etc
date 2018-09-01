@@ -1,6 +1,9 @@
 module Etc.Resolver
-  ( Types.resolveConfig
+  ( Types.ResolverError (..)
+  , Types.resolveConfig
   , File.fileResolver
+  , File.jsonFileResolver
+  , File.yamlFileResolver
   ) where
 
 import qualified Etc.Resolver.Internal.Types as Types

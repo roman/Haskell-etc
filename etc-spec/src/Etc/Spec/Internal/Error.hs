@@ -10,6 +10,7 @@ import qualified RIO.Text         as Text
 
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON
+import qualified Data.Yaml               as Yaml
 
 import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Util (reflow)
@@ -201,8 +202,16 @@ instance Exception SpecParserError where
         DefaultValueTypeMismatchFound ks cvt val ->
           renderDefaultValueTypeMismatchFound ks cvt val
 
-instance Exception err => Exception (SpecError err) where
-  displayException (SpecError specErr) =
+instance Exception ex => Exception (SpecError ex)  where
+  displayException (SpecYamlError specErr) =
+    "\n\n" <>
+    (renderErrorDoc $
+      foundError2 (vsep ["The yaml parser failed"
+                        , mempty
+                        , indent 2 $ "The yaml library reported the following error:"
+                        , indent 4 $ pretty $ Yaml.prettyPrintParseException specErr])
+                  [])
+  displayException (SpecJsonError specErr) =
     "\n\n" <>
     (case specErr of
        JSON.InvalidJSON msg -> renderErrorDoc $ renderInvalidJsonError msg

@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -28,10 +29,10 @@ newtype Resolver m
     }
 
 newtype ResolverError err
-  = ResolverError (JSON.ParseError err)
+  = ResolverError err
   deriving (Show)
 
-instance Exception err => Exception (ResolverError err) where
+instance Exception err => Exception (ResolverError (JSON.ParseError err)) where
   displayException (ResolverError resolverErr) =
     "\n\n" <>
     (case resolverErr of

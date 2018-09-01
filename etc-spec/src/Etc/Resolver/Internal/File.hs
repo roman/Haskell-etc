@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -13,6 +14,7 @@ import qualified RIO.Text as Text
 
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON
+import qualified Data.Yaml               as Yaml
 
 import System.Environment (lookupEnv)
 import System.Directory (doesFileExist)
@@ -51,15 +53,16 @@ parseConfigSpec = do
 
 parseConfig
   :: (MonadThrow m)
-  => Int
+  => FileParser e
+  -> Int
   -> Spec.ConfigValue
   -> Int
   -> FileValueOrigin
   -> ByteString
   -> m Config
-parseConfig priorityIndex spec fileIndex fileOrigin bytes = do
-  case JSON.parseStrict JSON.asValue bytes of
-    Left _err ->
+parseConfig FileParser {fileBytesToJsonValue} priorityIndex spec fileIndex fileOrigin bytes = do
+  case fileBytesToJsonValue bytes of
+    Left _err  ->
       throwM $ ConfigInvalidSyntaxFound fileOrigin
     Right jsonValue ->
       Config <$> parseConfigValue [] priorityIndex spec fileIndex fileOrigin jsonValue
@@ -77,8 +80,8 @@ parseConfigValue
   -> FileValueOrigin
   -> JSON.Value
   -> m ConfigValue
-parseConfigValue keyPath priorityIndex spec fileIndex fileOrigin json =
-  case (spec, json) of
+parseConfigValue keyPath priorityIndex spec fileIndex fileOrigin jsonVal =
+  case (spec, jsonVal) of
     (Spec.SubConfig currentSpec, JSON.Object object) -> SubConfig <$> foldM
       (\acc (key, subConfigValue) -> case Map.lookup key currentSpec of
         Nothing ->
@@ -95,20 +98,20 @@ parseConfigValue keyPath priorityIndex spec fileIndex fileOrigin json =
       Map.empty
       (HashMap.toList object)
 
-    (Spec.SubConfig{}, _) -> throwM $ SubConfigEntryExpected fileOrigin keyPath json
+    (Spec.SubConfig{}, _) -> throwM $ SubConfigEntryExpected fileOrigin keyPath jsonVal
 
     (Spec.ConfigValue Spec.ConfigValueData { Spec.configValueSensitive, Spec.configValueType }, _)
       -> do
         either throwM return
-          $ Spec.assertFieldTypeMatchesE (ConfigFileValueTypeMismatch fileOrigin keyPath) configValueType json
+          $ Spec.assertFieldTypeMatchesE (ConfigFileValueTypeMismatch fileOrigin keyPath) configValueType jsonVal
         return $ ConfigValue
           (Set.singleton $ toSomeConfigSource priorityIndex fileIndex fileOrigin $ markAsSensitive
             configValueSensitive
-            json
+            jsonVal
           )
 
-readConfigFile :: (MonadIO m, MonadThrow n) => Text -> m (n ByteString)
-readConfigFile filepath =
+readConfigFile :: (MonadIO m) => FileParser e -> Text -> m (Either FileResolverError ByteString)
+readConfigFile FileParser {fileExtension} filepath =
   let filepathStr = Text.unpack filepath
   in
     do
@@ -116,31 +119,33 @@ readConfigFile filepath =
       if fileExists
         then do
           contents <- readFileBinary filepathStr
-          if ".json" `Text.isSuffixOf` filepath
+          if ("." <> fileExtension) `Text.isSuffixOf` filepath
           then
-            return $ return contents
+            return $ Right contents
           else
-            return (throwM $ UnsupportedFileExtensionGiven filepath ".json")
+            return (Left $ UnsupportedFileExtensionGiven filepath fileExtension)
         else
-          return (throwM $ ConfigFileNotPresent filepath)
+          return (Left $ ConfigFileNotPresent filepath)
 
 readConfigFromFileSources ::
      (MonadThrow m, MonadIO m)
-  => Bool
+  => FileParser e
+  -> Bool
   -> Int
   -> Spec.ConfigSpec
   -> [FileValueOrigin]
   -> m (Config, [SomeException])
-readConfigFromFileSources throwErrors priorityIndex spec fileSources =
+readConfigFromFileSources fileParser throwErrors priorityIndex spec fileSources =
   fileSources
     & zip [1 ..]
     & mapM
         (\(fileIndex, fileOrigin) -> do
-          mContents <- readConfigFile (fileSourcePath fileOrigin)
+          mContents <- readConfigFile fileParser (fileSourcePath fileOrigin)
           let
             result =
-              (   mContents
-              >>= parseConfig priorityIndex
+              (  either throwM return mContents
+              >>= parseConfig fileParser
+                              priorityIndex
                               (Spec.getConfigSpecEntries spec)
                               fileIndex
                               fileOrigin
@@ -152,6 +157,7 @@ readConfigFromFileSources throwErrors priorityIndex spec fileSources =
                 -- this code with a helper that receives the exceptions (similar to catches)
                 case fromException err of
                   Just (UnknownConfigKeyFound {}) -> throwM err
+                  Just (ConfigFileValueTypeMismatch {}) -> throwM err
                   _ -> return $ Left err
             _ -> return result
         )
@@ -168,11 +174,12 @@ readConfigFromFileSources throwErrors priorityIndex spec fileSources =
 
 resolveFilesInternal ::
      (MonadThrow m, MonadIO m)
-  => Bool
+  => FileParser e
+  -> Bool
   -> Int
   -> Spec.ConfigSpec
   -> m (Config, [SomeException])
-resolveFilesInternal throwErrors priorityIndex spec = do
+resolveFilesInternal fileParser throwErrors priorityIndex spec = do
   result <-
     JSON.parseValueM parseConfigSpec (JSON.Object $ Spec.getConfigSpecJSON spec)
   case result of
@@ -188,15 +195,36 @@ resolveFilesInternal throwErrors priorityIndex spec = do
                         (EnvFileOrigin filePath . Text.pack <$> envFilePath)
                 return $ map ConfigFileOrigin paths0 ++ envPath
       paths <- getPaths
-      readConfigFromFileSources throwErrors priorityIndex spec paths
+      readConfigFromFileSources fileParser throwErrors priorityIndex spec paths
+
+jsonFileParser :: FileParser (JSON.ParseError FileResolverError)
+jsonFileParser =
+  FileParser {
+      fileExtension = "json"
+    , fileBytesToJsonValue = JSON.parseStrict JSON.asValue
+    }
+
+yamlFileParser :: FileParser Yaml.ParseException
+yamlFileParser =
+  FileParser {
+      fileExtension = "yaml"
+    , fileBytesToJsonValue = Yaml.decodeEither'
+    }
 
 getFileWarnings ::
-     (MonadThrow m, MonadIO m) => Spec.ConfigSpec -> m [SomeException]
-getFileWarnings spec = snd `fmap` resolveFilesInternal False 0 spec
+     (MonadThrow m, MonadIO m) => FileParser e -> Spec.ConfigSpec -> m [SomeException]
+getFileWarnings fileParser spec =
+  snd `fmap` resolveFilesInternal fileParser  False 0 spec
 
-resolveFiles :: (MonadThrow m, MonadIO m) => Int -> Spec.ConfigSpec -> m Config
-resolveFiles priorityIndex spec =
-  fst `fmap` resolveFilesInternal True priorityIndex spec
+resolveFiles :: (MonadThrow m, MonadIO m) => FileParser e -> Int -> Spec.ConfigSpec -> m Config
+resolveFiles fileParser priorityIndex spec =
+  fst `fmap` resolveFilesInternal fileParser True priorityIndex spec
 
-fileResolver :: (MonadThrow m, MonadIO m) => Resolver m
-fileResolver = Resolver resolveFiles
+fileResolver :: (MonadThrow m, MonadIO m) => FileParser e -> Resolver m
+fileResolver fileParser = Resolver (resolveFiles fileParser)
+
+yamlFileResolver :: (MonadThrow m, MonadIO m) => Resolver m
+yamlFileResolver = fileResolver yamlFileParser
+
+jsonFileResolver :: (MonadThrow m, MonadIO m) => Resolver m
+jsonFileResolver = fileResolver jsonFileParser

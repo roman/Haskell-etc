@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -14,6 +15,8 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
 
 import           Etc.Config
 import qualified Etc.Spec                    as Spec
+
+type FileExtension = Text
 
 data FileResolverError
   -- | The 'etc/files' entry is not present in the config spec top-level
@@ -35,6 +38,13 @@ data FileResolverError
   deriving (Show)
 
 --------------------------------------------------------------------------------
+
+data FileParser e
+  = FileParser
+  {
+    fileExtension :: !FileExtension
+  , fileBytesToJsonValue :: !(ByteString -> Either e JSON.Value)
+  }
 
 data FileValueOrigin
   = ConfigFileOrigin { fileSourcePath :: !Text }

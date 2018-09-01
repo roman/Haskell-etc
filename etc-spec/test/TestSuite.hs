@@ -6,7 +6,10 @@ module Main where
 import RIO
 import Test.Hspec
 
-import Etc.SpecSpec (spec)
+import qualified Etc.Resolver.FileSpec
+import qualified Etc.SpecSpec
 
 main :: IO ()
-main = hspec spec
+main = hspec $ do
+  Etc.SpecSpec.spec
+  Etc.Resolver.FileSpec.spec

@@ -11,8 +11,10 @@ import qualified RIO.Vector.Partial as Vector (head)
 
 import qualified Data.Aeson              as JSON hiding (withText)
 import qualified Data.Aeson.BetterErrors as JSON
+import qualified Data.Yaml as Yaml
 
 import Language.Haskell.TH        (ExpQ, runIO)
+import Language.Haskell.TH.Syntax (addDependentFile)
 
 import Etc.Spec.Internal.Error ()
 import Etc.Spec.Internal.Types
@@ -163,16 +165,17 @@ configSpecParser = do
 
 parseConfigSpec :: (Monad m, MonadThrow m) => ByteString -> m ConfigSpec
 parseConfigSpec bytes = do
-  result <- JSON.parseStrictM configSpecParser bytes
+  let result = Yaml.decodeEither' bytes
   case result of
-    Left err   -> throwM (SpecError err)
-    Right spec -> return spec
+    Left err -> throwM (SpecYamlError err :: SpecError SpecParserError)
+    Right jsonVal ->
+      parseConfigSpecValue jsonVal
 
 parseConfigSpecValue :: (Monad m, MonadThrow m) => JSON.Value -> m ConfigSpec
 parseConfigSpecValue json = do
   result <- JSON.parseValueM configSpecParser json
   case result of
-    Left err   -> throwM (SpecError err)
+    Left err   -> throwM (SpecJsonError err)
     Right spec -> return spec
 
 readConfigSpec :: (MonadIO m, MonadThrow m) => FilePath -> m ConfigSpec
@@ -182,5 +185,6 @@ readConfigSpec filepath = do
 
 readConfigSpecTH :: FilePath -> ExpQ
 readConfigSpecTH filepath = do
+  addDependentFile filepath
   configSpec <- runIO $ readConfigSpec filepath
   [| configSpec |]

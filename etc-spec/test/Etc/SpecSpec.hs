@@ -8,7 +8,7 @@ import RIO
 
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON
-import           Data.Aeson.QQ
+import           Data.Yaml.TH (yamlQQ)
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -29,21 +29,16 @@ spec =
 
     it "reports error on unknown type" $ do
       let specJSON =
-            [aesonQQ|
-                {
-                  "etc/entries": {
-                    "greeting": {
-                      "etc/spec": {
-                        "type": "foobar"
-                      }
-                    }
-                  }
-                }
+            [yamlQQ|
+                etc/entries:
+                    greeting:
+                      etc/spec:
+                        type: foobar
                 |]
       case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
-            Just (SUT.SpecParserError specErr) ->
+            Just (SUT.SpecJsonError specErr) ->
               case specErr of
                 JSON.BadSchema _ (JSON.CustomError (SUT.UnknownConfigValueType keyPath typeName))  -> do
                   typeName `shouldBe` "foobar"
@@ -58,15 +53,15 @@ spec =
 
     it "reports error when 'etc/entries' is not an object" $ do
       let specJSON =
-            [aesonQQ|
-                {
-                  "etc/entries": ["hello", "world"]
-                }
+            [yamlQQ|
+                   etc/entries:
+                   - hello
+                   - world
                 |]
       case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
-            Just (SUT.SpecParserError specErr) ->
+            Just (SUT.SpecJsonError specErr) ->
               case specErr of
                 JSON.BadSchema _ (JSON.CustomError (SUT.InvalidSpecEntries _))  -> do
                   return ()
@@ -81,22 +76,17 @@ spec =
 
     it "reports error when default value and type don't match" $ do
       let specJSON =
-            [aesonQQ|
-                {
-                  "etc/entries": {
-                    "greeting": {
-                      "etc/spec": {
-                        "default": "one"
-                      , "type": "number"
-                      }
-                    }
-                  }
-                }
+            [yamlQQ|
+                   etc/entries:
+                     greeting:
+                       etc/spec:
+                         default: "one"
+                         type: "number"
                 |]
       case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
-            Just (SUT.SpecParserError specErr) ->
+            Just (SUT.SpecJsonError specErr) ->
               case specErr of
                 JSON.BadSchema _ (JSON.CustomError (SUT.DefaultValueTypeMismatchFound keyPath cvType json))  -> do
                   keyPath `shouldBe` ["greeting"]
@@ -112,23 +102,18 @@ spec =
     it
       "reports error when 'etc/spec' is not the only key in the field metadata object" $ do
       let specJSON =
-            [aesonQQ|
-                {
-                  "etc/entries": {
-                    "greeting": {
-                      "etc/spec": {
-                        "default": "one"
-                      , "type": "string"
-                      }
-                    , "other": "field"
-                    }
-                  }
-                }
+            [yamlQQ|
+                   etc/entries:
+                     greeting:
+                       etc/spec:
+                         default: one
+                         type: string
+                       other: field
                 |]
       case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
-            Just (SUT.SpecParserError specErr) ->
+            Just (SUT.SpecJsonError specErr) ->
               case specErr of
                 JSON.BadSchema _ (JSON.CustomError (SUT.RedundantKeysOnValueSpec keyPath redundantKeys)) -> do
                   keyPath `shouldBe` ["greeting"]
