@@ -1,10 +1,12 @@
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 module Etc.Resolver.FileSpec where
 
 import RIO
+import qualified RIO.Text as Text
 
 import Test.Hspec
 
@@ -13,11 +15,20 @@ import Data.Aeson.QQ (aesonQQ)
 import qualified Data.Aeson.BetterErrors as JSON
 
 import System.Environment (setEnv, unsetEnv)
+import System.FilePath ((</>))
 
-import qualified Etc.Config as Config
-import qualified Etc.Spec as Spec
-import qualified Etc.Resolver as Resolver
+import qualified Etc.Config        as Config
+import qualified Etc.Resolver      as Resolver
 import qualified Etc.Resolver.File as SUT
+import qualified Etc.Spec          as Spec
+
+testFixturePath :: FilePath -> FilePath
+testFixturePath path =
+#ifdef GHCI
+  "etc-spec/test/fixtures" </> path
+#else
+  "test/fixtures" </> path
+#endif
 
 configSpecFilesEntryMissing :: Selector (Resolver.ResolverError (JSON.ParseError SUT.FileResolverError))
 configSpecFilesEntryMissing (Resolver.ResolverError (JSON.BadSchema [] (JSON.CustomError (SUT.ConfigSpecFilesEntryMissing _)))) = True
@@ -29,8 +40,9 @@ configSpecFilesPathsEntryIsEmpty (Resolver.ResolverError (JSON.BadSchema [JSON.O
   True
 configSpecFilesPathsEntryIsEmpty _ = False
 
-unsupportedFileExtensionGiven :: Text -> Selector SUT.FileResolverError
-unsupportedFileExtensionGiven filename (SUT.UnsupportedFileExtensionGiven otherFilename _) = filename == otherFilename
+unsupportedFileExtensionGiven :: FilePath -> Selector SUT.FileResolverError
+unsupportedFileExtensionGiven filename (SUT.UnsupportedFileExtensionGiven otherFilename _) =
+  Text.pack filename == otherFilename
 unsupportedFileExtensionGiven _ _ = False
 
 unknownConfigKeyFound :: [Text] -> Text -> [Text] -> Selector SUT.FileResolverError
@@ -38,16 +50,54 @@ unknownConfigKeyFound keyPath k ks (SUT.UnknownConfigKeyFound _ keyPath' looking
   keyPath == keyPath' && k == looking && ks == others
 unknownConfigKeyFound _ _ _ _ = False
 
-configurationFileNotPresent :: Text -> Selector SUT.FileResolverError
-configurationFileNotPresent filepath (SUT.ConfigFileNotPresent path) = filepath == path
-configurationFileNotPresent _ _ = False
+configurationFileNotPresent :: FilePath -> Selector SUT.FileResolverError
+configurationFileNotPresent filepath (SUT.ConfigFileNotPresent path) =
+  Text.pack filepath == path
+configurationFileNotPresent _ _                                      = False
 
 configFileValueTypeMismatch :: [Text] -> Selector SUT.FileResolverError
-configFileValueTypeMismatch keyPath (SUT.ConfigFileValueTypeMismatch _ ks _ _) = ks == keyPath
+configFileValueTypeMismatch keyPath (SUT.ConfigFileValueTypeMismatch _ ks _ _) =
+  ks == keyPath
 configFileValueTypeMismatch _ _ = False
+
+config1Path :: FilePath
+config1Path = testFixturePath "config1.json"
+
+config2Path :: FilePath
+config2Path = testFixturePath "config2.json"
+
+configWrongTypePath :: FilePath
+configWrongTypePath = testFixturePath "config_wrong_type.json"
+
+configNonExistingPath :: FilePath
+configNonExistingPath = testFixturePath "non_existing.json"
 
 spec :: Spec
 spec = do
+  describe "FileFormat Semigroup instance" $ do
+    it "allows to compose different file format parsers" $ do
+      let
+        configSpecValue =
+          [aesonQQ|
+                 { "etc/files":
+                   {
+                     "paths": [
+                       #{testFixturePath "config1.json"},
+                       #{testFixturePath "config1.yaml"}
+                     ]
+                   },
+                   "etc/entries": {"greeting": {"etc/spec": {"default": "default greeting"}}}
+                 }
+       |]
+      configSpec <- Spec.parseConfigSpecValue configSpecValue
+      -- NOTE: therr error types for jsonFormat and yamlFormat are not the same, using
+      -- the Functor instance of FileFormat, we can compose them with a high level ADT
+      let fileFormat = fmap Left SUT.jsonFormat <> fmap Right SUT.yamlFormat
+      config <- Resolver.resolveConfig configSpec [SUT.fileResolver fileFormat]
+
+      databaseValue <- Config.getConfigValue ["greeting"] config
+      databaseValue `shouldBe` ("config1.yaml" :: Text)
+
   describe "jsonFileResolver" $ do
     it "throws exception when 'etc/files' entry is not present" $ do
       let
@@ -70,14 +120,14 @@ spec = do
     it "throws exception when file in 'etc/files.path' contains key not present in spec" $ do
       let
         configSpecValue = [aesonQQ|
-          { "etc/files":   {"paths": ["./test/fixtures/config1.json"]}
+          { "etc/files":   {"paths": [#{config1Path}]}
           , "etc/entries": {"database": {"etc/spec": {"default": "database"}}}
           }
        |]
       configSpec <- Spec.parseConfigSpecValue configSpecValue
 
       -- NOTE: When using getFileWarnings, it returns the error as a warning
-      warnings <- SUT.getFileWarnings SUT.jsonFileParser configSpec
+      warnings <- SUT.getFileWarnings SUT.jsonFormat configSpec
       case warnings of
         [warning] ->
           (throwIO warning) `shouldThrow` (unknownConfigKeyFound [] "greeting" ["database"])
@@ -92,7 +142,7 @@ spec = do
       let
         configSpecValue = [aesonQQ|
           { "etc/files":   {
-              "paths": [ "./test/fixtures/config_wrong_type.json" ]
+              "paths": [ #{configWrongTypePath} ]
             }
           , "etc/entries": {"greeting": {"etc/spec": {"default": "default greeting"}}}
           }
@@ -105,8 +155,8 @@ spec = do
     it "returns the value of the configuration file with most precedence in 'etc/files.path' (the last file)" $ do
       let
         configSpecValue = [aesonQQ|
-          { "etc/files":   {"paths": [ "./test/fixtures/config1.json"
-                                     , "./test/fixtures/config2.json" ]}
+          { "etc/files":   {"paths": [ #{config1Path}
+                                     , #{config2Path} ]}
           , "etc/entries": {"greeting": {"etc/spec": {"default": "default greeting"}}}
           }
        |]
@@ -121,14 +171,13 @@ spec = do
         configSpecValue = [aesonQQ|
           { "etc/files":   {
               "env": #{varName}
-            , "paths": [ "./test/fixtures/config1.json"
-                       , "./test/fixtures/config2.json" ]
+            , "paths": [ #{config1Path}, #{config2Path} ]
             }
           , "etc/entries": {"greeting": {"etc/spec": {"default": "default greeting"}}}
           }
        |]
       bracket
-        (setEnv varName "./test/fixtures/config_env.json")
+        (setEnv varName (testFixturePath "config_env.json"))
         (const $ unsetEnv varName)
         (\_ -> do
             configSpec <- Spec.parseConfigSpecValue configSpecValue
@@ -140,30 +189,31 @@ spec = do
   describe "getFileWarnings" $ do
     it "returns warning when file in 'etc/files.path' has no JSON extension" $ do
       let
+        yamlFilePath = testFixturePath "config1.yaml"
         configSpecValue = [aesonQQ|
-          { "etc/files":   {"paths": ["./test/fixtures/config1.yaml"]}
+          { "etc/files":   {"paths": [#{ yamlFilePath }]}
           , "etc/entries": {"database": {"etc/spec": {"default": "database"}}}
           }
        |]
       configSpec <- Spec.parseConfigSpecValue configSpecValue
-      warnings <- SUT.getFileWarnings SUT.jsonFileParser configSpec
+      warnings <- SUT.getFileWarnings SUT.jsonFormat configSpec
       case warnings of
         [warning] ->
-          (throwIO warning) `shouldThrow` (unsupportedFileExtensionGiven "./test/fixtures/config1.yaml")
+          (throwIO warning) `shouldThrow` (unsupportedFileExtensionGiven yamlFilePath)
         _ ->
           expectationFailure $ "expecting exactly one warning, got " <> show (length warnings)
 
     it "returns warnings when files in 'etc/files.path' are not present" $ do
       let
         configSpecValue = [aesonQQ|
-          { "etc/files":   {"paths": ["./test/fixtures/non_existing.json"]}
+          { "etc/files":   {"paths": [ #{configNonExistingPath} ]}
           , "etc/entries": {"database": {"etc/spec": {"default": "database"}}}
           }
        |]
       configSpec <- Spec.parseConfigSpecValue configSpecValue
-      warnings <- SUT.getFileWarnings SUT.jsonFileParser configSpec
+      warnings <- SUT.getFileWarnings SUT.jsonFormat configSpec
       case warnings of
         [warning] ->
-          (throwIO warning) `shouldThrow` (configurationFileNotPresent "./test/fixtures/non_existing.json")
+          (throwIO warning) `shouldThrow` (configurationFileNotPresent configNonExistingPath)
         _ ->
           expectationFailure $ "expecting exactly one warning, got " <> show (length warnings)

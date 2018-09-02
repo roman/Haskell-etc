@@ -1,7 +1,7 @@
 module Etc.Resolver.File
-  ( FileParser(..)
-  , jsonFileParser
-  , yamlFileParser
+  ( FileFormat(..)
+  , jsonFormat
+  , yamlFormat
   , FileResolverError(..)
   , fileResolver
   , jsonFileResolver
@@ -9,12 +9,12 @@ module Etc.Resolver.File
   , getFileWarnings
   ) where
 
-import Etc.Resolver.Internal.File.Types (FileParser(..), FileResolverError(..))
+import Etc.Resolver.Internal.File.Types (FileFormat(..), FileResolverError(..))
 import Etc.Resolver.Internal.File
   ( fileResolver
   , getFileWarnings
-  , jsonFileParser
+  , jsonFormat
   , jsonFileResolver
-  , yamlFileParser
+  , yamlFormat
   , yamlFileResolver
   )

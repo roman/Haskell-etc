@@ -16,7 +16,7 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
 import           Etc.Config
 import qualified Etc.Spec                    as Spec
 
-type FileExtension = Text
+type FormatName = Text
 
 data FileResolverError
   -- | The 'etc/files' entry is not present in the config spec top-level
@@ -24,7 +24,7 @@ data FileResolverError
   -- | 'etc/files.paths' is an empty array
   | ConfigSpecFilesPathsEntryIsEmpty
   -- | The 'etc/files.paths' contains an entry that doesn't have a valid extension
-  | UnsupportedFileExtensionGiven !Text !Text
+  | UnsupportedFileExtensionGiven !Text ![Text]
   -- | An entry in a file in 'etc/files.paths' contains a value that does not match the spec
   | ConfigFileValueTypeMismatch !FileValueOrigin ![Text] !Spec.ConfigValueType !JSON.Value
   -- | The 'etc/files.paths' points to a file that does not exist
@@ -39,12 +39,27 @@ data FileResolverError
 
 --------------------------------------------------------------------------------
 
-data FileParser e
-  = FileParser
+data FileFormat e
+  = FileFormat
   {
-    fileExtension :: !FileExtension
-  , fileBytesToJsonValue :: !(ByteString -> Either e JSON.Value)
+    fileFormatName   :: ![FormatName]
+  , fileFormatParser :: !(ByteString -> Either e JSON.Value)
   }
+
+instance Functor FileFormat where
+  fmap f format@FileFormat {fileFormatParser} =
+    format {fileFormatParser = mapLeft f . fileFormatParser}
+
+instance Semigroup (FileFormat e) where
+  (<>) (FileFormat fn1 fp1) (FileFormat fn2 fp2) =
+    FileFormat (fn1 <> fn2) (\bytes ->
+                               case fp1 bytes of
+                                 Left _e -> fp2 bytes
+                                 Right result -> Right result)
+
+fileFormat :: FormatName -> (ByteString -> Either e JSON.Value) -> FileFormat e
+fileFormat formatName fileFormatParser =
+  FileFormat {fileFormatName = [formatName], fileFormatParser}
 
 data FileValueOrigin
   = ConfigFileOrigin { fileSourcePath :: !Text }

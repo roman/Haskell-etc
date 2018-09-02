@@ -88,15 +88,16 @@ unsupportedFileExtensionGivenBody filepath =
     ]
 
 
-renderUnsupportedFileExtensionGiven :: Text -> Text -> Doc Ann
-renderUnsupportedFileExtensionGiven filepath supportedExtension =
+renderUnsupportedFileExtensionGiven :: Text -> [Text] -> Doc Ann
+renderUnsupportedFileExtensionGiven filepath supportedExtensions =
   foundError3
     (reflow "Detected a configuration file with an unsupported extension")
     (unsupportedFileExtensionGivenBody $ pretty filepath)
-    [ reflow "Change the file extension from" <+>
-      dquotes (pretty $ takeExtension (Text.unpack filepath)) <+>
-      "to" <+> dquotes (pretty supportedExtension)
-    ]
+    (map (\supportedExtension ->
+            reflow "Change the file extension from" <+>
+           dquotes (pretty $ takeExtension (Text.unpack filepath)) <+>
+           reflow "to supported extension" <+> dquotes ("." <> (pretty supportedExtension)))
+         supportedExtensions)
 
 
 --------------------------------------------------------------------------------
