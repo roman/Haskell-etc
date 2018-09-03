@@ -14,7 +14,7 @@ import Test.Hspec
 import Test.Hspec.QuickCheck
 
 import Etc.Generators ()
-import Etc.Spec.Internal.Types (blankConfigValueJSON)
+import Etc.Internal.Spec.Types (blankConfigValueJSON)
 import qualified Etc.Spec as SUT
 
 spec :: Spec
@@ -46,7 +46,7 @@ spec =
                 _ ->
                   expectationFailure $
                   "Expecting spec error; got something else " <> show err
-            Nothing ->
+            _ ->
               expectationFailure $
               "Expecting spec error; got something else " <> show err
         Right _ -> expectationFailure "Expecting spec to fail; but didn't"
@@ -68,7 +68,7 @@ spec =
                 _ ->
                   expectationFailure $
                   "Expecting spec error; got something else " <> show err
-            Nothing ->
+            _ ->
               expectationFailure $
               "Expecting spec error; got something else " <> show err
         Right _ -> expectationFailure "Expecting spec to fail; but didn't"
@@ -95,7 +95,7 @@ spec =
                 _ ->
                   expectationFailure $
                   "Expecting spec error; got something else " <> show err
-            Nothing ->
+            _ ->
               expectationFailure $
               "Expecting spec error; got something else " <> show err
         Right _ -> expectationFailure "Expecting spec to fail; but didn't"
@@ -121,7 +121,7 @@ spec =
                 _ ->
                   expectationFailure $
                   "Expecting spec error; got something else:\n\t" <> show err
-            Nothing ->
+            _ ->
               expectationFailure $
               "Expecting spec error; got something else " <> show err
         Right _ -> expectationFailure "Expecting spec to fail; but didn't"

@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Spec.Internal.Serializer where
+module Etc.Internal.Spec.Serializer where
 
 import RIO
 import qualified RIO.HashMap as HashMap
@@ -12,7 +12,7 @@ import qualified RIO.Map as Map
 import           Data.Aeson ((.=))
 import qualified Data.Aeson as JSON
 
-import Etc.Spec.Internal.Types
+import Etc.Internal.Spec.Types
 
 singleConfigValueTypeName :: SingleConfigValueType -> Text
 singleConfigValueTypeName valueTy =

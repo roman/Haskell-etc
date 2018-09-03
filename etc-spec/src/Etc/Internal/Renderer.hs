@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module Etc.Renderer where
+module Etc.Internal.Renderer where
 
 import RIO
 import qualified RIO.HashMap as HashMap
@@ -18,7 +18,7 @@ import Data.Text.Prettyprint.Doc.Symbols.Unicode (bullet)
 import Data.Text.Prettyprint.Doc.Util (reflow)
 import Data.Text.Prettyprint.Doc.Render.Util.StackMachine
 
-import Etc.Spec.Internal.Types
+import Etc.Internal.Spec.Types
 
 --------------------------------------------------------------------------------
 

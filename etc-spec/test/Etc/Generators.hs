@@ -15,8 +15,8 @@ import qualified Data.Aeson as JSON
 
 import Test.QuickCheck
 
-import Etc.Spec.Internal.Serializer ()
-import Etc.Spec.Internal.Types
+import Etc.Internal.Spec.Serializer ()
+import Etc.Internal.Spec.Types
 
 instance Arbitrary SingleConfigValueType where
   arbitrary = do

@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Resolver.Internal.File.Error where
+module Etc.Internal.Resolver.File.Error where
 
 import           RIO
 import qualified RIO.Text as Text
@@ -14,9 +14,9 @@ import Data.Text.Prettyprint.Doc.Util (reflow)
 
 import System.FilePath (takeExtension)
 
-import Etc.Renderer
-import Etc.Resolver.Internal.File.Types
-import Etc.Spec.Internal.Types
+import Etc.Internal.Renderer
+import Etc.Internal.Resolver.File.Types
+import Etc.Internal.Spec.Types
 
 --------------------------------------------------------------------------------
 -- File Resolver

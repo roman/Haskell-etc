@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Spec.Internal.Error where
+module Etc.Internal.Spec.Error where
 
 import           RIO
 import qualified RIO.List.Partial as List (last)
@@ -15,8 +15,8 @@ import qualified Data.Yaml               as Yaml
 import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Util (reflow)
 
-import Etc.Renderer
-import Etc.Spec.Internal.Types
+import Etc.Internal.Renderer
+import Etc.Internal.Spec.Types
 
 --------------------------------------------------------------------------------
 -- CannotInferTypeFromDefault

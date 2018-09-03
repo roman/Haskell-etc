@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Resolver.Internal.File where
+module Etc.Internal.Resolver.File where
 
 import           RIO
 import qualified RIO.HashMap as HashMap
@@ -19,13 +19,13 @@ import qualified Data.Yaml               as Yaml
 import System.Environment (lookupEnv)
 import System.Directory (doesFileExist)
 
-import Etc.Resolver.Internal.Types
+import Etc.Internal.Resolver.Types
 
-import Etc.Config (Value, SomeConfigSource (..), Config (..), ConfigValue(..), markAsSensitive)
+import Etc.Internal.Config (Value, SomeConfigSource (..), Config (..), ConfigValue(..), markAsSensitive)
 import qualified Etc.Spec as Spec
 
-import Etc.Resolver.Internal.File.Types
-import Etc.Resolver.Internal.File.Error ()
+import Etc.Internal.Resolver.File.Types
+import Etc.Internal.Resolver.File.Error ()
 
 --------------------------------------------------------------------------------
 -- Spec Parser
@@ -199,11 +199,11 @@ resolveFilesInternal fileParser throwErrors priorityIndex spec = do
 
 jsonFormat :: FileFormat (JSON.ParseError FileResolverError)
 jsonFormat =
-  fileFormat "json" (JSON.parseStrict JSON.asValue)
+  newFileFormat "json" (JSON.parseStrict JSON.asValue)
 
 yamlFormat :: FileFormat Yaml.ParseException
 yamlFormat =
-  fileFormat "yaml" Yaml.decodeEither'
+  newFileFormat "yaml" Yaml.decodeEither'
 
 getFileWarnings ::
      (MonadThrow m, MonadIO m) => FileFormat e -> Spec.ConfigSpec -> m [SomeException]

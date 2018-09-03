@@ -15,16 +15,17 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-  - Etc.Spec
-  - Etc.Spec.Internal.Parser
-  - Etc.Spec.Internal.Serializer
-  - Etc.Spec.Internal.Types
-  - Etc.Config
+  # Internal API
+  - Etc.Internal.Config
+  - Etc.Internal.Resolver.Types
+  - Etc.Internal.Resolver.File.Types
+  - Etc.Internal.Resolver.File.Error
+  - Etc.Internal.Spec.Parser
+  - Etc.Internal.Spec.Serializer
+  - Etc.Internal.Spec.Types
+  # Public API
   - Etc.Resolver
-  - Etc.Resolver.File
-  - Etc.Resolver.Internal.Types
-  - Etc.Resolver.Internal.File.Types
-  - Etc.Resolver.Internal.File.Error
+  - Etc.Spec
 
 tests:
   etc-spec-tests:

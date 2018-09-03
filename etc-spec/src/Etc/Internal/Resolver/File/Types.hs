@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Resolver.Internal.File.Types where
+module Etc.Internal.Resolver.File.Types where
 
 import RIO
 
@@ -13,7 +13,7 @@ import Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 
 
-import           Etc.Config
+import           Etc.Internal.Config
 import qualified Etc.Spec                    as Spec
 
 type FormatName = Text
@@ -57,8 +57,8 @@ instance Semigroup (FileFormat e) where
                                  Left _e -> fp2 bytes
                                  Right result -> Right result)
 
-fileFormat :: FormatName -> (ByteString -> Either e JSON.Value) -> FileFormat e
-fileFormat formatName fileFormatParser =
+newFileFormat :: FormatName -> (ByteString -> Either e JSON.Value) -> FileFormat e
+newFileFormat formatName fileFormatParser =
   FileFormat {fileFormatName = [formatName], fileFormatParser}
 
 data FileValueOrigin

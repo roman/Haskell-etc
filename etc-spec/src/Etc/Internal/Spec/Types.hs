@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
-module Etc.Spec.Internal.Types where
+module Etc.Internal.Spec.Types where
 
 import           RIO
 import qualified RIO.HashMap as HashMap

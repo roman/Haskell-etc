@@ -1,24 +1,23 @@
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE ExistentialQuantification  #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE OverloadedStrings          #-}
-module Etc.Resolver.Internal.Types where
+module Etc.Internal.Resolver.Types where
 
 import           RIO
 import qualified RIO.Text as Text
 
 import qualified Data.Aeson.BetterErrors as JSON
 
-import qualified Data.Text.Prettyprint.Doc as Pretty
+import qualified Data.Text.Prettyprint.Doc      as Pretty
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 
-import qualified Etc.Spec as Spec
-import Etc.Config (Config)
-
-import Etc.Renderer
+import           Etc.Internal.Config   (Config)
+import           Etc.Internal.Renderer
+import qualified Etc.Spec              as Spec
 
 --------------------
 -- Configuration Types

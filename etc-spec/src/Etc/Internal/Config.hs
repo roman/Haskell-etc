@@ -5,7 +5,7 @@
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE OverloadedStrings          #-}
-module Etc.Config where
+module Etc.Internal.Config where
 
 import           RIO
 import qualified RIO.HashMap as HashMap

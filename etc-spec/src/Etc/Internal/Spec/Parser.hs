@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
-module Etc.Spec.Internal.Parser where
+module Etc.Internal.Spec.Parser where
 
 import           RIO
 import qualified RIO.HashMap        as HashMap
@@ -16,8 +16,8 @@ import qualified Data.Yaml as Yaml
 import Language.Haskell.TH        (ExpQ, runIO)
 import Language.Haskell.TH.Syntax (addDependentFile)
 
-import Etc.Spec.Internal.Error ()
-import Etc.Spec.Internal.Types
+import Etc.Internal.Spec.Error ()
+import Etc.Internal.Spec.Types
 
 --------------------------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 {-# LANGUAGE QuasiQuotes       #-}
 module Etc.Resolver.FileSpec where
 
-import RIO
+import           RIO
 import qualified RIO.Text as Text
 
 import Test.Hspec
@@ -15,12 +15,14 @@ import Data.Aeson.QQ (aesonQQ)
 import qualified Data.Aeson.BetterErrors as JSON
 
 import System.Environment (setEnv, unsetEnv)
-import System.FilePath ((</>))
+import System.FilePath    ((</>))
 
-import qualified Etc.Config        as Config
-import qualified Etc.Resolver      as Resolver
-import qualified Etc.Resolver.File as SUT
-import qualified Etc.Spec          as Spec
+import qualified Etc.Internal.Config        as Config
+import qualified Etc.Resolver               as Resolver
+import qualified Etc.Spec                   as Spec
+
+import qualified Etc.Internal.Resolver.File.Types as SUT
+import qualified Etc.Internal.Resolver.File as SUT
 
 testFixturePath :: FilePath -> FilePath
 testFixturePath path =
@@ -92,8 +94,8 @@ spec = do
       configSpec <- Spec.parseConfigSpecValue configSpecValue
       -- NOTE: therr error types for jsonFormat and yamlFormat are not the same, using
       -- the Functor instance of FileFormat, we can compose them with a high level ADT
-      let fileFormat = fmap Left SUT.jsonFormat <> fmap Right SUT.yamlFormat
-      config <- Resolver.resolveConfig configSpec [SUT.fileResolver fileFormat]
+      let newFileFormat = fmap Left SUT.jsonFormat <> fmap Right SUT.yamlFormat
+      config <- Resolver.resolveConfig configSpec [SUT.fileResolver newFileFormat]
 
       databaseValue <- Config.getConfigValue ["greeting"] config
       databaseValue `shouldBe` ("config1.yaml" :: Text)
