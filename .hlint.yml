@@ -49,6 +49,11 @@
 - ignore: {name: Use String}
 - ignore: {name: Use lambda-case}
 - ignore:
+    name: Reduce duplication
+    within:
+    - Etc.SpecSpec
+    - Etc.Resolver.FileSpec
+- ignore:
     name: Use camelCase
     within:
     - System.Etc.SpecTest

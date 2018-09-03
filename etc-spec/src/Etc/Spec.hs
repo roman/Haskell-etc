@@ -1,5 +1,4 @@
 {-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 module Etc.Spec
   ( Types.ConfigSpec
@@ -20,7 +19,7 @@ module Etc.Spec
   )
   where
 
-import Etc.Internal.Spec.Error ()
-import Etc.Internal.Spec.Serializer ()
-import qualified Etc.Internal.Spec.Parser as Parser
-import qualified Etc.Internal.Spec.Types as Types
+import           Etc.Internal.Spec.Error ()
+import qualified Etc.Internal.Spec.Parser     as Parser
+import           Etc.Internal.Spec.Serializer ()
+import qualified Etc.Internal.Spec.Types      as Types

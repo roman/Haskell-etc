@@ -17,12 +17,12 @@ import qualified Data.Aeson.BetterErrors as JSON
 import System.Environment (setEnv, unsetEnv)
 import System.FilePath    ((</>))
 
-import qualified Etc.Internal.Config        as Config
-import qualified Etc.Resolver               as Resolver
-import qualified Etc.Spec                   as Spec
+import qualified Etc.Internal.Config as Config
+import qualified Etc.Resolver        as Resolver
+import qualified Etc.Spec            as Spec
 
+import qualified Etc.Internal.Resolver.File       as SUT
 import qualified Etc.Internal.Resolver.File.Types as SUT
-import qualified Etc.Internal.Resolver.File as SUT
 
 testFixturePath :: FilePath -> FilePath
 testFixturePath path =
@@ -76,7 +76,7 @@ configNonExistingPath = testFixturePath "non_existing.json"
 
 spec :: Spec
 spec = do
-  describe "FileFormat Semigroup instance" $ do
+  describe "FileFormat Semigroup instance" $
     it "allows to compose different file format parsers" $ do
       let
         configSpecValue =
@@ -132,13 +132,13 @@ spec = do
       warnings <- SUT.getFileWarnings SUT.jsonFormat configSpec
       case warnings of
         [warning] ->
-          (throwIO warning) `shouldThrow` (unknownConfigKeyFound [] "greeting" ["database"])
+          throwIO warning `shouldThrow` unknownConfigKeyFound [] "greeting" ["database"]
         _ ->
           expectationFailure $ "Expecting exactly one warning, got " <> show (length warnings)
 
       -- NOTE: configuration file contains "greeting" key, which is not present in the spec above
       Resolver.resolveConfig configSpec [SUT.jsonFileResolver]
-        `shouldThrow` (unknownConfigKeyFound [] "greeting" ["database"])
+        `shouldThrow` unknownConfigKeyFound [] "greeting" ["database"]
 
     it "throws exception when spec entry type differs from file entry type" $ do
       let
@@ -201,7 +201,7 @@ spec = do
       warnings <- SUT.getFileWarnings SUT.jsonFormat configSpec
       case warnings of
         [warning] ->
-          (throwIO warning) `shouldThrow` (unsupportedFileExtensionGiven yamlFilePath)
+          throwIO warning `shouldThrow` unsupportedFileExtensionGiven yamlFilePath
         _ ->
           expectationFailure $ "expecting exactly one warning, got " <> show (length warnings)
 
@@ -216,6 +216,6 @@ spec = do
       warnings <- SUT.getFileWarnings SUT.jsonFormat configSpec
       case warnings of
         [warning] ->
-          (throwIO warning) `shouldThrow` (configurationFileNotPresent configNonExistingPath)
+          throwIO warning `shouldThrow` configurationFileNotPresent configNonExistingPath
         _ ->
           expectationFailure $ "expecting exactly one warning, got " <> show (length warnings)

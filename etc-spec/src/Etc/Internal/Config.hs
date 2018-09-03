@@ -9,9 +9,9 @@ module Etc.Internal.Config where
 
 import           RIO
 import qualified RIO.HashMap as HashMap
-import qualified RIO.Map  as Map
-import qualified RIO.Set  as Set
-import qualified RIO.Text as Text
+import qualified RIO.Map     as Map
+import qualified RIO.Set     as Set
+import qualified RIO.Text    as Text
 
 import qualified Data.Semigroup as Semigroup
 

@@ -1,7 +1,5 @@
-{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE OverloadedStrings          #-}
@@ -42,7 +40,7 @@ instance Exception err => Exception (ResolverError (JSON.ParseError err)) where
            _ ->
              renderErrorDoc $
              foundError3
-               ("Detected JSON parser failure")
+               "Detected JSON parser failure"
                (Pretty.vsep ["In the following entry:"
                      , mempty
                      , Pretty.indent 2 $ renderPathPieces ks
@@ -56,8 +54,6 @@ instance Exception err => Exception (ResolverError (JSON.ParseError err)) where
     )
 
 resolveConfig :: Monad m => Spec.ConfigSpec -> [Resolver m] -> m Config
-resolveConfig spec resolvers =
-  mconcat <$>
-  mapM (\(priorityIndex, resolver) ->
-          runResolver resolver priorityIndex spec)
-    (zip [(1 :: Int)..] $ reverse resolvers)
+resolveConfig spec resolvers = mconcat <$> mapM
+  (\(priorityIndex, resolver) -> runResolver resolver priorityIndex spec)
+  (zip [(1 :: Int) ..] $ reverse resolvers)

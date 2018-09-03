@@ -1,20 +1,20 @@
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 module Etc.Internal.Resolver.File.Types where
 
 import RIO
 
-import qualified Data.Aeson                as JSON
+import qualified Data.Aeson as JSON
 
-import Data.Text.Prettyprint.Doc ((<+>))
+import           Data.Text.Prettyprint.Doc ((<+>))
 import qualified Data.Text.Prettyprint.Doc as Pretty
 
 
 import           Etc.Internal.Config
-import qualified Etc.Spec                    as Spec
+import qualified Etc.Spec            as Spec
 
 type FormatName = Text
 
@@ -54,12 +54,12 @@ instance Semigroup (FileFormat e) where
   (<>) (FileFormat fn1 fp1) (FileFormat fn2 fp2) =
     FileFormat (fn1 <> fn2) (\bytes ->
                                case fp1 bytes of
-                                 Left _e -> fp2 bytes
+                                 Left _e      -> fp2 bytes
                                  Right result -> Right result)
 
 newFileFormat :: FormatName -> (ByteString -> Either e JSON.Value) -> FileFormat e
 newFileFormat formatName fileFormatParser =
-  FileFormat {fileFormatName = [formatName], fileFormatParser}
+  FileFormat {fileFormatName = [formatName], fileFormatParser }
 
 data FileValueOrigin
   = ConfigFileOrigin { fileSourcePath :: !Text }

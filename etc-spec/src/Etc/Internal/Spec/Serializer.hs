@@ -1,13 +1,13 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Etc.Internal.Spec.Serializer where
 
-import RIO
+import           RIO
 import qualified RIO.HashMap as HashMap
-import qualified RIO.Map as Map
+import qualified RIO.Map     as Map
 
 import           Data.Aeson ((.=))
 import qualified Data.Aeson as JSON
@@ -15,13 +15,12 @@ import qualified Data.Aeson as JSON
 import Etc.Internal.Spec.Types
 
 singleConfigValueTypeName :: SingleConfigValueType -> Text
-singleConfigValueTypeName valueTy =
-  case valueTy of
-    CVTString -> "string"
-    CVTNumber -> "number"
-    CVTBool   -> "bool"
-    CVTObject -> "object"
-    CVTCustom other -> other
+singleConfigValueTypeName valueTy = case valueTy of
+  CVTString       -> "string"
+  CVTNumber       -> "number"
+  CVTBool         -> "bool"
+  CVTObject       -> "object"
+  CVTCustom other -> other
 
 instance JSON.ToJSON SingleConfigValueType where
   toJSON valueTy =
@@ -58,7 +57,7 @@ instance JSON.ToJSON ConfigValue where
         JSON.object (Map.toList $ Map.map JSON.toJSON subConfig)
 
 instance JSON.ToJSON ConfigSpec where
-  toJSON (ConfigSpec {..}) =
+  toJSON ConfigSpec {..} =
     let
       otherKeys = configSpecJSON & HashMap.delete "etc/entries" & HashMap.toList
     in

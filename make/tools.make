@@ -9,7 +9,7 @@ HLINT_BIN := $(TOOLS_DIR)/hlint
 PPSH_BIN := $(TOOLS_DIR)/ppsh
 REFACTOR_BIN := $(TOOLS_DIR)/refactor
 
-FIND_HASKELL_FILES := find . -name "*.hs" -not -path '*.stack-work*' -not -path "*tmp*" -not -name "Setup.hs"
+FIND_HASKELL_FILES := find etc-spec -name "*.hs" -not -path '*.stack-work*' -not -path "*tmp*" -not -name "Setup.hs"
 
 STACK := stack --resolver lts-11 --local-bin-path $(TOOLS_DIR)
 

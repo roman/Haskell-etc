@@ -18,6 +18,7 @@ library:
   # Internal API
   - Etc.Internal.Config
   - Etc.Internal.Resolver.Types
+  - Etc.Internal.Resolver.File
   - Etc.Internal.Resolver.File.Types
   - Etc.Internal.Resolver.File.Error
   - Etc.Internal.Spec.Parser

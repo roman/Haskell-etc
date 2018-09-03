@@ -1,13 +1,12 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 module Etc.Generators where
 
-import RIO
+import           RIO
 import qualified RIO.HashMap as HashMap
-import qualified RIO.Map as Map
-import qualified RIO.Text as Text
+import qualified RIO.Map     as Map
+import qualified RIO.Text    as Text
 
 import Control.Monad (replicateM)
 
@@ -19,7 +18,7 @@ import Etc.Internal.Spec.Serializer ()
 import Etc.Internal.Spec.Types
 
 instance Arbitrary SingleConfigValueType where
-  arbitrary = do
+  arbitrary =
     -- custom <- (CVTCustom . Text.pack) <$> arbitrary
     -- elements [CVTString, CVTBool, CVTObject, custom]
     elements [CVTString, CVTBool, CVTObject]
@@ -39,10 +38,8 @@ instance Arbitrary ConfigValueData where
 instance Arbitrary ConfigValue where
   arbitrary = do
     subConfigKeyCount <- choose (1, 7)
-    subConfigVal <-
-      (SubConfig . Map.fromList) <$>
+    SubConfig . Map.fromList <$>
       replicateM subConfigKeyCount ((Text.pack *** ConfigValue) <$> arbitrary)
-    return subConfigVal
 
 instance Arbitrary ConfigSpec where
   arbitrary = do

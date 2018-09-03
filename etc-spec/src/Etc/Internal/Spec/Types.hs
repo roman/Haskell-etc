@@ -109,10 +109,10 @@ getConfigSpecEntries :: ConfigSpec -> ConfigValue
 getConfigSpecEntries = SubConfig . configSpecEntries
 
 blankConfigValueJSON :: ConfigSpec -> ConfigSpec
-blankConfigValueJSON spec@(ConfigSpec {configSpecEntries}) =
-    spec { configSpecEntries = Map.map blankValue configSpecEntries }
-  where
-    blankValue val =
-      case val of
-        ConfigValue (valueData) -> ConfigValue (valueData { configValueJSON = JSON.object [] })
-        SubConfig subConfig -> SubConfig $ Map.map blankValue subConfig
+blankConfigValueJSON spec@ConfigSpec { configSpecEntries } = spec
+  { configSpecEntries = Map.map blankValue configSpecEntries
+  }
+ where
+  blankValue val = case val of
+    ConfigValue valueData -> ConfigValue (valueData { configValueJSON = JSON.object [] })
+    SubConfig   subConfig   -> SubConfig $ Map.map blankValue subConfig

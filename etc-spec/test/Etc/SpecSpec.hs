@@ -8,14 +8,14 @@ import RIO
 
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON
-import           Data.Yaml.TH (yamlQQ)
+import           Data.Yaml.TH            (yamlQQ)
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
 
-import Etc.Generators ()
-import Etc.Internal.Spec.Types (blankConfigValueJSON)
-import qualified Etc.Spec as SUT
+import           Etc.Generators ()
+import           Etc.Internal.Spec.Types (blankConfigValueJSON)
+import qualified Etc.Spec                as SUT
 
 spec :: Spec
 spec =
@@ -63,7 +63,7 @@ spec =
           case fromException err of
             Just (SUT.SpecJsonError specErr) ->
               case specErr of
-                JSON.BadSchema _ (JSON.CustomError (SUT.InvalidSpecEntries _))  -> do
+                JSON.BadSchema _ (JSON.CustomError (SUT.InvalidSpecEntries _))  ->
                   return ()
                 _ ->
                   expectationFailure $
@@ -90,8 +90,8 @@ spec =
               case specErr of
                 JSON.BadSchema _ (JSON.CustomError (SUT.DefaultValueTypeMismatchFound keyPath cvType json))  -> do
                   keyPath `shouldBe` ["greeting"]
-                  cvType `shouldBe` (SUT.CVTSingle SUT.CVTNumber)
-                  json `shouldBe` (JSON.String "one")
+                  cvType `shouldBe` SUT.CVTSingle SUT.CVTNumber
+                  json `shouldBe` JSON.String "one"
                 _ ->
                   expectationFailure $
                   "Expecting spec error; got something else " <> show err
