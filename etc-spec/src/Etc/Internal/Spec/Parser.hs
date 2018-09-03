@@ -152,14 +152,14 @@ parseConfigSpec :: (Monad m, MonadThrow m) => ByteString -> m ConfigSpec
 parseConfigSpec bytes = do
   let result = Yaml.decodeEither' bytes
   case result of
-    Left  err     -> throwM (SpecYamlError err :: SpecError SpecParserError)
+    Left  err     -> throwM (SpecError err)
     Right jsonVal -> parseConfigSpecValue jsonVal
 
 parseConfigSpecValue :: (Monad m, MonadThrow m) => JSON.Value -> m ConfigSpec
-parseConfigSpecValue json = do
-  result <- JSON.parseValueM configSpecParser json
+parseConfigSpecValue jsonValue = do
+  result <- JSON.parseValueM configSpecParser jsonValue
   case result of
-    Left  err  -> throwM (SpecJsonError err)
+    Left  err  -> throwM (SpecError err)
     Right spec -> return spec
 
 readConfigSpec :: (MonadIO m, MonadThrow m) => FilePath -> m ConfigSpec

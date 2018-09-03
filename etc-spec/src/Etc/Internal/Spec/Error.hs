@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -168,16 +169,8 @@ instance Exception SpecParserError where
         DefaultValueTypeMismatchFound ks cvt val ->
           renderDefaultValueTypeMismatchFound ks cvt val
 
-instance Exception ex => Exception (SpecError ex)  where
-  displayException (SpecYamlError specErr) =
-    "\n\n" <>
-    renderErrorDoc
-      (foundError2 (vsep ["The yaml parser failed"
-                        , mempty
-                        , indent 2 "The yaml library reported the following error:"
-                        , indent 4 $ pretty $ Yaml.prettyPrintParseException specErr])
-                  [])
-  displayException (SpecJsonError specErr) =
+instance Exception ex => Exception (SpecError (JSON.ParseError ex))  where
+  displayException (SpecError specErr) =
     "\n\n" <>
     (case specErr of
        JSON.InvalidJSON msg -> renderErrorDoc $ renderInvalidJsonError msg
@@ -199,3 +192,13 @@ instance Exception ex => Exception (SpecError ex)  where
                )
                []
     )
+
+instance Exception (SpecError Yaml.ParseException)  where
+   displayException (SpecError specErr) =
+    "\n\n" <>
+    renderErrorDoc
+      (foundError2 (vsep ["The yaml parser failed"
+                        , mempty
+                        , indent 2 "The yaml library reported the following error:"
+                        , indent 4 $ pretty $ Yaml.prettyPrintParseException specErr])
+                  [])

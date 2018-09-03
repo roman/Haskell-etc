@@ -38,7 +38,7 @@ spec =
       case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
-            Just (SUT.SpecJsonError specErr) ->
+            Just (SUT.SpecError specErr) ->
               case specErr of
                 JSON.BadSchema _ (JSON.CustomError (SUT.UnknownConfigValueType keyPath typeName))  -> do
                   typeName `shouldBe` "foobar"
@@ -61,7 +61,7 @@ spec =
       case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
-            Just (SUT.SpecJsonError specErr) ->
+            Just (SUT.SpecError specErr) ->
               case specErr of
                 JSON.BadSchema _ (JSON.CustomError (SUT.InvalidSpecEntries _))  ->
                   return ()
@@ -86,7 +86,7 @@ spec =
       case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
-            Just (SUT.SpecJsonError specErr) ->
+            Just (SUT.SpecError specErr) ->
               case specErr of
                 JSON.BadSchema _ (JSON.CustomError (SUT.DefaultValueTypeMismatchFound keyPath cvType json))  -> do
                   keyPath `shouldBe` ["greeting"]
@@ -113,7 +113,7 @@ spec =
       case SUT.parseConfigSpecValue specJSON of
         Left err ->
           case fromException err of
-            Just (SUT.SpecJsonError specErr) ->
+            Just (SUT.SpecError specErr) ->
               case specErr of
                 JSON.BadSchema _ (JSON.CustomError (SUT.RedundantKeysOnValueSpec keyPath redundantKeys)) -> do
                   keyPath `shouldBe` ["greeting"]

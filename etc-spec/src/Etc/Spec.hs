@@ -8,6 +8,7 @@ module Etc.Spec
   , Types.SpecParserError (..)
   , Types.ConfigValueType (..)
   , Types.SingleConfigValueType (..)
+
   , Parser.matchesConfigValueType
   , Parser.assertFieldTypeMatchesE
   , Parser.readConfigSpec

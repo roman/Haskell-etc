@@ -15,12 +15,8 @@ import qualified RIO.Text    as Text
 import Language.Haskell.TH.Syntax (Lift (..))
 
 import qualified Data.Aeson              as JSON
-import qualified Data.Aeson.BetterErrors as JSON
-import qualified Data.Yaml               as Yaml
 
-data SpecError err
-  = SpecJsonError (JSON.ParseError err)
-  | SpecYamlError Yaml.ParseException
+newtype SpecError err = SpecError err
   deriving (Show)
 
 data SpecParserError
