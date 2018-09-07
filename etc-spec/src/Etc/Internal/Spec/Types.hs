@@ -1,10 +1,11 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE DeriveLift        #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE DeriveLift          #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE TemplateHaskell     #-}
 module Etc.Internal.Spec.Types where
 
 import           RIO
@@ -12,6 +13,7 @@ import qualified RIO.HashMap as HashMap
 import qualified RIO.Map     as Map
 import qualified RIO.Text    as Text
 
+import qualified Data.Aeson.BetterErrors as JSON
 import Language.Haskell.TH.Syntax (Lift (..))
 
 import qualified Data.Aeson              as JSON
@@ -27,6 +29,9 @@ data SpecParserError
   | RedundantKeysOnValueSpec ![Text] ![Text]
   | InvalidSpecEntries !ConfigValue
   deriving (Show)
+
+newtype CustomType
+  = CustomType {customTypeParser :: JSON.Parse () () }
 
 -- |
 data SingleConfigValueType
@@ -55,6 +60,11 @@ data ConfigValueType
   = CVTSingle !SingleConfigValueType
   | CVTArray  !SingleConfigValueType
   deriving (Generic, Show, Read, Eq, Lift)
+
+
+isCVTArray :: ConfigValueType -> Bool
+isCVTArray (CVTArray {}) = True
+isCVTArray _ = False
 
 -- |
 data ConfigValueData =
@@ -111,4 +121,4 @@ blankConfigValueJSON spec@ConfigSpec { configSpecEntries } = spec
  where
   blankValue val = case val of
     ConfigValue valueData -> ConfigValue (valueData { configValueJSON = JSON.object [] })
-    SubConfig   subConfig   -> SubConfig $ Map.map blankValue subConfig
+    SubConfig   subConfig -> SubConfig $ Map.map blankValue subConfig

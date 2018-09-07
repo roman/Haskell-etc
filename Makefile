@@ -12,13 +12,13 @@ STACK:=stack $(STACK_ARGS) --local-bin-path ./out/bin
 ################################################################################
 
 $(PROJECT_BIN): $(HASKELL_FILES)
-	$(STACK) build --copy-bins --local-bin-path $(PROJECT_BIN_DIR) --test --no-run-tests --bench --no-run-benchmarks --haddock --no-haddock-deps --pedantic
+	$(STACK) build --copy-bins --local-bin-path $(PROJECT_BIN_DIR) --test --no-run-tests --bench --no-run-benchmarks --haddock --no-haddock-deps --pedantic etc-spec
 
 build: $(PROJECT_BIN)  ## Build library and example binaries
 .PHONY: build
 
 test: $(PROJECT_BIN) ## Execute test suites
-	$(STACK) test --dump-logs
+	$(STACK) test etc-spec:test:etc-spec-tests --dump-logs
 .PHONY: test
 
 bench: $(PROJECT_BIN)

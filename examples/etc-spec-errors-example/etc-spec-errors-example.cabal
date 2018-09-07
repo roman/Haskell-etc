@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 04230a201d05d5be3f77cb72db404377f0987fa39d0109fb8c3645eb6e27a8a5
+-- hash: f71f981c146c91ac3bf2e568deb7e4cef546fd018b217eb2fab09c893f9d2c32
 
 name:           etc-spec-errors-example
 version:        0.0.0.0
@@ -20,6 +20,7 @@ cabal-version:  >= 1.10
 executable etc-spec-error1
   main-is: Main.hs
   other-modules:
+      Types
       Paths_etc_spec_errors_example
   hs-source-dirs:
       src

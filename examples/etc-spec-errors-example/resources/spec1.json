@@ -2,8 +2,8 @@
     "database":{
         "db": {
             "etc/spec": {
-                "type": "string",
-                "default": 123
+                "type": "[tcp]",
+                "default": ["tcp://0.0.0.0"]
             }
         }
     }

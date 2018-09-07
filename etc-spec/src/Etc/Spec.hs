@@ -9,17 +9,28 @@ module Etc.Spec
   , Types.ConfigValueType (..)
   , Types.SingleConfigValueType (..)
 
+  , Types.CustomType
+  , CustomType.aesonCustomType
+  , CustomType.textCustomType
+  , CustomType.boundedIntCustomType
+  , CustomType.boundedFloatCustomType
+
   , Parser.matchesConfigValueType
   , Parser.assertFieldTypeMatchesE
-  , Parser.readConfigSpec
-  , Parser.readConfigSpecTH
-  , Parser.parseConfigSpec
-  , Parser.parseConfigSpecValue
   , Types.getConfigSpecJSON
   , Types.getConfigSpecEntries
+
+
+  , Parser.jsonSpec
+  , Parser.yamlSpec
+  , Parser.readConfigSpec
+  , Parser.parseConfigSpec
+  , Parser.parseConfigSpecValue
+  , Parser.readConfigSpecTH
   )
   where
 
+import qualified Etc.Internal.CustomType      as CustomType
 import           Etc.Internal.Spec.Error ()
 import qualified Etc.Internal.Spec.Parser     as Parser
 import           Etc.Internal.Spec.Serializer ()

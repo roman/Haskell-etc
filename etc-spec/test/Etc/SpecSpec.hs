@@ -7,7 +7,7 @@ module Etc.SpecSpec (spec) where
 import RIO
 
 import qualified Data.Aeson              as JSON
-import qualified Data.Aeson.BetterErrors as JSON
+import qualified Data.Aeson.BetterErrors as JSON hiding (withScientific)
 import           Data.Yaml.TH            (yamlQQ)
 
 import Test.Hspec
@@ -17,111 +17,157 @@ import           Etc.Generators ()
 import           Etc.Internal.Spec.Types (blankConfigValueJSON)
 import qualified Etc.Spec                as SUT
 
+
 spec :: Spec
-spec =
-  describe "Etc.Spec.configSpecParser" $ do
-    prop "handles encoding/parsing roundtrip" $ \configSpec -> do
-      let jsonVal = JSON.toJSON configSpec
-      case SUT.parseConfigSpecValue jsonVal of
-        Left err -> error (show err)
-        Right configSpec' ->
-            configSpec == blankConfigValueJSON configSpec'
+spec = do
+  describe "Etc.Spec" $
+    describe "configSpecParser" $ do
+      prop "handles encoding/parsing roundtrip" $ \configSpec -> do
+        let jsonVal = JSON.toJSON configSpec
+        case SUT.parseConfigSpecValue [] jsonVal of
+          Left err -> error (show err)
+          Right configSpec' ->
+              configSpec == blankConfigValueJSON configSpec'
 
-    it "reports error on unknown type" $ do
-      let specJSON =
-            [yamlQQ|
-                etc/entries:
-                    greeting:
-                      etc/spec:
-                        type: foobar
-                |]
-      case SUT.parseConfigSpecValue specJSON of
-        Left err ->
-          case fromException err of
-            Just (SUT.SpecError specErr) ->
-              case specErr of
-                JSON.BadSchema _ (JSON.CustomError (SUT.UnknownConfigValueType keyPath typeName))  -> do
-                  typeName `shouldBe` "foobar"
-                  keyPath `shouldBe` ["greeting"]
-                _ ->
-                  expectationFailure $
-                  "Expecting spec error; got something else " <> show err
-            _ ->
-              expectationFailure $
-              "Expecting spec error; got something else " <> show err
-        Right _ -> expectationFailure "Expecting spec to fail; but didn't"
+      it "reports error on unknown type" $ do
+        let specJSON =
+              [yamlQQ|
+                  etc/entries:
+                      greeting:
+                        etc/spec:
+                          type: foobar
+                  |]
+        case SUT.parseConfigSpecValue [] specJSON of
+          Left err ->
+            case fromException err of
+              Just (SUT.SpecError specErr) ->
+                case specErr of
+                  JSON.BadSchema _ (JSON.CustomError (SUT.UnknownConfigValueType keyPath typeName))  -> do
+                    typeName `shouldBe` "foobar"
+                    keyPath `shouldBe` ["greeting"]
+                  _ ->
+                   expectationFailure $
+                    "Expecting spec error; got something else " <> show err
+              _ ->
+                expectationFailure $
+                "Expecting spec error; got something else " <> show err
+          Right _ -> expectationFailure "Expecting spec to fail; but didn't"
 
-    it "reports error when 'etc/entries' is not an object" $ do
-      let specJSON =
-            [yamlQQ|
-                   etc/entries:
-                   - hello
-                   - world
-                |]
-      case SUT.parseConfigSpecValue specJSON of
-        Left err ->
-          case fromException err of
-            Just (SUT.SpecError specErr) ->
-              case specErr of
-                JSON.BadSchema _ (JSON.CustomError (SUT.InvalidSpecEntries _))  ->
-                  return ()
-                _ ->
-                  expectationFailure $
-                  "Expecting spec error; got something else " <> show err
-            _ ->
-              expectationFailure $
-              "Expecting spec error; got something else " <> show err
-        Right _ -> expectationFailure "Expecting spec to fail; but didn't"
+      it "reports error when 'etc/entries' is not an object" $ do
+        let specJSON =
+              [yamlQQ|
+                     etc/entries:
+                     - hello
+                     - world
+                  |]
+        case SUT.parseConfigSpecValue [] specJSON of
+          Left err ->
+            case fromException err of
+              Just (SUT.SpecError specErr) ->
+                case specErr of
+                  JSON.BadSchema _ (JSON.CustomError (SUT.InvalidSpecEntries _))  ->
+                    return ()
+                  _ ->
+                    expectationFailure $
+                    "Expecting spec error; got something else " <> show err
+              _ ->
+                expectationFailure $
+                "Expecting spec error; got something else " <> show err
+          Right _ -> expectationFailure "Expecting spec to fail; but didn't"
 
 
-    it "reports error when default value and type don't match" $ do
-      let specJSON =
-            [yamlQQ|
-                   etc/entries:
-                     greeting:
-                       etc/spec:
-                         default: "one"
-                         type: "number"
-                |]
-      case SUT.parseConfigSpecValue specJSON of
-        Left err ->
-          case fromException err of
-            Just (SUT.SpecError specErr) ->
-              case specErr of
-                JSON.BadSchema _ (JSON.CustomError (SUT.DefaultValueTypeMismatchFound keyPath cvType json))  -> do
-                  keyPath `shouldBe` ["greeting"]
-                  cvType `shouldBe` SUT.CVTSingle SUT.CVTNumber
-                  json `shouldBe` JSON.String "one"
-                _ ->
-                  expectationFailure $
-                  "Expecting spec error; got something else " <> show err
-            _ ->
-              expectationFailure $
-              "Expecting spec error; got something else " <> show err
-        Right _ -> expectationFailure "Expecting spec to fail; but didn't"
-    it
-      "reports error when 'etc/spec' is not the only key in the field metadata object" $ do
-      let specJSON =
-            [yamlQQ|
-                   etc/entries:
-                     greeting:
-                       etc/spec:
-                         default: one
-                         type: string
-                       other: field
-                |]
-      case SUT.parseConfigSpecValue specJSON of
-        Left err ->
-          case fromException err of
-            Just (SUT.SpecError specErr) ->
-              case specErr of
-                JSON.BadSchema _ (JSON.CustomError (SUT.RedundantKeysOnValueSpec keyPath redundantKeys)) -> do
-                  keyPath `shouldBe` ["greeting"]
-                  redundantKeys `shouldBe` ["other"]
-                _ ->
-                  expectationFailure $
-                  "Expecting spec error; got something else:\n\t" <> show err
-            _ ->
-              expectationFailure $
-              "Expecting spec error; got something else " <> show err
-        Right _ -> expectationFailure "Expecting spec to fail; but didn't"
+      it "reports error when default value and type don't match" $ do
+        let specJSON =
+              [yamlQQ|
+                     etc/entries:
+                       greeting:
+                         etc/spec:
+                           default: "one"
+                           type: "number"
+                  |]
+        case SUT.parseConfigSpecValue [] specJSON of
+          Left err ->
+            case fromException err of
+              Just (SUT.SpecError specErr) ->
+                case specErr of
+                  JSON.BadSchema _ (JSON.CustomError (SUT.DefaultValueTypeMismatchFound keyPath cvType json))  -> do
+                    keyPath `shouldBe` ["greeting"]
+                    cvType `shouldBe` SUT.CVTSingle SUT.CVTNumber
+                    json `shouldBe` JSON.String "one"
+                  _ ->
+                    expectationFailure $
+                    "Expecting spec error; got something else " <> show err
+              _ ->
+                expectationFailure $
+                "Expecting spec error; got something else " <> show err
+          Right _ -> expectationFailure "Expecting spec to fail; but didn't"
+
+      it
+        "reports error when 'etc/spec' is not the only key in the field metadata object" $ do
+        let specJSON =
+              [yamlQQ|
+                     etc/entries:
+                       greeting:
+                         etc/spec:
+                           default: one
+                           type: string
+                         other: field
+                  |]
+        case SUT.parseConfigSpecValue [] specJSON of
+          Left err ->
+            case fromException err of
+              Just (SUT.SpecError specErr) ->
+                case specErr of
+                  JSON.BadSchema _ (JSON.CustomError (SUT.RedundantKeysOnValueSpec keyPath redundantKeys)) -> do
+                    keyPath `shouldBe` ["greeting"]
+                    redundantKeys `shouldBe` ["other"]
+                  _ ->
+                    expectationFailure $
+                    "Expecting spec error; got something else:\n\t" <> show err
+              _ ->
+                expectationFailure $
+                "Expecting spec error; got something else " <> show err
+          Right _ -> expectationFailure "Expecting spec to fail; but didn't"
+
+      it "reports when custom type errors detect invalid inputs" $ do
+        let greetingChecker = SUT.textCustomType $ \input -> input == ("hello" :: Text)
+        let specJSON =
+              [yamlQQ|
+                     etc/entries:
+                       greeting:
+                         etc/spec:
+                           default: other
+                           type: greeting
+                  |]
+        case SUT.parseConfigSpecValue [("greeting", greetingChecker)] specJSON of
+          Left err ->
+            case fromException err of
+              Just (SUT.SpecError specErr) ->
+                case specErr of
+                  JSON.BadSchema _ (JSON.CustomError (SUT.DefaultValueTypeMismatchFound keyPath cvType json))  -> do
+                    keyPath `shouldBe` ["greeting"]
+                    cvType `shouldBe` SUT.CVTSingle (SUT.CVTCustom "greeting")
+                    json `shouldBe` JSON.String "other"
+                  _ ->
+                    expectationFailure $
+                    "Expecting spec error; got something else " <> show err
+              _ ->
+                expectationFailure $
+                "Expecting spec error; got something else " <> show err
+          Right _ -> expectationFailure "Expecting spec to fail; but didn't"
+
+      it "allows custom types for config values" $ do
+        let greetingChecker = SUT.textCustomType $ \input -> input == ("hello" :: Text)
+        let specJSON =
+              [yamlQQ|
+                     etc/entries:
+                       greeting:
+                         etc/spec:
+                           default: hello
+                           type: greeting
+                  |]
+        case SUT.parseConfigSpecValue [("greeting", greetingChecker)] specJSON of
+          Left err ->
+            expectationFailure $ "Expecting valid config spec, got error instead " <> show err
+          Right _ ->
+            return ()

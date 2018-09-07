@@ -1,8 +1,8 @@
-{-# LANGUAGE ExistentialQuantification  #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE NamedFieldPuns             #-}
-{-# LANGUAGE NoImplicitPrelude          #-}
-{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE NamedFieldPuns            #-}
+{-# LANGUAGE NoImplicitPrelude         #-}
+{-# LANGUAGE OverloadedStrings         #-}
 module Etc.Internal.Resolver.Types where
 
 import           RIO
@@ -13,9 +13,9 @@ import qualified Data.Aeson.BetterErrors as JSON
 import qualified Data.Text.Prettyprint.Doc      as Pretty
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 
-import           Etc.Internal.Config   (Config)
+import           Etc.Internal.Config     (Config)
 import           Etc.Internal.Renderer
-import qualified Etc.Spec              as Spec
+import qualified Etc.Internal.Spec.Types as Spec
 
 --------------------
 -- Configuration Types

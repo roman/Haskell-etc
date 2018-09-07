@@ -169,7 +169,7 @@ instance Exception SpecParserError where
         DefaultValueTypeMismatchFound ks cvt val ->
           renderDefaultValueTypeMismatchFound ks cvt val
 
-instance Exception ex => Exception (SpecError (JSON.ParseError ex))  where
+instance {-# OVERLAPPING #-} Exception ex => Exception (SpecError (JSON.ParseError ex))  where
   displayException (SpecError specErr) =
     "\n\n" <>
     (case specErr of
@@ -193,7 +193,7 @@ instance Exception ex => Exception (SpecError (JSON.ParseError ex))  where
                []
     )
 
-instance Exception (SpecError Yaml.ParseException)  where
+instance {-# OVERLAPPING #-} Exception (SpecError Yaml.ParseException)  where
    displayException (SpecError specErr) =
     "\n\n" <>
     renderErrorDoc
@@ -202,3 +202,6 @@ instance Exception (SpecError Yaml.ParseException)  where
                         , indent 2 "The yaml library reported the following error:"
                         , indent 4 $ pretty $ Yaml.prettyPrintParseException specErr])
                   [])
+
+-- instance {-# OVERLAPPING #-} Exception (SpecError SomeException)  where
+--    displayException (SpecError specErr) = "\n\n" <> show specErr

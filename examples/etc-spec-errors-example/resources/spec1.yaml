@@ -1,0 +1,7 @@
+etc/entries:
+  database:
+    db:
+      etc/spec:
+        type: "[tcp]",
+        default:
+        - "tcp://0.0.0.0"

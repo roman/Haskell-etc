@@ -3,15 +3,12 @@ module Etc.Resolver
   , Types.resolveConfig
 
   -- * File Resolver Utilities
-  , Types.FileFormat
-  , Types.newFileFormat
-  , File.jsonFormat
-  , File.yamlFormat
+  , File.FileResolverError (..)
+  , File.jsonConfig
+  , File.yamlConfig
   , File.fileResolver
-  , File.jsonFileResolver
-  , File.yamlFileResolver
   ) where
 
 import qualified Etc.Internal.Resolver.File       as File
-import qualified Etc.Internal.Resolver.File.Types as Types
+import qualified Etc.Internal.Resolver.File.Types as File
 import qualified Etc.Internal.Resolver.Types      as Types

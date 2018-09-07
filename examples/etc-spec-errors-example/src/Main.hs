@@ -2,22 +2,22 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeApplications    #-}
 module Main where
-
 
 import RIO
 
-import Data.FileEmbed (embedFile)
+import qualified Etc.Spec as Etc
 
-import qualified Etc.Spec         as Etc
+import Types (customTypes)
 
 --------------------------------------------------------------------------------
 -- We specify the support commands for our program
 
-configSpecData :: ByteString
-configSpecData = $(embedFile "resources/spec1.json")
+configSpec :: Etc.ConfigSpec
+configSpec =
+  $(Etc.readConfigSpecTH Etc.yamlSpec customTypes "examples/etc-spec-errors-example/resources/spec1.yaml")
 
 main :: IO ()
 main = runSimpleApp $ do
-  configSpec <- Etc.parseConfigSpec configSpecData
   logInfo (displayShow configSpec)

@@ -2,6 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 module Etc.Internal.Resolver.File where
 
 import           RIO
@@ -10,7 +11,6 @@ import qualified RIO.Map     as Map
 import qualified RIO.Set     as Set
 import qualified RIO.Text    as Text
 
-
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON
 import qualified Data.Yaml               as Yaml
@@ -18,14 +18,18 @@ import qualified Data.Yaml               as Yaml
 import System.Directory   (doesFileExist)
 import System.Environment (lookupEnv)
 
+import Etc.Internal.FileFormat     as FileFormat
 import Etc.Internal.Resolver.Types
 
-import           Etc.Internal.Config
+import Etc.Internal.Config
     (Config (..), ConfigValue (..), SomeConfigSource (..), Value, markAsSensitive)
-import qualified Etc.Spec            as Spec
 
+import Etc.Internal.FileFormat          (FileFormat, jsonFormat, yamlFormat)
 import Etc.Internal.Resolver.File.Error ()
 import Etc.Internal.Resolver.File.Types
+
+import qualified Etc.Internal.Spec.Parser as Spec (assertFieldTypeMatchesE)
+import qualified Etc.Internal.Spec.Types  as Spec
 
 --------------------------------------------------------------------------------
 -- Spec Parser
@@ -154,9 +158,9 @@ readConfigFromFileSources fileParser throwErrors priorityIndex spec fileSources 
                 -- NOTE: This is fugly, if we happen to add more "raisable" errors, improve
                 -- this code with a helper that receives the exceptions (similar to catches)
                                       case fromException err of
-              Just UnknownConfigKeyFound{} -> throwM err
+              Just UnknownConfigKeyFound{}       -> throwM err
               Just ConfigFileValueTypeMismatch{} -> throwM err
-              _                                    -> return $ Left err
+              _                                  -> return $ Left err
             _ -> return result
         )
     & (foldl'
@@ -192,15 +196,9 @@ resolveFilesInternal fileParser throwErrors priorityIndex spec = do
       paths <- getPaths
       readConfigFromFileSources fileParser throwErrors priorityIndex spec paths
 
-jsonFormat :: FileFormat (JSON.ParseError FileResolverError)
-jsonFormat = newFileFormat "json" (JSON.parseStrict JSON.asValue)
-
-yamlFormat :: FileFormat Yaml.ParseException
-yamlFormat = newFileFormat "yaml" Yaml.decodeEither'
-
-getFileWarnings
+getConfigFileWarnings
   :: (MonadThrow m, MonadIO m) => FileFormat e -> Spec.ConfigSpec -> m [SomeException]
-getFileWarnings fileParser spec = snd `fmap` resolveFilesInternal fileParser False 0 spec
+getConfigFileWarnings fileParser spec = snd `fmap` resolveFilesInternal fileParser False 0 spec
 
 resolveFiles
   :: (MonadThrow m, MonadIO m) => FileFormat e -> Int -> Spec.ConfigSpec -> m Config
@@ -210,8 +208,8 @@ resolveFiles fileParser priorityIndex spec =
 fileResolver :: (MonadThrow m, MonadIO m) => FileFormat e -> Resolver m
 fileResolver fileParser = Resolver (resolveFiles fileParser)
 
-yamlFileResolver :: (MonadThrow m, MonadIO m) => Resolver m
-yamlFileResolver = fileResolver yamlFormat
+jsonConfig :: FileFormat (JSON.ParseError FileResolverError)
+jsonConfig = jsonFormat
 
-jsonFileResolver :: (MonadThrow m, MonadIO m) => Resolver m
-jsonFileResolver = fileResolver jsonFormat
+yamlConfig :: FileFormat Yaml.ParseException
+yamlConfig = yamlFormat

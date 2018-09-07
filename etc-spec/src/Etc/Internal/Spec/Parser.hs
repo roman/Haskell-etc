@@ -7,6 +7,8 @@ module Etc.Internal.Spec.Parser where
 import           RIO
 import qualified RIO.HashMap        as HashMap
 import qualified RIO.Map            as Map
+import qualified RIO.Text           as Text
+import qualified RIO.Text.Partial   as Text (init, tail)
 import qualified RIO.Vector.Partial as Vector (head)
 
 import qualified Data.Aeson              as JSON hiding (withText)
@@ -16,10 +18,18 @@ import qualified Data.Yaml               as Yaml
 import Language.Haskell.TH        (ExpQ, runIO)
 import Language.Haskell.TH.Syntax (addDependentFile)
 
+import Etc.Internal.CustomType
+import Etc.Internal.FileFormat (FileFormat, jsonFormat, yamlFormat)
 import Etc.Internal.Spec.Error ()
 import Etc.Internal.Spec.Types
 
 --------------------------------------------------------------------------------
+
+jsonSpec :: FileFormat (JSON.ParseError SpecParserError)
+jsonSpec = jsonFormat
+
+yamlSpec :: FileFormat Yaml.ParseException
+yamlSpec = yamlFormat
 
 matchesConfigValueType :: ConfigValueType -> JSON.Value -> Bool
 matchesConfigValueType cvType json = case (json, cvType) of
@@ -65,40 +75,77 @@ inferConfigValueTypeFromJSON fieldKeypath defaultJSON = either JSON.throwCustomE
         Left  err            -> Left err
     _ -> Left (CannotInferTypeFromDefault fieldKeypath json)
 
-parseConfigValueType1
-  :: (Monad m) => [Text] -> JSON.ParseT SpecParserError m ConfigValueType
-parseConfigValueType1 fieldKeypath =
-  JSON.withText $ \typeText -> case typeText of
-    "string"   -> Right $ CVTSingle CVTString
-    "number"   -> Right $ CVTSingle CVTNumber
-    "bool"     -> Right $ CVTSingle CVTBool
-    "object"   -> Right $ CVTSingle CVTObject
-    "[string]" -> Right $ CVTArray CVTString
-    "[number]" -> Right $ CVTArray CVTNumber
-    "[bool]"   -> Right $ CVTArray CVTBool
-    "[object]" -> Right $ CVTArray CVTObject
-    -- TODO: Implement tests
-    _          -> Left (UnknownConfigValueType fieldKeypath typeText)
+parseArrayType ::
+  Text -> (SingleConfigValueType -> ConfigValueType, Text)
+parseArrayType input =
+  if "[" `Text.isPrefixOf` input &&
+     "]" `Text.isSuffixOf` input
+    then (CVTArray, Text.strip $ Text.tail $ Text.init input)
+    else (CVTSingle, Text.strip input)
 
-parseConfigValueType
-  :: Monad m => [Text] -> Maybe JSON.Value -> JSON.ParseT SpecParserError m ConfigValueType
-parseConfigValueType fieldKeypath mdefaultValue = case mdefaultValue of
-  Nothing           -> JSON.key "type" (parseConfigValueType1 fieldKeypath)
-  Just defaultValue -> do
-    mFieldType <- JSON.keyMay "type" (parseConfigValueType1 fieldKeypath)
-    case mFieldType of
-      Nothing        -> inferConfigValueTypeFromJSON fieldKeypath defaultValue
-      Just fieldType -> do
-        assertFieldTypeMatches (DefaultValueTypeMismatchFound fieldKeypath)
-                               fieldType
-                               defaultValue
-        return fieldType
+parseConfigValueType1 ::
+     (Monad m)
+  => Map Text CustomType
+  -> [Text]
+  -> JSON.ParseT SpecParserError m (ConfigValueType, Maybe CustomType)
+parseConfigValueType1 customTypes fieldKeypath =
+  JSON.withText $ \typeText ->
+    case parseArrayType typeText of
+      (ctor, "string") -> Right $ (ctor CVTString, Nothing)
+      (ctor, "number") -> Right $ (ctor CVTNumber, Nothing)
+      (ctor, "bool")   -> Right $ (ctor CVTBool, Nothing)
+      (ctor, "object") -> Right $ (ctor CVTObject, Nothing)
+      (ctor, customTypeName) ->
+        case Map.lookup customTypeName customTypes of
+          Nothing ->
+            Left (UnknownConfigValueType fieldKeypath customTypeName)
+          Just parser ->
+            Right ( ctor (CVTCustom customTypeName)
+                  , Just parser
+                  )
 
-parseConfigValueData :: Monad m => [Text] -> JSON.ParseT SpecParserError m ConfigValueData
-parseConfigValueData fieldKeypath = JSON.key "etc/spec" $ do
+parseConfigValueType ::
+     (Monad m)
+  => Map Text CustomType
+  -> [Text]
+  -> Maybe JSON.Value
+  -> JSON.ParseT SpecParserError m ConfigValueType
+parseConfigValueType customTypes fieldKeypath mdefaultValue =
+  case mdefaultValue of
+    Nothing ->
+      fst <$> JSON.key "type" (parseConfigValueType1 customTypes fieldKeypath)
+    Just defaultValue -> do
+      mFieldType <-
+        JSON.keyMay "type" (parseConfigValueType1 customTypes fieldKeypath)
+      case mFieldType of
+        Nothing -> inferConfigValueTypeFromJSON fieldKeypath defaultValue
+
+        Just (fieldType, Nothing) -> do
+          assertFieldTypeMatches
+            (DefaultValueTypeMismatchFound fieldKeypath)
+            fieldType
+            defaultValue
+          return fieldType
+
+        Just (fieldType, Just customType) -> do
+          let
+            parseError =
+              (DefaultValueTypeMismatchFound
+                   fieldKeypath
+                   fieldType
+                   defaultValue)
+          parseCustomType (isCVTArray fieldType) parseError defaultValue customType
+          return fieldType
+
+parseConfigValueData ::
+     (Monad m)
+  => Map Text CustomType
+  -> [Text]
+  -> JSON.ParseT SpecParserError m ConfigValueData
+parseConfigValueData customTypes fieldKeypath = JSON.key "etc/spec" $ do
   configValueDefault   <- JSON.keyMay "default" JSON.asValue
   -- TODO: make tests around type inference
-  configValueType      <- parseConfigValueType fieldKeypath configValueDefault
+  configValueType      <- parseConfigValueType customTypes fieldKeypath configValueDefault
   configValueSensitive <- JSON.keyOrDefault "sensitive" False JSON.asBool
   configValueJSON      <- JSON.asValue
   return $ ConfigValueData
@@ -108,8 +155,8 @@ parseConfigValueData fieldKeypath = JSON.key "etc/spec" $ do
     , configValueJSON
     }
 
-parseConfigSpecEntries :: Monad m => [Text] -> JSON.ParseT SpecParserError m ConfigValue
-parseConfigSpecEntries fieldKeypath = do
+parseConfigSpecEntries :: Monad m => Map Text CustomType -> [Text] -> JSON.ParseT SpecParserError m ConfigValue
+parseConfigSpecEntries customTypes fieldKeypath = do
   jsonValue <- JSON.asValue
   case jsonValue of
     JSON.Object object -> case HashMap.lookup "etc/spec" object of
@@ -135,40 +182,39 @@ parseConfigSpecEntries fieldKeypath = do
         }
  where
   parseSubConfig = SubConfig . Map.fromList <$> JSON.forEachInObject
-    (\key -> (,) key <$> parseConfigSpecEntries (key : fieldKeypath))
-  parseConfigValue = ConfigValue <$> parseConfigValueData fieldKeypath
+    (\key -> (,) key <$> parseConfigSpecEntries customTypes (key : fieldKeypath))
+  parseConfigValue = ConfigValue <$> parseConfigValueData customTypes fieldKeypath
 
-configSpecParser :: Monad m => JSON.ParseT SpecParserError m ConfigSpec
-configSpecParser = do
-  result         <- JSON.key "etc/entries" (parseConfigSpecEntries [])
+configSpecParser :: (Monad m) => Map Text CustomType -> JSON.ParseT SpecParserError m ConfigSpec
+configSpecParser customTypes = do
+  result         <- JSON.key "etc/entries" (parseConfigSpecEntries customTypes [])
   configSpecJSON <- HashMap.delete "etc/entries" <$> JSON.asObject
   case result of
     ConfigValue{} -> JSON.throwCustomError (InvalidSpecEntries result)
     SubConfig configSpecEntries ->
       return $ ConfigSpec {configSpecJSON , configSpecEntries }
 
-
-parseConfigSpec :: (Monad m, MonadThrow m) => ByteString -> m ConfigSpec
-parseConfigSpec bytes = do
+parseConfigSpec :: (Monad m, MonadThrow m) => [(Text, CustomType)] -> ByteString -> m ConfigSpec
+parseConfigSpec customTypes bytes = do
   let result = Yaml.decodeEither' bytes
   case result of
     Left  err     -> throwM (SpecError err)
-    Right jsonVal -> parseConfigSpecValue jsonVal
+    Right jsonVal -> parseConfigSpecValue customTypes jsonVal
 
-parseConfigSpecValue :: (Monad m, MonadThrow m) => JSON.Value -> m ConfigSpec
-parseConfigSpecValue jsonValue = do
-  result <- JSON.parseValueM configSpecParser jsonValue
+parseConfigSpecValue :: (Monad m, MonadThrow m) => [(Text, CustomType)] -> JSON.Value -> m ConfigSpec
+parseConfigSpecValue customTypes jsonValue = do
+  result <- JSON.parseValueM (configSpecParser (Map.fromList customTypes)) jsonValue
   case result of
     Left  err  -> throwM (SpecError err)
     Right spec -> return spec
 
-readConfigSpec :: (MonadIO m, MonadThrow m) => FilePath -> m ConfigSpec
-readConfigSpec filepath = do
+readConfigSpec :: (MonadIO m, MonadThrow m) => [(Text, CustomType)] -> FilePath -> m ConfigSpec
+readConfigSpec customTypes filepath = do
   bytes <- readFileBinary filepath
-  parseConfigSpec bytes
+  parseConfigSpec customTypes bytes
 
-readConfigSpecTH :: FilePath -> ExpQ
-readConfigSpecTH filepath = do
+readConfigSpecTH :: [(Text, CustomType)] -> FilePath -> ExpQ
+readConfigSpecTH customTypes filepath = do
   addDependentFile filepath
-  configSpec <- runIO $ readConfigSpec filepath
+  configSpec <- runIO $ readConfigSpec customTypes filepath
   [| configSpec |]

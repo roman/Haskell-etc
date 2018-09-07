@@ -14,7 +14,7 @@ import qualified Data.Text.Prettyprint.Doc as Pretty
 
 
 import           Etc.Internal.Config
-import qualified Etc.Spec            as Spec
+import qualified Etc.Internal.Spec.Types as Spec
 
 type FormatName = Text
 
@@ -38,28 +38,6 @@ data FileResolverError
   deriving (Show)
 
 --------------------------------------------------------------------------------
-
-data FileFormat e
-  = FileFormat
-  {
-    fileFormatName   :: ![FormatName]
-  , fileFormatParser :: !(ByteString -> Either e JSON.Value)
-  }
-
-instance Functor FileFormat where
-  fmap f format@FileFormat {fileFormatParser} =
-    format {fileFormatParser = mapLeft f . fileFormatParser}
-
-instance Semigroup (FileFormat e) where
-  (<>) (FileFormat fn1 fp1) (FileFormat fn2 fp2) =
-    FileFormat (fn1 <> fn2) (\bytes ->
-                               case fp1 bytes of
-                                 Left _e      -> fp2 bytes
-                                 Right result -> Right result)
-
-newFileFormat :: FormatName -> (ByteString -> Either e JSON.Value) -> FileFormat e
-newFileFormat formatName fileFormatParser =
-  FileFormat {fileFormatName = [formatName], fileFormatParser }
 
 data FileValueOrigin
   = ConfigFileOrigin { fileSourcePath :: !Text }
