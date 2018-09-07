@@ -45,14 +45,16 @@ getFileFromOrigin origin = case origin of
 
 configSpecFilesEntryMissingBody :: [Doc ann] -> Doc ann
 configSpecFilesEntryMissingBody siblingKeys = vsep
-  [ "Other keys found in the configuration spec file"
+  [ reflow "The \"etc/files\" is entry missing in the configuration spec file"
+  , mempty
+  , "Other keys found in the configuration spec file"
   , mempty
   , indent 2 $ vsep $ map (<> ": ...") siblingKeys
   ]
 
 renderConfigSpecFilesEntryMissingBody :: [Text] -> Doc Ann
 renderConfigSpecFilesEntryMissingBody siblingKeys = foundError3
-  (reflow "The \"etc/files\" is entry missing in the configuration spec file")
+  "file resolver"
   (configSpecFilesEntryMissingBody (map pretty siblingKeys))
   [ reflow
       "Make sure to include the \"etc/files\" entry in your configuration spec file, you can find more information at <PENDING_URL>"
@@ -62,8 +64,9 @@ renderConfigSpecFilesEntryMissingBody siblingKeys = foundError3
 -- ConfigSpecFilesPathsEntryIsEmpty
 
 renderConfigSpecFilesPathsEntryIsEmpty :: Doc Ann
-renderConfigSpecFilesPathsEntryIsEmpty = foundError2
-  (reflow "The \"etc/files.path\" entry in your configuration spec file is empty")
+renderConfigSpecFilesPathsEntryIsEmpty = foundError3
+  "file resolver"
+  ( reflow "The \"etc/files.path\" entry in your configuration spec file is empty")
   [ reflow
       "Make sure to have a valid \"etc/files\" entry in your configuration spec file, you can find more information at <PENDING_URL>"
   ]
@@ -73,7 +76,9 @@ renderConfigSpecFilesPathsEntryIsEmpty = foundError2
 
 unsupportedFileExtensionGivenBody :: Doc Ann -> Doc Ann
 unsupportedFileExtensionGivenBody filepath = vsep
-  [ "In the configuration spec file"
+  [ reflow "Detected a configuration file with an unsupported extension"
+  , mempty
+  , reflow "In the configuration spec file"
   , mempty
   , indent 2 $ renderKeyPathBody ["etc/files", "path"] $ newlineBody $ vsep
     ["- ...", annotate Error $ pointed ("-" <+> filepath), "- ..."]
@@ -82,7 +87,7 @@ unsupportedFileExtensionGivenBody filepath = vsep
 
 renderUnsupportedFileExtensionGiven :: Text -> [Text] -> Doc Ann
 renderUnsupportedFileExtensionGiven filepath supportedExtensions = foundError3
-  (reflow "Detected a configuration file with an unsupported extension")
+  "file resolver"
   (unsupportedFileExtensionGivenBody $ pretty filepath)
   (map
     (\supportedExtension ->
@@ -98,11 +103,12 @@ renderUnsupportedFileExtensionGiven filepath supportedExtensions = foundError3
 --------------------------------------------------------------------------------
 -- ConfigFileValueTypeMismatch
 
-
 configFileValueTypeMismatchFoundBody
   :: FileValueOrigin -> [Doc Ann] -> ConfigValueType -> JSON.Value -> Doc Ann
 configFileValueTypeMismatchFoundBody origin keyPath cvType jsonVal = vsep
-  [ "In the configuration file" <+> renderFileOrigin origin
+  [ reflow "There is a mistmach between a configuration file value and the type specified in the configuration spec file"
+  , mempty
+  , "In the configuration file" <+> renderFileOrigin origin
   , mempty
   , indent 2 $ renderKeyPathBody keyPath $ newlineBody $ annotate
     Current
@@ -118,9 +124,7 @@ configFileValueTypeMismatchFoundBody origin keyPath cvType jsonVal = vsep
 renderConfigFileValueTypeMismatchFound
   :: FileValueOrigin -> [Text] -> ConfigValueType -> JSON.Value -> Doc Ann
 renderConfigFileValueTypeMismatchFound origin keyPath cvType jsonVal = foundError3
-  (reflow
-    "There is a mistmach between a configuration file value and the type specified in the configuration spec file"
-  )
+  "file resolver"
   (configFileValueTypeMismatchFoundBody origin (map pretty keyPath) cvType jsonVal)
   [ reflow "Change the value to match the given type"
     <+> dquotes (renderConfigValueType cvType)
@@ -140,9 +144,11 @@ renderConfigFileNotPresent filepath =
   let filepathDoc = dquotes (pretty filepath)
   in
     foundError3
-      (reflow "Didn't find a configuration file specified in the configuration spec file")
+      "file resolver"
       (vsep
-        [ reflow "In the configuration spec file"
+        [ reflow "Didn't find a configuration file specified in the configuration spec file"
+        , mempty
+        , reflow "In the configuration spec file"
         , mempty
         , indent 2 $ renderKeyPathBody ["etc/files", "path"] $ newlineBody $ vsep
           ["- ...", annotate Error $ pointed ("-" <+> filepathDoc), "- ..."]
@@ -155,7 +161,10 @@ renderConfigFileNotPresent filepath =
 
 unknownConfigKeyFoundBody :: FileValueOrigin -> [Doc Ann] -> Doc Ann -> Doc Ann
 unknownConfigKeyFoundBody fileSource keyPath unknownKey = vsep
-  [ "On an entry in the configuration file" <+> renderFileOrigin fileSource
+  [ reflow
+        "Detected a configuration file with an entry not present in the configuration spec file"
+  , mempty
+  , "On an entry in the configuration file" <+> renderFileOrigin fileSource
   , mempty
   , indent 2
   $ renderKeyPathBody keyPath
@@ -172,9 +181,7 @@ renderUnknownConfigKeyFound origin keyPath unknownKey =
     unknownKeyDoc = pretty unknownKey
   in
     foundError3
-      (reflow
-        "Detected a configuration file with an entry not present in the configuration spec file"
-      )
+      "file resolver"
       (unknownConfigKeyFoundBody origin keyPathDoc unknownKeyDoc)
       [ reflow "Remove unknown entry"
       <+> dquotes unknownKeyDoc
@@ -196,9 +203,11 @@ renderConfigInvalidSyntaxFound origin =
   let filepathDoc = getFileFromOrigin origin
   in
     foundError3
-      (reflow "Found a configuration file with unsupported syntax")
+      "file resolver"
       (vsep
-        [ reflow "In the configuration spec file"
+        [ reflow "Found a configuration file with unsupported syntax"
+        , mempty
+        , reflow "In the configuration spec file"
         , mempty
         , indent 2 $ renderKeyPathBody ["etc/files", "path"] $ newlineBody $ vsep
           ["- ...", annotate Error $ pointed ("-" <+> filepathDoc), "- ..."]
@@ -214,7 +223,9 @@ renderConfigInvalidSyntaxFound origin =
 
 subConfigEntryExpectedBody :: FileValueOrigin -> [Doc Ann] -> JSON.Value -> Doc Ann
 subConfigEntryExpectedBody origin keyPath jsonVal = vsep
-  [ "In the configuration file" <+> renderFileOrigin origin
+  [ reflow
+      "There is a mistmach between a configuration file entry and the spec specified in the configuration spec file"
+  , "In the configuration file" <+> renderFileOrigin origin
   , mempty
   , indent 2 $ renderKeyPathBody keyPath $ newlineBody $ annotate
     Current
@@ -227,9 +238,7 @@ subConfigEntryExpectedBody origin keyPath jsonVal = vsep
 
 renderSubConfigEntryExpected :: FileValueOrigin -> [Text] -> JSON.Value -> Doc Ann
 renderSubConfigEntryExpected origin keyPath jsonVal = foundError3
-  (reflow
-    "There is a mistmach between a configuration file entry and the spec specified in the configuration spec file"
-  )
+  "file resolver"
   (subConfigEntryExpectedBody origin (map pretty keyPath) jsonVal)
   [ reflow "Change the entry found in the configuration file"
     <+> renderFileOrigin1 origin
@@ -238,9 +247,9 @@ renderSubConfigEntryExpected origin keyPath jsonVal = foundError3
 
 --------------------------------------------------------------------------------
 
-instance Exception FileResolverError where
-  displayException err =
-    renderErrorDoc $ case err of
+instance HumanErrorMessage FileResolverError where
+  humanErrorMessage err =
+    case err of
       ConfigSpecFilesEntryMissing siblingKeys ->
         renderConfigSpecFilesEntryMissingBody siblingKeys
 

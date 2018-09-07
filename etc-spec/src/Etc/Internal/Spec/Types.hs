@@ -30,6 +30,8 @@ data SpecParserError
   | InvalidSpecEntries !ConfigValue
   deriving (Show)
 
+instance Exception SpecParserError
+
 newtype CustomType
   = CustomType {customTypeParser :: JSON.Parse () () }
 

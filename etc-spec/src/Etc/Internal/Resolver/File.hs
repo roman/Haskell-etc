@@ -155,12 +155,12 @@ readConfigFromFileSources fileParser throwErrors priorityIndex spec fileSources 
                                 fileOrigin
           case result of
             Left err | throwErrors ->
-                -- NOTE: This is fugly, if we happen to add more "raisable" errors, improve
-                -- this code with a helper that receives the exceptions (similar to catches)
-                                      case fromException err of
-              Just UnknownConfigKeyFound{}       -> throwM err
-              Just ConfigFileValueTypeMismatch{} -> throwM err
-              _                                  -> return $ Left err
+              -- NOTE: This is fugly, if we happen to add more "raisable" errors, improve
+              -- this code with a helper that receives the exceptions (similar to catches)
+              case fromException err of
+                Just UnknownConfigKeyFound{}       -> throwM err
+                Just ConfigFileValueTypeMismatch{} -> throwM err
+                _                                  -> return $ Left err
             _ -> return result
         )
     & (foldl'

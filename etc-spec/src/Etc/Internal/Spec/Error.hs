@@ -24,7 +24,9 @@ import Etc.Internal.Spec.Types
 
 cannotInferTypeFromDefaultBody :: [Doc Ann] -> JSON.Value -> Doc Ann
 cannotInferTypeFromDefaultBody keyPath jsonVal = vsep
-  [ "In the entry of the configuration spec file"
+  [ reflow "Cannot infer the type of an entry from its default value"
+  , mempty
+  , reflow "In the entry of the configuration spec file"
   , mempty
   , indent 2 $ renderSpecKeyPath keyPath $ newlineBody $ vsep
     [hsep ["default:", annotate Error $ pointed $ renderJsonValue jsonVal]]
@@ -32,7 +34,7 @@ cannotInferTypeFromDefaultBody keyPath jsonVal = vsep
 
 renderCannotInferTypeFromDefault :: [Text] -> JSON.Value -> Doc Ann
 renderCannotInferTypeFromDefault keyPath jsonVal = foundError3
-  (reflow "Cannot infer the type of an entry from its default value")
+  "configuration spec"
   (cannotInferTypeFromDefaultBody (map pretty keyPath) jsonVal)
   [ reflow "Add a \"type\" field in the configuration map of the"
     <+> dquotes (pretty (List.last keyPath))
@@ -44,7 +46,9 @@ renderCannotInferTypeFromDefault keyPath jsonVal = foundError3
 
 inferredNestedArrayOnDefaultBody :: [Doc Ann] -> JSON.Value -> Doc Ann
 inferredNestedArrayOnDefaultBody keyPath jsonVal = vsep
-  [ "In the entry of the configuration spec file"
+  [ reflow "Detected a deeply nested array in the default value of an entry; this is not supported by the library"
+  , mempty
+  , reflow "In the entry of the configuration spec file"
   , mempty
   , indent 2 $ renderSpecKeyPath keyPath $ newlineBody $ vsep
     [hsep ["default:", newlineBody (annotate Error $ pointed $ renderJsonValue jsonVal)]]
@@ -52,9 +56,7 @@ inferredNestedArrayOnDefaultBody keyPath jsonVal = vsep
 
 renderInferredNestedArrayOnDefault :: [Text] -> JSON.Value -> Doc Ann
 renderInferredNestedArrayOnDefault keyPath jsonVal = foundError3
-  (reflow
-    "Detected a deeply nested array in the default value of an entry; this is not supported by the library"
-  )
+  "configuration spec"
   (inferredNestedArrayOnDefaultBody (map pretty keyPath) jsonVal)
   [ reflow "Use a one level array value in the \"default\" field of the"
     <+> dquotes (pretty (List.last keyPath))
@@ -67,7 +69,9 @@ renderInferredNestedArrayOnDefault keyPath jsonVal = foundError3
 
 unknownConfigValueTypeBody :: [Doc Ann] -> Doc Ann -> Doc Ann
 unknownConfigValueTypeBody keyPath typeName = vsep
-  [ "In the entry of the configuration spec file"
+  [ reflow "Detected an entry with an unknown type"
+  , mempty
+  , reflow "In the entry of the configuration spec file"
   , mempty
   , indent 2 $ renderSpecKeyPath keyPath $ newlineBody $ vsep
     [hsep ["type:", annotate Error $ pointed typeName]]
@@ -75,7 +79,7 @@ unknownConfigValueTypeBody keyPath typeName = vsep
 
 renderUnknownConfigValueType :: [Text] -> Text -> Doc Ann
 renderUnknownConfigValueType keyPath typeName = foundError3
-  (reflow "Detected an entry with an unknown type")
+  "configuration spec"
   (unknownConfigValueTypeBody (map pretty keyPath) (pretty typeName))
   [ reflow
       "Use one of the known types of the etc library, you can find more information at <PENDING_URL>"
@@ -86,7 +90,9 @@ renderUnknownConfigValueType keyPath typeName = foundError3
 
 defaultValueTypeMismatchFoundBody :: [Doc Ann] -> ConfigValueType -> JSON.Value -> Doc Ann
 defaultValueTypeMismatchFoundBody keyPath cvType jsonVal = vsep
-  [ "In the entry of the configuration spec file"
+  [ reflow "There is a mistmach between the default value and the type of an entry"
+  , mempty
+  , "In the entry of the configuration spec file"
   , mempty
   , indent 2 $ renderSpecKeyPath keyPath $ newlineBody $ vsep
     [ hsep ["type:", annotate Expected $ pointed $ renderConfigValueType cvType]
@@ -107,7 +113,7 @@ defaultValueTypeMismatchFoundBody keyPath cvType jsonVal = vsep
 
 renderDefaultValueTypeMismatchFound :: [Text] -> ConfigValueType -> JSON.Value -> Doc Ann
 renderDefaultValueTypeMismatchFound keyPath cvType jsonVal = foundError3
-  (reflow "There is a mistmach between the default value and the type of an entry")
+  "configuration spec"
   (defaultValueTypeMismatchFoundBody (map pretty keyPath) cvType jsonVal)
   [ reflow "Change the default value to match the given type"
     <+> dquotes (renderConfigValueType cvType)
@@ -122,7 +128,9 @@ renderDefaultValueTypeMismatchFound keyPath cvType jsonVal = foundError3
 
 redundantKeysOnValueSpecBody :: [Doc Ann] -> [Doc Ann] -> Doc Ann
 redundantKeysOnValueSpecBody keyPath siblingKeys = vsep
-  [ "In the entry of the configuration spec file"
+  [ reflow "Detected an entry with extra keys at the \"etc/spec\" level"
+  , mempty
+  , reflow "In the entry of the configuration spec file"
   , mempty
   , indent 2
   $  renderKeyPathBody ("etc/entries" : keyPath)
@@ -137,7 +145,7 @@ renderRedundantKeysOnValueSpec :: [Text] -> [Text] -> Doc Ann
 renderRedundantKeysOnValueSpec keyPath siblingKeys =
   let siblingKeyDocs = map pretty siblingKeys
   in  foundError3
-        (reflow "Detected an entry with extra keys at the \"etc/spec\" level")
+        "configuration spec"
         (redundantKeysOnValueSpecBody (map pretty keyPath) siblingKeyDocs)
         [ reflow "Remove all keys that are siblings of the \"etc/spec\" (e.g."
           <+> hsep (punctuate comma $ map dquotes siblingKeyDocs)
@@ -148,7 +156,8 @@ renderRedundantKeysOnValueSpec keyPath siblingKeys =
 -- InvalidSpecEntriesBody
 
 renderInvalidSpecEntries :: ConfigValue -> Doc Ann
-renderInvalidSpecEntries _configValue = foundError2
+renderInvalidSpecEntries _configValue = foundError3
+  "configuration spec"
   (reflow "Detected an invalid \"etc/entries\" value in your configuration spec file")
   [ reflow
       "You can find more information about what values \"etc/entries\" can have at <PENDING_URL>"
@@ -156,52 +165,45 @@ renderInvalidSpecEntries _configValue = foundError2
 
 --------------------------------------------------------------------------------
 
-instance Exception SpecParserError where
-  displayException err =
-    renderErrorDoc $
-      case err of
-        CannotInferTypeFromDefault ks val -> renderCannotInferTypeFromDefault ks val
-        UnknownConfigValueType ks tyName -> renderUnknownConfigValueType ks tyName
-        RedundantKeysOnValueSpec ks other -> renderRedundantKeysOnValueSpec ks other
-        InvalidSpecEntries configValue -> renderInvalidSpecEntries configValue
-        InferredNestedArrayOnDefault ks val ->
-          renderInferredNestedArrayOnDefault ks val
-        DefaultValueTypeMismatchFound ks cvt val ->
-          renderDefaultValueTypeMismatchFound ks cvt val
+instance HumanErrorMessage SpecParserError where
+  humanErrorMessage err =
+    case err of
+      CannotInferTypeFromDefault ks val -> renderCannotInferTypeFromDefault ks val
+      UnknownConfigValueType ks tyName -> renderUnknownConfigValueType ks tyName
+      RedundantKeysOnValueSpec ks other -> renderRedundantKeysOnValueSpec ks other
+      InvalidSpecEntries configValue -> renderInvalidSpecEntries configValue
+      InferredNestedArrayOnDefault ks val ->
+        renderInferredNestedArrayOnDefault ks val
+      DefaultValueTypeMismatchFound ks cvt val ->
+        renderDefaultValueTypeMismatchFound ks cvt val
 
-instance {-# OVERLAPPING #-} Exception ex => Exception (SpecError (JSON.ParseError ex))  where
-  displayException (SpecError specErr) =
-    "\n\n" <>
-    (case specErr of
-       JSON.InvalidJSON msg -> renderErrorDoc $ renderInvalidJsonError msg
+instance (Show ex, HumanErrorMessage ex) => HumanErrorMessage (JSON.ParseError ex) where
+  humanErrorMessage parseErr =
+    case parseErr of
+       JSON.InvalidJSON msg -> renderInvalidJsonError msg
        JSON.BadSchema ks errSpecifics ->
          case errSpecifics of
-           JSON.CustomError err -> displayException err
+           JSON.CustomError err -> humanErrorMessage err
            _ ->
-             renderErrorDoc $
              foundError3
-               "Detected JSON parser failure"
+               "JSON Parser"
                (vsep ["In the following entry:"
                      , mempty
                      , indent 2 $ renderPathPieces ks
                      , mempty
-                     , "The JSON API returned the following error:"
+                     , "The aeson library returned reported the following error:"
                      , mempty
                      , indent 2 $ reflow $ Text.pack $ show errSpecifics
                      ]
                )
                []
-    )
 
-instance {-# OVERLAPPING #-} Exception (SpecError Yaml.ParseException)  where
-   displayException (SpecError specErr) =
-    "\n\n" <>
-    renderErrorDoc
-      (foundError2 (vsep ["The yaml parser failed"
-                        , mempty
-                        , indent 2 "The yaml library reported the following error:"
-                        , indent 4 $ pretty $ Yaml.prettyPrintParseException specErr])
-                  [])
-
--- instance {-# OVERLAPPING #-} Exception (SpecError SomeException)  where
---    displayException (SpecError specErr) = "\n\n" <> show specErr
+instance HumanErrorMessage Yaml.ParseException where
+  humanErrorMessage yamlErr =
+    foundError2
+      "YAML Parser"
+      (vsep
+         [ reflow "Got an error from the yaml library, it reported the following error:"
+         , mempty
+         , indent 4 $ pretty $ Yaml.prettyPrintParseException yamlErr
+         ])

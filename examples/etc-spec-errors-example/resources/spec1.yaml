@@ -2,6 +2,6 @@ etc/entries:
   database:
     db:
       etc/spec:
-        type: "[tcp]",
+        type: "foobar"
         default:
         - "tcp://0.0.0.0"

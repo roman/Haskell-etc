@@ -4,6 +4,8 @@
 {-# LANGUAGE TemplateHaskell   #-}
 module Etc.Internal.Spec.Parser where
 
+import Prelude (putStrLn)
+
 import           RIO
 import qualified RIO.HashMap        as HashMap
 import qualified RIO.Map            as Map
@@ -18,18 +20,19 @@ import qualified Data.Yaml               as Yaml
 import Language.Haskell.TH        (ExpQ, runIO)
 import Language.Haskell.TH.Syntax (addDependentFile)
 
+import Etc.Internal.Renderer (HumanErrorMessage)
 import Etc.Internal.CustomType
-import Etc.Internal.FileFormat (FileFormat, jsonFormat, yamlFormat)
+import Etc.Internal.FileFormat (FileFormat(..), jsonFormat, yamlFormat)
 import Etc.Internal.Spec.Error ()
 import Etc.Internal.Spec.Types
 
 --------------------------------------------------------------------------------
 
-jsonSpec :: FileFormat (JSON.ParseError SpecParserError)
-jsonSpec = jsonFormat
+jsonSpec :: FileFormat (SpecError (JSON.ParseError SpecParserError))
+jsonSpec = SpecError <$> jsonFormat
 
-yamlSpec :: FileFormat Yaml.ParseException
-yamlSpec = yamlFormat
+yamlSpec :: FileFormat (SpecError Yaml.ParseException)
+yamlSpec = SpecError <$> yamlFormat
 
 matchesConfigValueType :: ConfigValueType -> JSON.Value -> Bool
 matchesConfigValueType cvType json = case (json, cvType) of
@@ -194,9 +197,11 @@ configSpecParser customTypes = do
     SubConfig configSpecEntries ->
       return $ ConfigSpec {configSpecJSON , configSpecEntries }
 
-parseConfigSpec :: (Monad m, MonadThrow m) => [(Text, CustomType)] -> ByteString -> m ConfigSpec
-parseConfigSpec customTypes bytes = do
-  let result = Yaml.decodeEither' bytes
+parseConfigSpec ::
+     (Show err, Typeable err, HumanErrorMessage err, Monad m, MonadThrow m)
+  => FileFormat (SpecError err) -> [(Text, CustomType)] -> ByteString -> m ConfigSpec
+parseConfigSpec FileFormat { fileFormatParser } customTypes bytes = do
+  let result = fileFormatParser bytes
   case result of
     Left  err     -> throwM (SpecError err)
     Right jsonVal -> parseConfigSpecValue customTypes jsonVal
@@ -208,13 +213,27 @@ parseConfigSpecValue customTypes jsonValue = do
     Left  err  -> throwM (SpecError err)
     Right spec -> return spec
 
-readConfigSpec :: (MonadIO m, MonadThrow m) => [(Text, CustomType)] -> FilePath -> m ConfigSpec
-readConfigSpec customTypes filepath = do
+readConfigSpec ::
+     (Typeable err, Show err, HumanErrorMessage err, MonadIO m, MonadThrow m)
+  => FileFormat (SpecError err)
+  -> [(Text, CustomType)]
+  -> FilePath
+  -> m ConfigSpec
+readConfigSpec fileFormat customTypes filepath = do
   bytes <- readFileBinary filepath
-  parseConfigSpec customTypes bytes
+  parseConfigSpec fileFormat customTypes bytes
 
-readConfigSpecTH :: [(Text, CustomType)] -> FilePath -> ExpQ
-readConfigSpecTH customTypes filepath = do
+readConfigSpecTH ::
+     (Typeable err, Show err, HumanErrorMessage err)
+  => FileFormat (SpecError err)
+  -> [(Text, CustomType)]
+  -> FilePath
+  -> ExpQ
+readConfigSpecTH fileFormat customTypes filepath = do
   addDependentFile filepath
-  configSpec <- runIO $ readConfigSpec customTypes filepath
+  configSpec <- runIO $ do
+    result <- try $ readConfigSpec fileFormat customTypes filepath
+    case result of
+      Left err -> putStrLn (displayException err) >> throwIO (err :: SomeException)
+      Right configSpec -> return configSpec
   [| configSpec |]

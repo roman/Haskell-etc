@@ -37,6 +37,8 @@ data FileResolverError
   | SubConfigEntryExpected !FileValueOrigin ![Text] JSON.Value
   deriving (Show)
 
+instance Exception FileResolverError
+
 --------------------------------------------------------------------------------
 
 data FileValueOrigin

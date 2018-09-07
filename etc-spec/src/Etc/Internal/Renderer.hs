@@ -1,6 +1,7 @@
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE NamedFieldPuns       #-}
+{-# LANGUAGE NoImplicitPrelude    #-}
+{-# LANGUAGE OverloadedStrings    #-}
 module Etc.Internal.Renderer where
 
 import           RIO
@@ -33,6 +34,18 @@ data Ann
   | Filepath
   | Envvar
 
+class HumanErrorMessage e where
+  humanErrorMessage :: e -> Doc Ann
+
+instance (Typeable ex, Show ex, HumanErrorMessage ex) => HumanErrorMessage (SpecError ex) where
+  humanErrorMessage (SpecError specErr) =
+    humanErrorMessage specErr
+
+instance (Typeable ex, Show ex, HumanErrorMessage ex) => Exception (SpecError ex) where
+  displayException (SpecError specErr) =
+    "\n\n" <> renderErrorDoc (humanErrorMessage specErr)
+
+
 --------------------------------------------------------------------------------
 -- General Purpose
 
@@ -57,44 +70,61 @@ underlined = highlighted '─'
 pointed :: Doc ann -> Doc ann
 pointed = highlighted '^'
 
-bulletList :: Doc ann -> Doc ann -> Doc ann -> [Doc ann] -> Doc ann
-bulletList emptyList singularTitle pluralTitle docs = case docs of
-  [] -> vsep [pluralTitle, emptyList]
-  [doc] -> vsep [singularTitle, indent 2 doc]
-  _ -> vsep $ pluralTitle : map (\doc -> indent 2 (bullet <> indent 1 doc <> line)) docs
+fixedWidth :: Doc Ann -> (Int -> Doc Ann) -> Doc Ann
+fixedWidth noWidthDoc widthFn =
+  pageWidth $ \input ->
+    case input of
+      AvailablePerLine w _ -> widthFn w
+      _ -> noWidthDoc
+
+title :: Int -> Doc Ann -> Doc Ann
+title msgLength msgDoc =
+  fixedWidth msgDoc $ \w ->
+    let borderLineLength = (w - msgLength - 2) `div` 2
+        borderLine = pretty (Text.replicate borderLineLength "━")
+    in mempty <+> borderLine <+> msgDoc <+> borderLine
+
+styledTitle :: Ann -> Text -> Doc Ann
+styledTitle ann msg =
+  let
+    msgDoc = annotate ann (pretty $ Text.toUpper msg)
+  in
+    title (Text.length msg) msgDoc
+
+errorTitle :: Text -> Doc Ann
+errorTitle = styledTitle ErrorTitle
+
+bulletList :: Doc ann -> Doc ann -> [Doc ann] -> Doc ann
+bulletList singularTitle pluralTitle docs = case docs of
+  [] -> mempty
+  [doc] -> vsep [singularTitle, doc] <> line
+  _ -> vsep $ pluralTitle : map (\doc -> bullet <> indent 1 doc <> line) docs
 
 renderSolutions :: [Doc Ann] -> Doc Ann
 renderSolutions = bulletList
-  "Can't recommend any solutions"
   (annotate SolutionsTitle $ underlined "Possible Solution" <> line)
   (annotate SolutionsTitle $ underlined "Possible Solutions" <> line)
 
 renderKeyPath :: [Doc ann] -> Doc ann
 renderKeyPath = flip renderKeyPathBody mempty
 
-foundError3 :: Doc Ann -> Doc Ann -> [Doc Ann] -> Doc Ann
-foundError3 errorHeader errorDescription errorSolutions = vsep
-  [ annotate ErrorTitle (underlined "Error Found")
+foundError3 :: Text -> Doc Ann -> [Doc Ann] -> Doc Ann
+foundError3 titleText errorDescription errorSolutions = vsep
+  [ errorTitle titleText
   , mempty
-  , indent 2 errorHeader
-  , mempty
-  , indent 2 errorDescription
+  , indent 1 errorDescription
   , mempty
   , mempty
-  , renderSolutions errorSolutions
-  , mempty
+  , indent 1 $ renderSolutions errorSolutions
   ]
 
-foundError2 :: Doc Ann -> [Doc Ann] -> Doc Ann
-foundError2 errorHeader errorSolutions = vsep
-  [ annotate ErrorTitle (underlined "Error Found")
+foundError2 :: Text -> Doc Ann -> Doc Ann
+foundError2 titleDoc descDoc = vsep
+  [ errorTitle titleDoc
   , mempty
-  , indent 2 errorHeader
-  , mempty
-  , renderSolutions errorSolutions
+  , indent 1 descDoc
   , mempty
   ]
-
 
 --------------------------------------------------------------------------------
 -- JSON
