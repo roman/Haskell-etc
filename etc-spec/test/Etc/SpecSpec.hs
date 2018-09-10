@@ -8,7 +8,10 @@ import RIO
 
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON hiding (withScientific)
+import qualified Data.Yaml               as Yaml
 import           Data.Yaml.TH            (yamlQQ)
+
+import Text.RawString.QQ (r)
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -17,10 +20,36 @@ import           Etc.Generators ()
 import           Etc.Internal.Spec.Types (blankConfigValueJSON)
 import qualified Etc.Spec                as SUT
 
+invalidYamlError :: SUT.SpecError Yaml.ParseException -> Bool
+invalidYamlError (SUT.SpecError (Yaml.InvalidYaml {})) = True
+invalidYamlError _                                     = False
+
+invalidJsonError :: SUT.SpecError (JSON.ParseError SUT.SpecParserError) -> Bool
+invalidJsonError _ = True
 
 spec :: Spec
 spec = do
-  describe "Etc.Spec" $
+  describe "Etc.Spec" $ do
+
+    describe "readConfigSpec" $ do
+      describe "yaml format" $ do
+        it "handles invalid syntax" $ do
+          let
+            input =
+              [r|
+                hello: world:
+              |]
+          SUT.parseConfigSpec SUT.yamlSpec [] input `shouldThrow` invalidYamlError
+
+      describe "json format" $ do
+        it "handles invalid syntax" $ do
+          let
+            input =
+              [r|
+                {"hello": "world":}
+              |]
+          SUT.parseConfigSpec SUT.jsonSpec [] input `shouldThrow` invalidJsonError
+
     describe "configSpecParser" $ do
       prop "handles encoding/parsing roundtrip" $ \configSpec -> do
         let jsonVal = JSON.toJSON configSpec

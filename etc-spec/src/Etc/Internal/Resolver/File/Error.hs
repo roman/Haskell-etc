@@ -45,19 +45,22 @@ getFileFromOrigin origin = case origin of
 
 configSpecFilesEntryMissingBody :: [Doc ann] -> Doc ann
 configSpecFilesEntryMissingBody siblingKeys = vsep
-  [ reflow "The \"etc/files\" is entry missing in the configuration spec file"
-  , mempty
-  , "Other keys found in the configuration spec file"
-  , mempty
-  , indent 2 $ vsep $ map (<> ": ...") siblingKeys
-  ]
+  ([ reflow "I could not find the \"etc/files\" entry in the configuration spec file"
+   ] <>
+   if null siblingKeys
+     then []
+     else [ mempty
+          , reflow "Other keys found in the configuration spec file"
+          , mempty
+          , indent 2 $ vsep $ map (<> ": ...") siblingKeys
+          ])
 
 renderConfigSpecFilesEntryMissingBody :: [Text] -> Doc Ann
 renderConfigSpecFilesEntryMissingBody siblingKeys = foundError3
   "file resolver"
   (configSpecFilesEntryMissingBody (map pretty siblingKeys))
   [ reflow
-      "Make sure to include the \"etc/files\" entry in your configuration spec file, you can find more information at <PENDING_URL>"
+      "Make sure to include the \"etc/files\" entry in your configuration spec file; more information at <PENDING_URL>"
   ]
 
 --------------------------------------------------------------------------------
@@ -222,25 +225,28 @@ renderConfigInvalidSyntaxFound origin =
 -- SubConfigEntryExpected
 
 subConfigEntryExpectedBody :: FileValueOrigin -> [Doc Ann] -> JSON.Value -> Doc Ann
-subConfigEntryExpectedBody origin keyPath jsonVal = vsep
-  [ reflow
-      "There is a mistmach between a configuration file entry and the spec specified in the configuration spec file"
-  , "In the configuration file" <+> renderFileOrigin origin
-  , mempty
-  , indent 2 $ renderKeyPathBody keyPath $ newlineBody $ annotate
-    Current
-    (renderJsonValue jsonVal)
-  , mempty
-  , "The"
-  <+> annotate Current "current entry"
-  <+> "does not match the definition in the configuration spec"
-  ]
+subConfigEntryExpectedBody origin keyPath jsonVal =
+  vsep
+    [ reflow
+        "There is a mistmach between a configuration file entry and the spec specified in the configuration spec file"
+    , mempty
+    , "In the configuration file" <+> renderFileOrigin origin
+    , mempty
+    , indent 2 $
+      renderKeyPathBody keyPath $
+      newlineBody $ annotate Current (pointed (renderJsonValue jsonVal))
+    , mempty
+    , "The" <+>
+      annotate Current "current entry" <+>
+      "does not match the definition in the configuration spec"
+    ]
 
 renderSubConfigEntryExpected :: FileValueOrigin -> [Text] -> JSON.Value -> Doc Ann
 renderSubConfigEntryExpected origin keyPath jsonVal = foundError3
   "file resolver"
   (subConfigEntryExpectedBody origin (map pretty keyPath) jsonVal)
-  [ reflow "Change the entry found in the configuration file"
+  [ reflow "Make sure the entry metadata is contained in an \"etc/spec\" entry"
+  , reflow "Change the entry found in the configuration file"
     <+> renderFileOrigin1 origin
     <+> reflow "to match the definition found in the spec"
   ]

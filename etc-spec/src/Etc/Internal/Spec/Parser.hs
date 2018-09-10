@@ -197,21 +197,21 @@ configSpecParser customTypes = do
     SubConfig configSpecEntries ->
       return $ ConfigSpec {configSpecJSON , configSpecEntries }
 
-parseConfigSpec ::
-     (Show err, Typeable err, HumanErrorMessage err, Monad m, MonadThrow m)
-  => FileFormat (SpecError err) -> [(Text, CustomType)] -> ByteString -> m ConfigSpec
-parseConfigSpec FileFormat { fileFormatParser } customTypes bytes = do
-  let result = fileFormatParser bytes
-  case result of
-    Left  err     -> throwM (SpecError err)
-    Right jsonVal -> parseConfigSpecValue customTypes jsonVal
-
 parseConfigSpecValue :: (Monad m, MonadThrow m) => [(Text, CustomType)] -> JSON.Value -> m ConfigSpec
 parseConfigSpecValue customTypes jsonValue = do
   result <- JSON.parseValueM (configSpecParser (Map.fromList customTypes)) jsonValue
   case result of
     Left  err  -> throwM (SpecError err)
     Right spec -> return spec
+
+parseConfigSpec ::
+     (Show err, Typeable err, HumanErrorMessage err, Monad m, MonadThrow m)
+  => FileFormat (SpecError err) -> [(Text, CustomType)] -> ByteString -> m ConfigSpec
+parseConfigSpec FileFormat { fileFormatParser } customTypes bytes = do
+  let result = fileFormatParser bytes
+  case result of
+    Left  err     -> throwM err
+    Right jsonVal -> parseConfigSpecValue customTypes jsonVal
 
 readConfigSpec ::
      (Typeable err, Show err, HumanErrorMessage err, MonadIO m, MonadThrow m)

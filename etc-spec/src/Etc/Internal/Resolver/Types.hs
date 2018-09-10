@@ -5,6 +5,8 @@
 {-# LANGUAGE OverloadedStrings         #-}
 module Etc.Internal.Resolver.Types where
 
+import Prelude (putStrLn)
+
 import           RIO
 import qualified RIO.Text as Text
 
@@ -14,7 +16,6 @@ import qualified Data.Text.Prettyprint.Doc      as Pretty
 import qualified Data.Text.Prettyprint.Doc.Util as Pretty (reflow)
 
 import           Etc.Internal.Config     (Config)
-import           Etc.Internal.Renderer
 import qualified Etc.Internal.Spec.Types as Spec
 
 --------------------
@@ -29,31 +30,14 @@ newtype ResolverError err
   = ResolverError err
   deriving (Show)
 
-instance Exception err => Exception (ResolverError (JSON.ParseError err)) where
-  displayException (ResolverError resolverErr) =
-    "\n\n" <>
-    (case resolverErr of
-       JSON.InvalidJSON msg -> renderErrorDoc $ renderInvalidJsonError msg
-       JSON.BadSchema ks errSpecifics ->
-         case errSpecifics of
-           JSON.CustomError err -> displayException err
-           _ ->
-             renderErrorDoc $
-             foundError3
-               "Detected JSON parser failure"
-               (Pretty.vsep ["In the following entry:"
-                     , mempty
-                     , Pretty.indent 2 $ renderPathPieces ks
-                     , mempty
-                     , "The JSON API returned the following error:"
-                     , mempty
-                     , Pretty.indent 2 $ Pretty.reflow $ Text.pack $ show errSpecifics
-                     ]
-               )
-               []
-    )
-
-resolveConfig :: Monad m => Spec.ConfigSpec -> [Resolver m] -> m Config
-resolveConfig spec resolvers = mconcat <$> mapM
-  (\(priorityIndex, resolver) -> runResolver resolver priorityIndex spec)
-  (zip [(1 :: Int) ..] $ reverse resolvers)
+resolveConfig :: (MonadUnliftIO m) => Spec.ConfigSpec -> [Resolver m] -> m Config
+resolveConfig spec resolvers = do
+    result <- try resolveAll
+    case result of
+      Left err -> liftIO (putStrLn (displayException err)) >> throwIO (err :: SomeException)
+      Right config -> return config
+  where
+    resolveAll =
+      mconcat <$> mapM
+      (\(priorityIndex, resolver) -> runResolver resolver priorityIndex spec)
+      (zip [(1 :: Int) ..] $ reverse resolvers)

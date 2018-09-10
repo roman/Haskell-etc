@@ -13,6 +13,7 @@ import qualified RIO.Vector.Partial as Vector (head)
 
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON
+import qualified Data.Scientific as Scientific
 
 import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Render.Util.StackMachine
@@ -20,6 +21,7 @@ import Data.Text.Prettyprint.Doc.Symbols.Unicode          (bullet)
 import Data.Text.Prettyprint.Doc.Util                     (reflow)
 
 import Etc.Internal.Spec.Types
+import Etc.Internal.Resolver.Types
 
 --------------------------------------------------------------------------------
 
@@ -41,10 +43,17 @@ instance (Typeable ex, Show ex, HumanErrorMessage ex) => HumanErrorMessage (Spec
   humanErrorMessage (SpecError specErr) =
     humanErrorMessage specErr
 
+instance (Typeable ex, Show ex, HumanErrorMessage ex) => HumanErrorMessage (ResolverError ex) where
+  humanErrorMessage (ResolverError err) =
+    humanErrorMessage err
+
 instance (Typeable ex, Show ex, HumanErrorMessage ex) => Exception (SpecError ex) where
   displayException (SpecError specErr) =
     "\n\n" <> renderErrorDoc (humanErrorMessage specErr)
 
+instance (Typeable ex, Show ex, HumanErrorMessage ex) => Exception (ResolverError ex) where
+  displayException (ResolverError err) =
+    "\n\n" <> renderErrorDoc (humanErrorMessage err)
 
 --------------------------------------------------------------------------------
 -- General Purpose
@@ -152,7 +161,15 @@ renderJsonValue value = case value of
 
   JSON.Bool   boolean    -> pretty $ Text.toLower $ tshow boolean
 
-  JSON.Number scientific -> pretty $ show scientific
+  JSON.Number scientific
+    | Scientific.isInteger scientific ->
+      maybe ("Number to big to display")
+            pretty
+            ((Scientific.toBoundedInteger scientific) :: Maybe Int)
+    | otherwise ->
+      either (const "Number to big to display")
+             pretty
+             ((Scientific.toBoundedRealFloat scientific) :: Either Double Double)
 
   JSON.Null              -> "null"
 

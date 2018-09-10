@@ -36,6 +36,7 @@ tests:
     source-dirs: test
     dependencies:
       - aeson-qq
+      - raw-strings-qq
       - base
       - hspec
       - QuickCheck

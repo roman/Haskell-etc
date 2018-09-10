@@ -82,7 +82,7 @@ renderUnknownConfigValueType keyPath typeName = foundError3
   "configuration spec"
   (unknownConfigValueTypeBody (map pretty keyPath) (pretty typeName))
   [ reflow
-      "Use one of the known types of the etc library, you can find more information at <PENDING_URL>"
+      "Use one of the known types of the etc library; more information at: <PENDING_URL>"
   ]
 
 --------------------------------------------------------------------------------
@@ -92,8 +92,7 @@ defaultValueTypeMismatchFoundBody :: [Doc Ann] -> ConfigValueType -> JSON.Value 
 defaultValueTypeMismatchFoundBody keyPath cvType jsonVal = vsep
   [ reflow "There is a mistmach between the default value and the type of an entry"
   , mempty
-  , "In the entry of the configuration spec file"
-  , mempty
+  , "reflow In the entry of the configuration spec file"
   , indent 2 $ renderSpecKeyPath keyPath $ newlineBody $ vsep
     [ hsep ["type:", annotate Expected $ pointed $ renderConfigValueType cvType]
     , hsep ["default:", annotate Current $ pointed $ renderJsonValue jsonVal]
