@@ -64,6 +64,11 @@ data ConfigValueType
   deriving (Generic, Show, Read, Eq, Lift)
 
 
+
+stripArrayWrapper :: ConfigValueType -> SingleConfigValueType
+stripArrayWrapper (CVTArray inner) = inner
+stripArrayWrapper (CVTSingle inner) = inner
+
 isCVTArray :: ConfigValueType -> Bool
 isCVTArray (CVTArray {}) = True
 isCVTArray _ = False

@@ -82,10 +82,11 @@ markAsSensitive = bool Plain Sensitive
 class (Show source, Typeable source) =>
       IConfigSource source
   where
-  sourceValue :: source -> Value JSON.Value
+  sourceValue :: source -> JSON.Value
   sourcePrettyDoc :: source -> Doc ann
   compareSources :: source -> source -> Ordering
   compareSources _ _ = EQ
+
 
 data SomeConfigSource =
   forall source. (IConfigSource source) =>
@@ -100,15 +101,15 @@ instance IConfigSource SomeConfigSource where
   sourceValue (SomeConfigSource _ inner) = sourceValue inner
   compareSources x@(SomeConfigSource ia a) y@(SomeConfigSource ib b)
     | ia == ib =
-      if fromValue (sourceValue a) == JSON.Null && fromValue (sourceValue b) == JSON.Null then
+      if sourceValue a == JSON.Null && sourceValue b == JSON.Null then
         EQ
       else if typeOf a == typeOf b then
         let b' = fromMaybe (throw (InvalidConfigSourceComparison x y)) (cast b)
         in compareSources a b'
       else
         throw (InvalidConfigSourceComparison x y)
-    | fromValue (sourceValue a) == JSON.Null = LT
-    | fromValue (sourceValue b) == JSON.Null = GT
+    | sourceValue a == JSON.Null = LT
+    | sourceValue b == JSON.Null = GT
     | otherwise =
       compare ia ib
 
@@ -119,7 +120,7 @@ instance Ord SomeConfigSource where
   compare = compareSources
 
 data ConfigValue
-  = ConfigValue !(Set SomeConfigSource)
+  = ConfigValue !Bool !(Set SomeConfigSource)
   | SubConfig   !(Map Text ConfigValue)
 
   deriving (Eq, Show)
@@ -133,8 +134,8 @@ deepMerge left right = case (left, right) of
     )
     leftm
     rightm
-  (ConfigValue leftSources, ConfigValue rightSources) ->
-    ConfigValue $ Set.union leftSources rightSources
+  (ConfigValue leftSensitive leftSources, ConfigValue rightSensitive rightSources) ->
+    ConfigValue (leftSensitive || rightSensitive) (Set.union leftSources rightSources)
   _ -> right
 
 instance Semigroup ConfigValue where
@@ -220,10 +221,10 @@ class IConfig config where
 
 configValueToJsonObject :: ConfigValue -> JSON.Value
 configValueToJsonObject configValue = case configValue of
-  ConfigValue sources -> case Set.maxView sources of
+  ConfigValue _ sources -> case Set.minView sources of
     Nothing          -> JSON.Null
 
-    Just (source, _) -> fromValue $ sourceValue source
+    Just (source, _) -> sourceValue source
 
   SubConfig configm ->
     configm
@@ -239,10 +240,10 @@ _getConfigValueWith
 _getConfigValueWith parser keys0 (Config configValue0) =
   let
     loop keys configValue = case (keys, configValue) of
-      ([], ConfigValue sources) -> case Set.maxView sources of
+      ([], ConfigValue _ sources) -> case Set.minView sources of
         Nothing          -> throwM $ InvalidConfigKeyPath keys0
 
-        Just (source, _) -> case JSON.iparse parser (fromValue $ sourceValue source) of
+        Just (source, _) -> case JSON.iparse parser (sourceValue source) of
 
           JSON.IError path err ->
             JSON.formatError path err & Text.pack & ConfigValueParserFailed keys0 & throwM
@@ -267,7 +268,7 @@ _getSelectedConfigSource
   :: (MonadThrow m, IConfigSource result) => [Text] -> Config -> m result
 _getSelectedConfigSource keys0 (Config configValue0) =
   let loop keys configValue = case (keys, configValue) of
-        ([], ConfigValue sources) -> case Set.maxView sources of
+        ([], ConfigValue _ sources) -> case Set.minView sources of
           Nothing -> throwM $ InvalidConfigKeyPath keys0
 
           Just (SomeConfigSource _ source, _) ->
@@ -285,7 +286,7 @@ _getSelectedConfigSource keys0 (Config configValue0) =
 _getAllConfigSources :: (MonadThrow m) => [Text] -> Config -> m (Set SomeConfigSource)
 _getAllConfigSources keys0 (Config configValue0) =
   let loop keys configValue = case (keys, configValue) of
-        ([]       , ConfigValue sources) -> return sources
+        ([]       , ConfigValue _ sources) -> return sources
 
         (k : keys1, SubConfig configm  ) -> case Map.lookup k configm of
           Nothing           -> throwM $ InvalidConfigKeyPath keys0

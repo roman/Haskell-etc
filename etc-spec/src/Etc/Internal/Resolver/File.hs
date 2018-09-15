@@ -22,7 +22,7 @@ import Etc.Internal.FileFormat     as FileFormat
 import Etc.Internal.Resolver.Types
 
 import Etc.Internal.Config
-    (Config (..), ConfigValue (..), SomeConfigSource (..), Value, markAsSensitive)
+    (Config (..), ConfigValue (..), SomeConfigSource (..))
 
 import Etc.Internal.FileFormat          (FileFormat, jsonFormat, yamlFormat)
 import Etc.Internal.Resolver.File.Error ()
@@ -34,14 +34,16 @@ import qualified Etc.Internal.Spec.Types  as Spec
 --------------------------------------------------------------------------------
 -- Spec Parser
 
-parseSpecFiles :: Monad m => JSON.ParseT FileResolverError m (Maybe Text, [Text])
+parseSpecFiles ::
+     Monad m => JSON.ParseT FileResolverError m (Maybe Text, [Text])
 parseSpecFiles = do
   mFileEnv  <- JSON.keyMay "env" JSON.asText
   filepaths <- JSON.key "paths" (JSON.eachInArray JSON.asText)
   when (null filepaths) (JSON.throwCustomError ConfigSpecFilesPathsEntryIsEmpty)
   return (mFileEnv, filepaths)
 
-parseConfigSpec :: Monad m => JSON.ParseT FileResolverError m (Maybe Text, [Text])
+parseConfigSpec ::
+     Monad m => JSON.ParseT FileResolverError m (Maybe Text, [Text])
 parseConfigSpec = do
   mFiles <- JSON.keyMay "etc/files" JSON.asObject
   case mFiles of
@@ -58,18 +60,20 @@ parseConfig
   :: (MonadThrow m)
   => FileFormat e
   -> Int
+  -> Map Text Spec.CustomType
   -> Spec.ConfigValue
   -> Int
   -> FileValueOrigin
   -> ByteString
   -> m Config
-parseConfig FileFormat { fileFormatParser } priorityIndex spec fileIndex fileOrigin bytes =
+parseConfig FileFormat { fileFormatParser } priorityIndex customTypes spec fileIndex fileOrigin bytes =
     case fileFormatParser bytes of
       Left _err -> throwM $ ConfigInvalidSyntaxFound fileOrigin
       Right jsonValue ->
-        Config <$> parseConfigValue [] priorityIndex spec fileIndex fileOrigin jsonValue
+        Config <$> parseConfigValue [] priorityIndex customTypes spec fileIndex fileOrigin jsonValue
 
-toSomeConfigSource :: Int -> Int -> FileValueOrigin -> Value JSON.Value -> SomeConfigSource
+toSomeConfigSource ::
+     Int -> Int -> FileValueOrigin -> JSON.Value -> SomeConfigSource
 toSomeConfigSource priorityIndex index origin val =
   SomeConfigSource priorityIndex $ FileSource index origin val
 
@@ -77,12 +81,13 @@ parseConfigValue
   :: (MonadThrow m)
   => [Text]
   -> Int
+  -> Map Text Spec.CustomType
   -> Spec.ConfigValue
   -> Int
   -> FileValueOrigin
   -> JSON.Value
   -> m ConfigValue
-parseConfigValue keyPath priorityIndex spec fileIndex fileOrigin jsonVal =
+parseConfigValue keyPath priorityIndex customTypes spec fileIndex fileOrigin jsonVal =
   case (spec, jsonVal) of
     (Spec.SubConfig currentSpec, JSON.Object object) -> SubConfig <$> foldM
       (\acc (key, subConfigValue) -> case Map.lookup key currentSpec of
@@ -91,6 +96,7 @@ parseConfigValue keyPath priorityIndex spec fileIndex fileOrigin jsonVal =
         Just subConfigSpec -> do
           value1 <- parseConfigValue (key : keyPath)
                                      priorityIndex
+                                     customTypes
                                      subConfigSpec
                                      fileIndex
                                      fileOrigin
@@ -106,13 +112,11 @@ parseConfigValue keyPath priorityIndex spec fileIndex fileOrigin jsonVal =
       -> do
         either throwM return $ Spec.assertFieldTypeMatchesE
           (ConfigFileValueTypeMismatch fileOrigin keyPath)
+          customTypes
           configValueType
           jsonVal
-        return $ ConfigValue
-          ( Set.singleton
-          $ toSomeConfigSource priorityIndex fileIndex fileOrigin
-          $ markAsSensitive configValueSensitive jsonVal
-          )
+        return $ ConfigValue configValueSensitive
+          ( Set.singleton $ toSomeConfigSource priorityIndex fileIndex fileOrigin jsonVal )
 
 readConfigFile
   :: (MonadIO m) => FileFormat e -> Text -> m (Either FileResolverError ByteString)
@@ -137,10 +141,11 @@ readConfigFromFileSources
   => FileFormat e
   -> Bool
   -> Int
+  -> Map Text Spec.CustomType
   -> Spec.ConfigSpec
   -> [FileValueOrigin]
   -> m (Config, [SomeException])
-readConfigFromFileSources fileParser throwErrors priorityIndex spec fileSources =
+readConfigFromFileSources fileParser throwErrors priorityIndex customTypes spec fileSources =
   fileSources
     & zip [1 ..]
     & mapM
@@ -150,6 +155,7 @@ readConfigFromFileSources fileParser throwErrors priorityIndex spec fileSources 
                 either throwM return mContents
                 >>= parseConfig fileParser
                                 priorityIndex
+                                customTypes
                                 (Spec.getConfigSpecEntries spec)
                                 fileIndex
                                 fileOrigin
@@ -180,9 +186,10 @@ resolveFilesInternal
   => FileFormat e
   -> Bool
   -> Int
+  -> Map Text Spec.CustomType
   -> Spec.ConfigSpec
   -> m (Config, [SomeException])
-resolveFilesInternal fileParser throwErrors priorityIndex spec = do
+resolveFilesInternal fileParser throwErrors priorityIndex customTypes spec = do
   result <- JSON.parseValueM parseConfigSpec (JSON.Object $ Spec.getConfigSpecJSON spec)
   case result of
     Left  err                  -> throwM (ResolverError err)
@@ -195,16 +202,25 @@ resolveFilesInternal fileParser throwErrors priorityIndex spec = do
                     maybeToList (EnvFileOrigin filePath . Text.pack <$> envFilePath)
               return $ map ConfigFileOrigin paths0 ++ envPath
       paths <- getPaths
-      readConfigFromFileSources fileParser throwErrors priorityIndex spec paths
+      readConfigFromFileSources fileParser throwErrors priorityIndex customTypes spec paths
 
-getConfigFileWarnings
-  :: (MonadThrow m, MonadIO m) => FileFormat e -> Spec.ConfigSpec -> m [SomeException]
-getConfigFileWarnings fileParser spec = snd `fmap` resolveFilesInternal fileParser False 0 spec
+getConfigFileWarnings ::
+     (MonadThrow m, MonadIO m)
+  => FileFormat e
+  -> Spec.ConfigSpec
+  -> m [SomeException]
+getConfigFileWarnings fileParser spec =
+  snd `fmap` resolveFilesInternal fileParser False 0 Map.empty spec
 
-resolveFiles
-  :: (MonadThrow m, MonadIO m) => FileFormat e -> Int -> Spec.ConfigSpec -> m Config
-resolveFiles fileParser priorityIndex spec =
-  fst `fmap` resolveFilesInternal fileParser True priorityIndex spec
+resolveFiles ::
+     (MonadThrow m, MonadIO m)
+  => FileFormat e
+  -> Int
+  -> Map Text Spec.CustomType
+  -> Spec.ConfigSpec
+  -> m Config
+resolveFiles fileParser priorityIndex customTypes spec =
+  fst `fmap` resolveFilesInternal fileParser True priorityIndex customTypes spec
 
 fileResolver :: (MonadThrow m, MonadIO m) => FileFormat e -> Resolver m
 fileResolver fileParser = Resolver (resolveFiles fileParser)

@@ -51,7 +51,7 @@ instance NFData FileValueOrigin
 data FileSource = FileSource
   { fsConfigIndex :: !Int
   , fsValueOrigin :: !FileValueOrigin
-  , fsValue       :: !(Value JSON.Value) }
+  , fsValue       :: !JSON.Value }
   deriving (Generic, Typeable, Show, Eq)
 
 instance NFData FileSource

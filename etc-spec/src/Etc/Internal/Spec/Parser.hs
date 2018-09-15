@@ -34,31 +34,43 @@ jsonSpec = SpecError <$> jsonFormat
 yamlSpec :: FileFormat (SpecError Yaml.ParseException)
 yamlSpec = SpecError <$> yamlFormat
 
-matchesConfigValueType :: ConfigValueType -> JSON.Value -> Bool
-matchesConfigValueType cvType json = case (json, cvType) of
+-- TODO: Add custom types to this function
+matchesConfigValueType :: Map Text CustomType -> ConfigValueType -> JSON.Value -> Bool
+matchesConfigValueType customTypes cvType jsonVal = case (jsonVal, cvType) of
   (JSON.Null    , CVTSingle _        ) -> True
   (JSON.String{}, CVTSingle CVTString) -> True
   (JSON.Number{}, CVTSingle CVTNumber) -> True
   (JSON.Bool{}  , CVTSingle CVTBool  ) -> True
   (JSON.Object{}, CVTSingle CVTObject) -> True
+  (_, CVTSingle (CVTCustom typeName)) ->
+    case Map.lookup typeName customTypes of
+      Nothing -> False
+      Just (CustomType parser) ->
+        isRight (JSON.parseValue parser jsonVal)
   (JSON.Array arr, CVTArray inner) ->
-    if null arr then True else all (matchesConfigValueType (CVTSingle inner)) arr
+    if null arr then True else all (matchesConfigValueType customTypes (CVTSingle inner)) arr
   _ -> False
 
 assertFieldTypeMatchesE
-  :: (ConfigValueType -> JSON.Value -> e) -> ConfigValueType -> JSON.Value -> Either e ()
-assertFieldTypeMatchesE errCtor cvType json | matchesConfigValueType cvType json = Right ()
-                                            | otherwise = Left (errCtor cvType json)
+  :: (ConfigValueType -> JSON.Value -> e)
+  -> Map Text CustomType
+  -> ConfigValueType
+  -> JSON.Value
+  -> Either e ()
+assertFieldTypeMatchesE errCtor customTypes cvType json
+  | matchesConfigValueType customTypes cvType json = Right ()
+  | otherwise = Left (errCtor cvType json)
 
 assertFieldTypeMatches
   :: Monad m
   => (ConfigValueType -> JSON.Value -> e)
+  -> Map Text CustomType
   -> ConfigValueType
   -> JSON.Value
   -> JSON.ParseT e m ()
-assertFieldTypeMatches errCtor cvType json
-  | matchesConfigValueType cvType json = return ()
-  | otherwise                          = JSON.throwCustomError (errCtor cvType json)
+assertFieldTypeMatches errCtor customTypes cvType json
+  | matchesConfigValueType customTypes cvType json = return ()
+  | otherwise = JSON.throwCustomError (errCtor cvType json)
 
 inferConfigValueTypeFromJSON
   :: Monad m => [Text] -> JSON.Value -> JSON.ParseT SpecParserError m ConfigValueType
@@ -126,6 +138,7 @@ parseConfigValueType customTypes fieldKeypath mdefaultValue =
         Just (fieldType, Nothing) -> do
           assertFieldTypeMatches
             (DefaultValueTypeMismatchFound fieldKeypath)
+            customTypes
             fieldType
             defaultValue
           return fieldType
@@ -147,7 +160,6 @@ parseConfigValueData ::
   -> JSON.ParseT SpecParserError m ConfigValueData
 parseConfigValueData customTypes fieldKeypath = JSON.key "etc/spec" $ do
   configValueDefault   <- JSON.keyMay "default" JSON.asValue
-  -- TODO: make tests around type inference
   configValueType      <- parseConfigValueType customTypes fieldKeypath configValueDefault
   configValueSensitive <- JSON.keyOrDefault "sensitive" False JSON.asBool
   configValueJSON      <- JSON.asValue
@@ -158,7 +170,11 @@ parseConfigValueData customTypes fieldKeypath = JSON.key "etc/spec" $ do
     , configValueJSON
     }
 
-parseConfigSpecEntries :: Monad m => Map Text CustomType -> [Text] -> JSON.ParseT SpecParserError m ConfigValue
+parseConfigSpecEntries ::
+     Monad m
+  => Map Text CustomType
+  -> [Text]
+  -> JSON.ParseT SpecParserError m ConfigValue
 parseConfigSpecEntries customTypes fieldKeypath = do
   jsonValue <- JSON.asValue
   case jsonValue of
@@ -188,7 +204,10 @@ parseConfigSpecEntries customTypes fieldKeypath = do
     (\key -> (,) key <$> parseConfigSpecEntries customTypes (key : fieldKeypath))
   parseConfigValue = ConfigValue <$> parseConfigValueData customTypes fieldKeypath
 
-configSpecParser :: (Monad m) => Map Text CustomType -> JSON.ParseT SpecParserError m ConfigSpec
+configSpecParser ::
+     (Monad m)
+  => Map Text CustomType
+  -> JSON.ParseT SpecParserError m ConfigSpec
 configSpecParser customTypes = do
   result         <- JSON.key "etc/entries" (parseConfigSpecEntries customTypes [])
   configSpecJSON <- HashMap.delete "etc/entries" <$> JSON.asObject
@@ -197,16 +216,24 @@ configSpecParser customTypes = do
     SubConfig configSpecEntries ->
       return $ ConfigSpec {configSpecJSON , configSpecEntries }
 
-parseConfigSpecValue :: (Monad m, MonadThrow m) => [(Text, CustomType)] -> JSON.Value -> m ConfigSpec
+parseConfigSpecValue ::
+     (Monad m, MonadThrow m)
+  => [(Text, CustomType)]
+  -> JSON.Value
+  -> m ConfigSpec
 parseConfigSpecValue customTypes jsonValue = do
   result <- JSON.parseValueM (configSpecParser (Map.fromList customTypes)) jsonValue
   case result of
     Left  err  -> throwM (SpecError err)
     Right spec -> return spec
 
+-- TODO: Add source name parameter for debugging purposes
 parseConfigSpec ::
      (Show err, Typeable err, HumanErrorMessage err, Monad m, MonadThrow m)
-  => FileFormat (SpecError err) -> [(Text, CustomType)] -> ByteString -> m ConfigSpec
+  => FileFormat (SpecError err)
+  -> [(Text, CustomType)]
+  -> ByteString
+  -> m ConfigSpec
 parseConfigSpec FileFormat { fileFormatParser } customTypes bytes = do
   let result = fileFormatParser bytes
   case result of
