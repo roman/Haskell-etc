@@ -92,7 +92,7 @@ defaultValueTypeMismatchFoundBody :: [Doc Ann] -> ConfigValueType -> JSON.Value 
 defaultValueTypeMismatchFoundBody keyPath cvType jsonVal = vsep
   [ reflow "There is a mistmach between the default value and the type of an entry"
   , mempty
-  , "reflow In the entry of the configuration spec file"
+  , reflow "In the entry of the configuration spec file"
   , indent 2 $ renderSpecKeyPath keyPath $ newlineBody $ vsep
     [ hsep ["type:", annotate Expected $ pointed $ renderConfigValueType cvType]
     , hsep ["default:", annotate Current $ pointed $ renderJsonValue jsonVal]

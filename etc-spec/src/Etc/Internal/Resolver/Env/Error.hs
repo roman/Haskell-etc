@@ -17,10 +17,10 @@ import Etc.Internal.Resolver.Env.Types
 
 envValueTypeMismatchFoundBody
   :: Text -> ([Doc Ann]) -> ConfigValueType -> JSON.Value -> Doc Ann
-envValueTypeMismatchFoundBody varName keyPath cvType jsonVal = vsep
+envValueTypeMismatchFoundBody varName _keyPath cvType jsonVal = vsep
   [ reflow "There is a mistmach between an environment variable value and the type specified in the configuration spec file"
   , mempty
-  , "The environment variable"
+  , "In the environment variable"
   , mempty
   , indent 4 $ pretty varName <> "=" <> annotate Current (renderJsonValue jsonVal)
   , mempty

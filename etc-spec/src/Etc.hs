@@ -15,6 +15,11 @@ module Etc
   , Env.envResolver
   , Env.pureEnvResolver
 
+  , Spec.CustomType
+  , CustomType.aesonCustomType
+  , CustomType.textCustomType
+  , CustomType.boundedIntCustomType
+
   , Config.IConfig
   , Config.Config
   , Config.getConfigValue
@@ -23,6 +28,7 @@ module Etc
   where
 
 import qualified Etc.Internal.Config as Config
+import qualified Etc.Internal.CustomType as CustomType
 import qualified Etc.Internal.Spec.Parser as Spec
 import qualified Etc.Internal.Spec.Types as Spec
 import qualified Etc.Internal.Resolver as Resolver
