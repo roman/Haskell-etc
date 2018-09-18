@@ -9,7 +9,7 @@ import           RIO
 import qualified RIO.Map     as Map
 import qualified RIO.Text    as Text
 
-import System.Environment (getEnvironment)
+import System.Environment (lookupEnv)
 
 import qualified Data.Aeson              as JSON
 import qualified Data.Aeson.BetterErrors as JSON
@@ -29,12 +29,12 @@ toSomeConfigSource index varName val =
 
 resolveEnv
   :: MonadThrow m
-  => Map Text Text
+  => (Text -> m (Maybe Text))
   -> Int
   -> Map Text Spec.CustomType
   -> Spec.ConfigSpec
   -> m Config
-resolveEnv env priorityIndex customTypes spec =
+resolveEnv lookupEnvFn priorityIndex customTypes spec =
   resolveSpecToConfig resolveConfigEntry customTypes spec
   where
     getEnvVarName val =
@@ -43,18 +43,29 @@ resolveEnv env priorityIndex customTypes spec =
         Just
         (JSON.parseValue (JSON.key "env" JSON.asText) val)
 
-    resolveConfigEntry entryJson =
-      return $ do
-        varName <- getEnvVarName entryJson
-        result <-
-          toSomeConfigSource priorityIndex varName . JSON.String <$>
-            Map.lookup varName env
-        return (ResolverResult (EnvValueTypeMismatch varName) result)
+    resolveConfigEntry entryJson = do
+        case getEnvVarName entryJson of
+          Nothing -> return Nothing
+          Just varName -> do
+            lookupResult <- lookupEnvFn varName
+            case lookupResult of
+              Nothing -> return Nothing
+              Just varValue -> do
+                let result = toSomeConfigSource priorityIndex varName $ JSON.String varValue
+                return $ Just $ ResolverResult (EnvValueTypeMismatch varName) result
 
 pureEnvResolver :: (MonadThrow m, Monad m) => [(Text, Text)] -> Resolver m
-pureEnvResolver env = Resolver (resolveEnv $ Map.fromList env)
+pureEnvResolver env =
+  let
+    envMap = Map.fromList env
+    pureLookupEnv = return . flip Map.lookup envMap
+  in
+    Resolver (resolveEnv pureLookupEnv)
 
-envResolver :: (MonadThrow m, MonadIO m) => m (Resolver m)
-envResolver = do
-  env <- map (Text.pack *** Text.pack) <$> liftIO getEnvironment
-  return $ pureEnvResolver env
+envResolver :: (MonadThrow m, MonadIO m) => Resolver m
+envResolver =
+  let
+    lookupText name =
+      fmap Text.pack <$> liftIO (lookupEnv (Text.unpack name))
+  in
+    Resolver (resolveEnv lookupText)

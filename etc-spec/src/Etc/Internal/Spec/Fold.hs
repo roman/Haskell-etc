@@ -20,11 +20,11 @@ import qualified Etc.Internal.Resolver.Types as Resolver
 import Etc.Internal.Renderer (HumanErrorMessage)
 
 
-type TypeMismatchCtor e =
+type TypeMismatchBuilder e =
   [Text] -> Spec.ConfigValueType -> JSON.Value -> e
 
 data ResolverResult e
-  = ResolverResult { onValueTypeMismatch :: !(TypeMismatchCtor e)
+  = ResolverResult { onValueTypeMismatch :: !(TypeMismatchBuilder e)
                    , resolverValue       :: !SomeConfigSource
                    }
 
