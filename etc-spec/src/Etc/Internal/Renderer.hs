@@ -39,11 +39,19 @@ data Ann
 class HumanErrorMessage e where
   humanErrorMessage :: e -> Doc Ann
 
-instance (Typeable ex, Show ex, HumanErrorMessage ex) => HumanErrorMessage (SpecError ex) where
+instance HumanErrorMessage err => Show (SpecError err) where
+  show (SpecError err) =
+    "\n\n" <> renderErrorDoc (humanErrorMessage err)
+
+instance HumanErrorMessage err => Show (ResolverError err) where
+  show (ResolverError err) =
+    "\n\n" <> renderErrorDoc (humanErrorMessage err)
+
+instance (HumanErrorMessage err) => HumanErrorMessage (SpecError err) where
   humanErrorMessage (SpecError specErr) =
     humanErrorMessage specErr
 
-instance (Typeable ex, Show ex, HumanErrorMessage ex) => HumanErrorMessage (ResolverError ex) where
+instance (HumanErrorMessage err) => HumanErrorMessage (ResolverError err) where
   humanErrorMessage (ResolverError err) =
     humanErrorMessage err
 
@@ -93,6 +101,11 @@ title msgLength msgDoc =
         borderLine = pretty (Text.replicate borderLineLength "━")
     in mempty <+> borderLine <+> msgDoc <+> borderLine
 
+pageBreak :: Doc Ann
+pageBreak =
+  fixedWidth mempty $ \w ->
+    mempty <+> pretty (Text.replicate (w - 2) "━") <> hardline
+
 styledTitle :: Ann -> Text -> Doc Ann
 styledTitle ann msg =
   let
@@ -125,6 +138,7 @@ foundError3 titleText errorDescription errorSolutions = vsep
   , mempty
   , mempty
   , indent 1 $ renderSolutions errorSolutions
+  , pageBreak
   ]
 
 foundError2 :: Text -> Doc Ann -> Doc Ann
@@ -132,7 +146,7 @@ foundError2 titleDoc descDoc = vsep
   [ errorTitle titleDoc
   , mempty
   , indent 1 descDoc
-  , mempty
+  , pageBreak
   ]
 
 --------------------------------------------------------------------------------

@@ -4,8 +4,6 @@
 {-# LANGUAGE TemplateHaskell   #-}
 module Etc.Internal.Spec.Parser where
 
-import Prelude (putStrLn)
-
 import           RIO
 import qualified RIO.HashMap        as HashMap
 import qualified RIO.Map            as Map
@@ -259,8 +257,5 @@ readConfigSpecTH ::
 readConfigSpecTH fileFormat customTypes filepath = do
   addDependentFile filepath
   configSpec <- runIO $ do
-    result <- try $ readConfigSpec fileFormat customTypes filepath
-    case result of
-      Left err -> putStrLn (displayException err) >> throwIO (err :: SomeException)
-      Right configSpec -> return configSpec
+    readConfigSpec fileFormat customTypes filepath
   [| configSpec |]

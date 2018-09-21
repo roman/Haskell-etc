@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -41,10 +42,22 @@ instance Exception FileResolverError
 
 --------------------------------------------------------------------------------
 
-data FileValueOrigin
-  = ConfigFileOrigin { fileSourcePath :: !Text }
-  | EnvFileOrigin    { fileSourceEnvVar :: !Text,  fileSourcePath :: !Text }
+data EnvOrigin
+  = EnvOrigin { envVarFilepath ::  !Text, fileOrigin :: !Text}
   deriving (Generic, Show, Eq)
+
+instance NFData EnvOrigin
+
+data FileValueOrigin
+  = SpecFileOrigin !Text
+  | EnvFileOrigin  !EnvOrigin
+  deriving (Generic, Show, Eq)
+
+getFileSourcePath :: FileValueOrigin -> Text
+getFileSourcePath input =
+  case input of
+    SpecFileOrigin origin -> origin
+    EnvFileOrigin (EnvOrigin {fileOrigin}) -> fileOrigin
 
 instance NFData FileValueOrigin
 
@@ -60,6 +73,6 @@ instance IConfigSource FileSource where
   sourceValue = fsValue
   sourcePrettyDoc (FileSource _index origin _value) =
     case origin of
-      ConfigFileOrigin filepath -> "File:" <+> Pretty.pretty filepath
-      EnvFileOrigin envVar filepath ->
+      SpecFileOrigin filepath -> "File:" <+> Pretty.pretty filepath
+      EnvFileOrigin (EnvOrigin envVar filepath) ->
         "File:" <+> Pretty.pretty envVar <> "=" <> Pretty.pretty filepath

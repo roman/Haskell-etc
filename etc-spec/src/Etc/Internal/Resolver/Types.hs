@@ -20,4 +20,3 @@ newtype Resolver m
 
 newtype ResolverError err
   = ResolverError err
-  deriving (Show)

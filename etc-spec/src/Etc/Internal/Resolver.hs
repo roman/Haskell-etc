@@ -3,8 +3,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Etc.Internal.Resolver where
 
-import Prelude (putStrLn)
-
 import RIO
 import qualified RIO.Map as Map
 
@@ -14,11 +12,8 @@ import           Etc.Internal.Resolver.Types
 import qualified Etc.Internal.Spec.Types       as Spec
 
 resolveConfig :: (MonadUnliftIO m) => [(Text, Spec.CustomType)] -> Spec.ConfigSpec -> [Resolver m] -> m Config
-resolveConfig customTypesList spec resolvers = do
-    result <- try resolveAll
-    case result of
-      Left err -> liftIO (putStrLn (displayException err)) >> throwIO (err :: SomeException)
-      Right config -> return config
+resolveConfig customTypesList spec resolvers =
+    resolveAll
   where
     customTypes =
       Map.fromList customTypesList

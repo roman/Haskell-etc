@@ -23,8 +23,8 @@ import Etc.Internal.Spec.Types
 
 renderFileOrigin :: FileValueOrigin -> Doc Ann
 renderFileOrigin origin = case origin of
-  ConfigFileOrigin path -> annotate Filepath (dquotes (pretty path))
-  EnvFileOrigin env path ->
+  SpecFileOrigin path -> annotate Filepath (dquotes (pretty path))
+  EnvFileOrigin (EnvOrigin env path) ->
     annotate Filepath (dquotes (pretty path))
       <+> "(from ENV"
       <+> annotate Envvar (dquotes (pretty env))
@@ -32,13 +32,13 @@ renderFileOrigin origin = case origin of
 
 renderFileOrigin1 :: FileValueOrigin -> Doc Ann
 renderFileOrigin1 origin = case origin of
-  ConfigFileOrigin path   -> annotate Filepath (dquotes (pretty path))
-  EnvFileOrigin _env path -> annotate Filepath (dquotes (pretty path))
+  SpecFileOrigin path   -> annotate Filepath (dquotes (pretty path))
+  EnvFileOrigin (EnvOrigin _env path) -> annotate Filepath (dquotes (pretty path))
 
 getFileFromOrigin :: FileValueOrigin -> Doc ann
 getFileFromOrigin origin = case origin of
-  ConfigFileOrigin path   -> dquotes (pretty path)
-  EnvFileOrigin _env path -> dquotes (pretty path)
+  SpecFileOrigin path   -> dquotes (pretty path)
+  EnvFileOrigin (EnvOrigin _env path) -> dquotes (pretty path)
 
 --------------------------------------------------------------------------------
 -- ConfigSpecFilesEntryMissing

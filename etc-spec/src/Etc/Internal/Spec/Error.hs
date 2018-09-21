@@ -88,39 +88,51 @@ renderUnknownConfigValueType keyPath typeName = foundError3
 --------------------------------------------------------------------------------
 -- DefaultValueTypeMismatchFoundBody
 
+defaultValueDoc :: Doc Ann
+defaultValueDoc = annotate Current "default value"
+
+expectedTypeDoc :: Doc Ann
+expectedTypeDoc = annotate Expected "expected type"
+
 defaultValueTypeMismatchFoundBody :: [Doc Ann] -> ConfigValueType -> JSON.Value -> Doc Ann
-defaultValueTypeMismatchFoundBody keyPath cvType jsonVal = vsep
-  [ reflow "There is a mistmach between the default value and the type of an entry"
-  , mempty
-  , reflow "In the entry of the configuration spec file"
-  , indent 2 $ renderSpecKeyPath keyPath $ newlineBody $ vsep
-    [ hsep ["type:", annotate Expected $ pointed $ renderConfigValueType cvType]
-    , hsep ["default:", annotate Current $ pointed $ renderJsonValue jsonVal]
+defaultValueTypeMismatchFoundBody keyPath cvType jsonVal =
+  vsep
+    [ reflow "I detected a mistmach between the" <+>
+      expectedTypeDoc <+> "and the" <+> defaultValueDoc <+> reflow "of an entry"
+    , mempty
+    , reflow "In the entry of the configuration spec file"
+    , mempty
+    , indent 2 $
+      renderSpecKeyPath keyPath $
+      newlineBody $
+      vsep
+        [ hsep
+            [ "type:"
+            , annotate Expected $ pointed $ renderConfigValueType cvType
+            ]
+        , hsep
+            ["default:", annotate Current $ pointed $ renderJsonValue jsonVal]
+        ]
     ]
-  , mempty
-  , "The"
-  <+> annotate Current "default value"
-  <+> "(in"
-  <+> annotate CurrentColorName mempty
-  <>  ")"
-  <+> "does not match the"
-  <+> annotate Expected "expected type"
-  <+> "(in"
-  <+> annotate ExpectedColorName mempty
-  <>  ")"
-  ]
 
 renderDefaultValueTypeMismatchFound :: [Text] -> ConfigValueType -> JSON.Value -> Doc Ann
-renderDefaultValueTypeMismatchFound keyPath cvType jsonVal = foundError3
-  "configuration spec"
-  (defaultValueTypeMismatchFoundBody (map pretty keyPath) cvType jsonVal)
-  [ reflow "Change the default value to match the given type"
-    <+> dquotes (renderConfigValueType cvType)
-  , case renderJsonType jsonVal of
-    Just jsonTyDoc ->
-      "Change the type to" <+> dquotes jsonTyDoc <+> "to match the given default value"
-    Nothing -> mempty
-  ]
+renderDefaultValueTypeMismatchFound keyPath cvType jsonVal =
+  foundError3
+    "configuration spec"
+    (defaultValueTypeMismatchFoundBody (map pretty keyPath) cvType jsonVal)
+    [ reflow "Change the" <+>
+      defaultValueDoc <+>
+      "to match the given type" <+>
+      annotate Expected (dquotes (renderConfigValueType cvType))
+    , case renderJsonType jsonVal of
+        Just jsonTyDoc ->
+          reflow "Change the" <+>
+          expectedTypeDoc <+>
+          "to" <+>
+          annotate Expected (dquotes jsonTyDoc) <+>
+          reflow "to match the given default value"
+        Nothing -> mempty
+    ]
 
 --------------------------------------------------------------------------------
 -- RedundantKeysOnValueSpec

@@ -19,7 +19,6 @@ import Language.Haskell.TH.Syntax (Lift (..))
 import qualified Data.Aeson              as JSON
 
 newtype SpecError err = SpecError err
-  deriving (Show)
 
 data SpecParserError
   = CannotInferTypeFromDefault ![Text] !JSON.Value
