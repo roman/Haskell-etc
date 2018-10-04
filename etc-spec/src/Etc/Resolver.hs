@@ -1,6 +1,6 @@
 module Etc.Resolver
   ( Types.ResolverError (..)
-  , Resolver.resolveConfig
+  , Resolver.resolveConfigWith
 
   -- * File Resolver Utilities
   , File.FileResolverError (..)

@@ -26,5 +26,5 @@ instance IConfigSource EnvSource where
     "Env:" <+> pretty esVarName
 
 data EnvResolverError
-  = EnvValueTypeMismatch !Text ![Text] !Spec.ConfigValueType !JSON.Value
+  = EnvValueTypeMismatch !Text !Spec.SpecFilePath !Spec.SpecEntryPath !Spec.ConfigValueType !JSON.Value
   deriving (Show)

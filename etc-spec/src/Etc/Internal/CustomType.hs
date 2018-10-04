@@ -16,7 +16,6 @@ import qualified Data.Aeson.BetterErrors as JSON
 
 import Etc.Internal.Spec.Types
 
-
 aesonCustomType1 ::
      forall a. (JSON.FromJSON a)
   => Proxy a
@@ -27,10 +26,35 @@ aesonCustomType1 _ =
       const () <$> (JSON.fromAesonParser :: JSON.Parse () a)
   }
 
+-- | Creates a 'CustomType' from a 'JSON.FromJSON' instance. You'll need
+-- to enable the _TypeApplications_ GHC extension for this to work.
+--
+-- Example:
+--
+-- @
+-- newtype IpAddress = IpAddress Text
+--
+-- instance FromJSON IpAddress where
+--   parseJSON = withString "IpAddress" $ \text ->
+--     maybe (fail "invalid ip address") return (parseIpAddress text)
+--
+-- ipAddressTy = aesonCustomType @IpAddress
+-- @
+--
+-- @since 1.0.0.0
 aesonCustomType :: forall a. (JSON.FromJSON a) => CustomType
 aesonCustomType =
   aesonCustomType1 @a Proxy
 
+-- | Creates a 'CustomType' from a predicate that checks strings.
+--
+-- Example:
+--
+-- @
+-- ipAddressTy = textCustomType (isJust . parseIpAddress)
+-- @
+--
+-- @since 1.0.0.0
 textCustomType :: (Text -> Bool) -> CustomType
 textCustomType predFn =
   let
@@ -43,6 +67,18 @@ textCustomType predFn =
         customTypeParser = parser
       }
 
+-- | Creates a 'CustomType' from a predicate that checks bounded integers.
+--
+-- Example:
+--
+-- @
+-- parsePortNumber :: Int -> Bool
+-- parsePortNumber n = (n > 0) && (n < 10000)
+--
+-- portNumberTy = boundedIntCustomType parsePortNumber
+-- @
+--
+-- @since 1.0.0.0
 boundedIntCustomType :: (Integral i, Bounded i) => (i -> Bool) -> CustomType
 boundedIntCustomType predFn =
   let
@@ -56,6 +92,9 @@ boundedIntCustomType predFn =
         customTypeParser = parser
       }
 
+-- | Creates a 'CustomType' from a predicate that checks bounded floats.
+--
+-- @since 1.0.0.0
 boundedFloatCustomType :: (RealFloat a) => (a -> Bool) -> CustomType
 boundedFloatCustomType predFn =
   let

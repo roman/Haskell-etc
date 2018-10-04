@@ -53,7 +53,7 @@ spec = do
     describe "configSpecParser" $ do
       prop "handles encoding/parsing roundtrip" $ \configSpec -> do
         let jsonVal = JSON.toJSON configSpec
-        case SUT.parseConfigSpecValue [] jsonVal of
+        case SUT.parseConfigSpecValue "<<string>>" [] jsonVal of
           Left err -> error (show err)
           Right configSpec' ->
               configSpec == blankConfigValueJSON configSpec'
@@ -66,12 +66,12 @@ spec = do
                         etc/spec:
                           type: foobar
                   |]
-        case SUT.parseConfigSpecValue [] specJSON of
+        case SUT.parseConfigSpecValue "<<string>>" [] specJSON of
           Left err ->
             case fromException err of
               Just (SUT.SpecError specErr) ->
                 case specErr of
-                  JSON.BadSchema _ (JSON.CustomError (SUT.UnknownConfigValueType keyPath typeName))  -> do
+                  JSON.BadSchema _ (JSON.CustomError (SUT.UnknownConfigValueType _sourceName keyPath typeName))  -> do
                     typeName `shouldBe` "foobar"
                     keyPath `shouldBe` ["greeting"]
                   _ ->
@@ -89,12 +89,12 @@ spec = do
                      - hello
                      - world
                   |]
-        case SUT.parseConfigSpecValue [] specJSON of
+        case SUT.parseConfigSpecValue "<<string>>" [] specJSON of
           Left err ->
             case fromException err of
               Just (SUT.SpecError specErr) ->
                 case specErr of
-                  JSON.BadSchema _ (JSON.CustomError (SUT.InvalidSpecEntries _))  ->
+                  JSON.BadSchema _ (JSON.CustomError (SUT.InvalidSpecEntries {}))  ->
                     return ()
                   _ ->
                     expectationFailure $
@@ -114,12 +114,12 @@ spec = do
                            default: "one"
                            type: "number"
                   |]
-        case SUT.parseConfigSpecValue [] specJSON of
+        case SUT.parseConfigSpecValue "<<string>>" [] specJSON of
           Left err ->
             case fromException err of
               Just (SUT.SpecError specErr) ->
                 case specErr of
-                  JSON.BadSchema _ (JSON.CustomError (SUT.DefaultValueTypeMismatchFound keyPath cvType json))  -> do
+                  JSON.BadSchema _ (JSON.CustomError (SUT.DefaultValueTypeMismatchFound _ keyPath cvType json))  -> do
                     keyPath `shouldBe` ["greeting"]
                     cvType `shouldBe` SUT.CVTSingle SUT.CVTNumber
                     json `shouldBe` JSON.String "one"
@@ -142,12 +142,12 @@ spec = do
                            type: string
                          other: field
                   |]
-        case SUT.parseConfigSpecValue [] specJSON of
+        case SUT.parseConfigSpecValue "<<string>>" [] specJSON of
           Left err ->
             case fromException err of
               Just (SUT.SpecError specErr) ->
                 case specErr of
-                  JSON.BadSchema _ (JSON.CustomError (SUT.RedundantKeysOnValueSpec keyPath redundantKeys)) -> do
+                  JSON.BadSchema _ (JSON.CustomError (SUT.RedundantKeysOnValueSpec _ keyPath redundantKeys)) -> do
                     keyPath `shouldBe` ["greeting"]
                     redundantKeys `shouldBe` ["other"]
                   _ ->
@@ -168,12 +168,12 @@ spec = do
                            default: other
                            type: greeting
                   |]
-        case SUT.parseConfigSpecValue [("greeting", greetingChecker)] specJSON of
+        case SUT.parseConfigSpecValue "<<string>>" [("greeting", greetingChecker)] specJSON of
           Left err ->
             case fromException err of
               Just (SUT.SpecError specErr) ->
                 case specErr of
-                  JSON.BadSchema _ (JSON.CustomError (SUT.DefaultValueTypeMismatchFound keyPath cvType json))  -> do
+                  JSON.BadSchema _ (JSON.CustomError (SUT.DefaultValueTypeMismatchFound _ keyPath cvType json))  -> do
                     keyPath `shouldBe` ["greeting"]
                     cvType `shouldBe` SUT.CVTSingle (SUT.CVTCustom "greeting")
                     json `shouldBe` JSON.String "other"
@@ -195,7 +195,7 @@ spec = do
                            default: hello
                            type: greeting
                   |]
-        case SUT.parseConfigSpecValue [("greeting", greetingChecker)] specJSON of
+        case SUT.parseConfigSpecValue "<<string>>" [("greeting", greetingChecker)] specJSON of
           Left err ->
             expectationFailure $ "Expecting valid config spec, got error instead " <> show err
           Right _ ->

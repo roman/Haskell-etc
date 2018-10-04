@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 module Etc.Generators where
@@ -47,4 +48,4 @@ instance Arbitrary ConfigSpec where
     entriesMap <-
       Map.fromList <$>
       replicateM subConfigKeyCount (first Text.pack <$> arbitrary)
-    return $ ConfigSpec HashMap.empty entriesMap
+    return $ ConfigSpec "<<string>>" HashMap.empty entriesMap

@@ -27,7 +27,7 @@ data FileResolverError
   -- | The 'etc/files.paths' contains an entry that doesn't have a valid extension
   | UnsupportedFileExtensionGiven !Text ![Text]
   -- | An entry in a file in 'etc/files.paths' contains a value that does not match the spec
-  | ConfigFileValueTypeMismatch !FileValueOrigin ![Text] !Spec.ConfigValueType !JSON.Value
+  | ConfigFileValueTypeMismatch !FileValueOrigin !Spec.SpecFilePath !Spec.SpecEntryPath !Spec.ConfigValueType !JSON.Value
   -- | The 'etc/files.paths' points to a file that does not exist
   | ConfigFileNotPresent !Text
   -- | When configuration files contains keyPath that are not part of the spec

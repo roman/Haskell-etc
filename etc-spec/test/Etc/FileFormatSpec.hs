@@ -1,9 +1,9 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TypeApplications  #-}
 module Etc.FileFormatSpec where
 
 import RIO
@@ -14,10 +14,10 @@ import Test.Hspec
 
 import System.FilePath ((</>))
 
-import qualified Etc.Spec           as Spec
-import qualified Etc.Resolver       as Resolver
+import qualified Etc.Resolver as Resolver
+import qualified Etc.Spec     as Spec
 
-import qualified Etc.Internal.Config as Config
+import qualified Etc.Internal.Config     as Config
 import qualified Etc.Internal.FileFormat as SUT
 
 testFixturePath :: FilePath -> FilePath
@@ -46,12 +46,12 @@ spec =
                      "etc/entries": {"greeting": {"etc/spec": {"default": "default greeting"}}}
                    }
          |]
-        configSpec <- Spec.parseConfigSpecValue [] configSpecValue
+        configSpec <- Spec.parseConfigSpecValue "<<string>>" [] configSpecValue
         -- NOTE: therr error types for jsonFormat and yamlFormat are not the same, using
         -- the Functor instance of FileFormat, we can compose them with a high level ADT
         let newFileFormat = fmap Left (SUT.jsonFormat @Resolver.FileResolverError)  <> fmap Right SUT.yamlFormat
 
-        config <- Resolver.resolveConfig [] configSpec [Resolver.fileResolver newFileFormat]
+        config <- Resolver.resolveConfigWith [] configSpec [Resolver.fileResolver newFileFormat]
 
         databaseValue <- Config.getConfigValue ["greeting"] config
         databaseValue `shouldBe` ("config1.yaml" :: Text)

@@ -16,7 +16,7 @@ import qualified Data.Aeson.BetterErrors as JSON
 
 import           Etc.Internal.Config
 import           Etc.Internal.Resolver.Types
-import           Etc.Internal.Spec.Fold      (ResolverResult (..), resolveSpecToConfig)
+import           Etc.Internal.Resolver.Fold      (ResolverResult (..), resolveSpecEntries)
 import qualified Etc.Internal.Spec.Types     as Spec
 
 import Etc.Internal.Resolver.Env.Error ()
@@ -35,24 +35,18 @@ resolveEnv
   -> Spec.ConfigSpec
   -> m Config
 resolveEnv lookupEnvFn priorityIndex customTypes spec =
-  resolveSpecToConfig resolveConfigEntry customTypes spec
+  resolveSpecEntries configEntryParser resolveConfigEntry customTypes spec
   where
-    getEnvVarName val =
-      either
-        (const Nothing)
-        Just
-        (JSON.parseValue (JSON.key "env" JSON.asText) val)
+    configEntryParser =
+      JSON.key "env" JSON.asText
 
-    resolveConfigEntry entryJson = do
-        case getEnvVarName entryJson of
-          Nothing -> return Nothing
-          Just varName -> do
-            lookupResult <- lookupEnvFn varName
-            case lookupResult of
-              Nothing -> return Nothing
-              Just varValue -> do
-                let result = toSomeConfigSource priorityIndex varName $ JSON.String varValue
-                return $ Just $ ResolverResult (EnvValueTypeMismatch varName) result
+    resolveConfigEntry varName = do
+      lookupResult <- lookupEnvFn varName
+      case lookupResult of
+        Nothing -> return Nothing
+        Just varValue -> do
+          let result = toSomeConfigSource priorityIndex varName $ JSON.String varValue
+          return $ Just $ ResolverResult (EnvValueTypeMismatch varName) result
 
 pureEnvResolver :: (MonadThrow m, Monad m) => [(Text, Text)] -> Resolver m
 pureEnvResolver env =

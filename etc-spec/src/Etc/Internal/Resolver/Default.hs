@@ -5,23 +5,21 @@
 module Etc.Internal.Resolver.Default where
 
 import           RIO
-import qualified RIO.Map as Map
-import qualified RIO.Set as Set
 
 import qualified Data.Aeson as JSON
+import qualified Data.Aeson.BetterErrors as JSON
 
 import           Etc.Internal.Config
-    ( Config (..)
-    , ConfigValue (..)
+    (
+      Config
     , IConfigSource (..)
     , SomeConfigSource (..)
-    , emptySubConfig
-    , filterMaybe
-    , isEmptySubConfig
-    , writeInSubConfig
     )
-import           Etc.Internal.Resolver.Types
 import qualified Etc.Internal.Spec.Types     as Spec
+import           Etc.Internal.Resolver.Types
+import           Etc.Internal.Resolver.Fold      (ResolverResult (..), resolveSpecEntries)
+
+--------------------------------------------------------------------------------
 
 data DefaultSource = DefaultSource
   { dsValue       :: !JSON.Value }
@@ -37,38 +35,20 @@ toSomeConfigSource :: Int -> JSON.Value -> SomeConfigSource
 toSomeConfigSource priorityIndex val =
   SomeConfigSource priorityIndex $ DefaultSource val
 
-toDefaultConfigValue :: Int -> Bool -> JSON.Value -> ConfigValue
-toDefaultConfigValue priorityIndex sensitive =
-  ConfigValue sensitive . Set.singleton . toSomeConfigSource priorityIndex
+resolveDefault ::
+  MonadThrow m =>
+  Int -> Map Text Spec.CustomType -> Spec.ConfigSpec -> m Config
+resolveDefault priorityIndex customTypes spec =
+  resolveSpecEntries configEntryParser resolveConfigEntry customTypes spec
+  where
+    configEntryParser = JSON.key "default" JSON.asValue
+    resolveConfigEntry defaultVal =
+      return $
+      Just $
+      ResolverResult
+        Spec.DefaultValueTypeMismatchFound
+        (toSomeConfigSource priorityIndex defaultVal)
 
-resolveDefault :: Int -> Spec.ConfigSpec -> Maybe ConfigValue
-resolveDefault priorityIndex spec =
-  let resolverReducer ::
-           Text -> Spec.ConfigValue -> Maybe ConfigValue -> Maybe ConfigValue
-      resolverReducer specKey specValue mConfig =
-        case specValue of
-          Spec.ConfigValue Spec.ConfigValueData { Spec.configValueDefault
-                                                , Spec.configValueSensitive
-                                                } ->
-            let mConfigSource =
-                  toDefaultConfigValue priorityIndex configValueSensitive <$>
-                  configValueDefault
-                updateConfig =
-                  writeInSubConfig specKey <$> mConfigSource <*> mConfig
-             in updateConfig <|> mConfig
-          Spec.SubConfig specConfigMap ->
-            let mSubConfig =
-                  specConfigMap &
-                  Map.foldrWithKey resolverReducer (Just emptySubConfig) &
-                  filterMaybe isEmptySubConfig
-                updateConfig =
-                  writeInSubConfig specKey <$> mSubConfig <*> mConfig
-             in updateConfig <|> mConfig
-   in Spec.configSpecEntries spec &
-      Map.foldrWithKey resolverReducer (Just emptySubConfig) &
-      filterMaybe isEmptySubConfig
-
-defaultResolver :: Monad m => Resolver m
+defaultResolver :: MonadThrow m => Resolver m
 defaultResolver =
-  Resolver $ \priorityIndex _customTypes spec ->
-    return $ maybe (Config mempty) Config (resolveDefault priorityIndex spec)
+  Resolver resolveDefault

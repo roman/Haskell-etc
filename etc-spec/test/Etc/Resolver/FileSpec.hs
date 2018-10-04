@@ -59,7 +59,7 @@ configurationFileNotPresent filepath (SUT.ConfigFileNotPresent path) =
 configurationFileNotPresent _ _                                      = False
 
 configFileValueTypeMismatch :: [Text] -> Selector (Resolver.ResolverError SUT.FileResolverError)
-configFileValueTypeMismatch keyPath (Resolver.ResolverError (SUT.ConfigFileValueTypeMismatch _ ks _ _)) =
+configFileValueTypeMismatch keyPath (Resolver.ResolverError (SUT.ConfigFileValueTypeMismatch _ _ ks _ _)) =
   ks == keyPath
 configFileValueTypeMismatch _ _ = False
 
@@ -84,8 +84,8 @@ spec = do
         configSpecValue = [aesonQQ|
           { "etc/entries": {"database": {"etc/spec": {"default": "database"}}}}
        |]
-      configSpec <- Spec.parseConfigSpecValue [] configSpecValue
-      Resolver.resolveConfig [] configSpec [SUT.fileResolver SUT.jsonConfig] `shouldThrow` configSpecFilesEntryMissing
+      configSpec <- Spec.parseConfigSpecValue "<<string>>" [] configSpecValue
+      Resolver.resolveConfigWith [] configSpec [SUT.fileResolver SUT.jsonConfig] `shouldThrow` configSpecFilesEntryMissing
 
     it "throws exception when 'etc/files.path' is empty" $ do
       let
@@ -94,8 +94,8 @@ spec = do
           , "etc/entries": {"database": {"etc/spec": {"default": "database"}}}
           }
        |]
-      configSpec <- Spec.parseConfigSpecValue [] configSpecValue
-      Resolver.resolveConfig [] configSpec [SUT.fileResolver SUT.jsonConfig] `shouldThrow` configSpecFilesPathsEntryIsEmpty
+      configSpec <- Spec.parseConfigSpecValue "<<string>>" [] configSpecValue
+      Resolver.resolveConfigWith [] configSpec [SUT.fileResolver SUT.jsonConfig] `shouldThrow` configSpecFilesPathsEntryIsEmpty
 
     it "throws exception when file in 'etc/files.path' contains key not present in spec" $ do
       let
@@ -104,7 +104,7 @@ spec = do
           , "etc/entries": {"database": {"etc/spec": {"default": "database"}}}
           }
        |]
-      configSpec <- Spec.parseConfigSpecValue [] configSpecValue
+      configSpec <- Spec.parseConfigSpecValue "<<string>>" [] configSpecValue
 
       -- NOTE: When using getConfigFileWarnings, it returns errors as a warning
       warnings <- SUT.getConfigFileWarnings SUT.jsonConfig configSpec
@@ -120,7 +120,7 @@ spec = do
           expectationFailure $ "Expecting exactly one warning, got " <> show (length warnings)
 
       -- NOTE: configuration file contains "greeting" key, which is not present in the spec above
-      Resolver.resolveConfig [] configSpec [SUT.fileResolver SUT.jsonConfig]
+      Resolver.resolveConfigWith [] configSpec [SUT.fileResolver SUT.jsonConfig]
         `shouldThrow` unknownConfigKeyFound [] "greeting" ["database"]
 
     it "throws exception when spec entry type differs from file entry type" $ do
@@ -132,8 +132,8 @@ spec = do
           , "etc/entries": {"greeting": {"etc/spec": {"default": "default greeting"}}}
           }
         |]
-      configSpec <- Spec.parseConfigSpecValue [] configSpecValue
-      Resolver.resolveConfig [] configSpec [SUT.fileResolver SUT.jsonConfig]
+      configSpec <- Spec.parseConfigSpecValue "<<string>>" [] configSpecValue
+      Resolver.resolveConfigWith [] configSpec [SUT.fileResolver SUT.jsonConfig]
         `shouldThrow` configFileValueTypeMismatch ["greeting"]
 
 
@@ -145,8 +145,8 @@ spec = do
           , "etc/entries": {"greeting": {"etc/spec": {"default": "default greeting"}}}
           }
        |]
-      configSpec <- Spec.parseConfigSpecValue [] configSpecValue
-      config <- Resolver.resolveConfig [] configSpec [SUT.fileResolver SUT.jsonConfig]
+      configSpec <- Spec.parseConfigSpecValue "<<string>>" [] configSpecValue
+      config <- Resolver.resolveConfigWith [] configSpec [SUT.fileResolver SUT.jsonConfig]
       databaseValue <- Config.getConfigValue ["greeting"] config
       databaseValue `shouldBe` ("config2" :: Text)
 
@@ -165,8 +165,8 @@ spec = do
         (setEnv varName (testFixturePath "config_env.json"))
         (const $ unsetEnv varName)
         (\_ -> do
-            configSpec <- Spec.parseConfigSpecValue [] configSpecValue
-            config <- Resolver.resolveConfig [] configSpec [SUT.fileResolver SUT.jsonConfig]
+            configSpec <- Spec.parseConfigSpecValue "<<string>>" [] configSpecValue
+            config <- Resolver.resolveConfigWith [] configSpec [SUT.fileResolver SUT.jsonConfig]
             databaseValue <- Config.getConfigValue ["greeting"] config
             databaseValue `shouldBe` ("env" :: Text))
 
@@ -180,7 +180,7 @@ spec = do
           , "etc/entries": {"database": {"etc/spec": {"default": "database"}}}
           }
        |]
-      configSpec <- Spec.parseConfigSpecValue [] configSpecValue
+      configSpec <- Spec.parseConfigSpecValue "<<string>>" [] configSpecValue
       warnings <- SUT.getConfigFileWarnings SUT.jsonConfig configSpec
       case warnings of
         [warning] ->
@@ -195,7 +195,7 @@ spec = do
           , "etc/entries": {"database": {"etc/spec": {"default": "database"}}}
           }
        |]
-      configSpec <- Spec.parseConfigSpecValue [] configSpecValue
+      configSpec <- Spec.parseConfigSpecValue "<<string>>" [] configSpecValue
       warnings <- SUT.getConfigFileWarnings SUT.jsonConfig configSpec
       case warnings of
         [warning] ->

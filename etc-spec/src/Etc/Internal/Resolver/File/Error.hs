@@ -107,37 +107,57 @@ renderUnsupportedFileExtensionGiven filepath supportedExtensions = foundError3
 -- ConfigFileValueTypeMismatch
 
 configFileValueTypeMismatchFoundBody
-  :: FileValueOrigin -> [Doc Ann] -> ConfigValueType -> JSON.Value -> Doc Ann
-configFileValueTypeMismatchFoundBody origin keyPath cvType jsonVal = vsep
-  [ reflow "There is a mistmach between a configuration file value and the type specified in the configuration spec file"
-  , mempty
-  , "In the configuration file" <+> renderFileOrigin origin
-  , mempty
-  , indent 2 $ renderKeyPathBody keyPath $ newlineBody $ annotate
-    Current
-    (renderJsonValue jsonVal)
-  , mempty
-  , "The"
-  <+> annotate Current "current value"
-  <+> "does not match the"
-  <+> "expected type"
-  <+> annotate Expected (renderConfigValueType cvType)
-  ]
+  :: FileValueOrigin -> Doc Ann -> [Doc Ann] -> ConfigValueType -> JSON.Value -> Doc Ann
+configFileValueTypeMismatchFoundBody origin specFilePath keyPath cvType jsonVal =
+  vsep
+    [ reflow
+        "I detected a mistmach between a configuration file value and the type specified in the configuration spec"
+    , mempty
+    , reflow "The configuration spec file located at" <+>
+      annotate Filepath (dquotes specFilePath) <+>
+      reflow "has the following type:"
+    , mempty
+    , indent 2 $
+      renderSpecKeyPath keyPath $
+      newlineBody $
+      vsep
+        [ hsep
+            [ "type:"
+            , annotate Expected $ pointed $ (renderConfigValueType cvType)
+            ]
+        ]
+    , mempty
+    , reflow "But the configuration file located at" <+>
+      renderFileOrigin origin <+> reflow "has the following value:"
+    , mempty
+    , indent 2 $
+      renderKeyPathBody keyPath $
+      newlineBody $ annotate Current $ pointed $ renderJsonValue jsonVal
+    , mempty
+    , "The" <+>
+      annotate Current "current value" <+>
+      "does not match the" <+> annotate Expected "expected type"
+    ]
 
 renderConfigFileValueTypeMismatchFound
-  :: FileValueOrigin -> [Text] -> ConfigValueType -> JSON.Value -> Doc Ann
-renderConfigFileValueTypeMismatchFound origin keyPath cvType jsonVal = foundError3
-  "file resolver"
-  (configFileValueTypeMismatchFoundBody origin (map pretty keyPath) cvType jsonVal)
-  [ reflow "Change the value to match the given type"
-    <+> dquotes (renderConfigValueType cvType)
-  , case renderJsonType jsonVal of
-    Just jsonTyDoc ->
-      reflow "In the configuration spec file, change the entry \"type\" to"
-        <+> dquotes jsonTyDoc
-        <+> reflow "to match the file value"
-    Nothing -> mempty
-  ]
+  :: FileValueOrigin -> Text -> [Text] -> ConfigValueType -> JSON.Value -> Doc Ann
+renderConfigFileValueTypeMismatchFound origin specFilePath keyPath cvType jsonVal =
+  foundError3
+    "file resolver"
+    (configFileValueTypeMismatchFoundBody
+       origin
+       (pretty specFilePath)
+       (map pretty keyPath)
+       cvType
+       jsonVal)
+    [ reflow
+        "In the configuration file, change the entry value to match the type in the configuration spec"
+    , case renderJsonType jsonVal of
+        Just jsonTyDoc ->
+          reflow "In the configuration spec file, change the entry \"type\" to" <+>
+          dquotes jsonTyDoc <+> reflow "to match the configuration file value"
+        Nothing -> mempty
+    ]
 
 --------------------------------------------------------------------------------
 -- ConfigFileNotPresent
@@ -265,8 +285,8 @@ instance HumanErrorMessage FileResolverError where
       UnsupportedFileExtensionGiven path ext ->
         renderUnsupportedFileExtensionGiven path ext
 
-      ConfigFileValueTypeMismatch origin keyPath cvType jsonVal ->
-        renderConfigFileValueTypeMismatchFound origin keyPath cvType jsonVal
+      ConfigFileValueTypeMismatch origin specFilePath keyPath cvType jsonVal ->
+        renderConfigFileValueTypeMismatchFound origin specFilePath keyPath cvType jsonVal
 
       ConfigFileNotPresent path ->
         renderConfigFileNotPresent path

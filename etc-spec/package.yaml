@@ -11,13 +11,16 @@ dependencies:
   - rio
   - scientific
   - template-haskell
+  - transformers
   - yaml
 
 library:
   source-dirs: src
   exposed-modules:
+  - Etc
   # Internal API
   - Etc.Internal.Config
+  - Etc.Internal.FileFormat
   - Etc.Internal.Resolver.Types
   - Etc.Internal.Resolver.File
   - Etc.Internal.Resolver.File.Types

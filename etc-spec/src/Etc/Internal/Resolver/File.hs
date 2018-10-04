@@ -60,7 +60,8 @@ parseConfigSpec = do
 
 parseConfig
   :: (MonadThrow m)
-  => FileFormat e
+  => Spec.SpecFilePath
+  -> FileFormat e
   -> Int
   -> Map Text Spec.CustomType
   -> Spec.ConfigValue
@@ -68,12 +69,12 @@ parseConfig
   -> FileValueOrigin
   -> ByteString
   -> m Config
-parseConfig FileFormat { fileFormatParser } priorityIndex customTypes spec fileIndex fileOrigin bytes =
+parseConfig specFilePath FileFormat { fileFormatParser } priorityIndex customTypes spec fileIndex fileOrigin bytes =
     case fileFormatParser bytes of
       -- TODO: Investigate ways to avoid discarding the err message from the parser
       Left _err -> throwM $ ConfigInvalidSyntaxFound fileOrigin
       Right jsonValue ->
-        Config <$> parseConfigValue [] priorityIndex customTypes spec fileIndex fileOrigin jsonValue
+        Config <$> parseConfigValue specFilePath [] priorityIndex customTypes spec fileIndex fileOrigin jsonValue
 
 toSomeConfigSource ::
      Int -> Int -> FileValueOrigin -> JSON.Value -> SomeConfigSource
@@ -82,7 +83,8 @@ toSomeConfigSource priorityIndex index origin val =
 
 parseConfigValue
   :: (MonadThrow m)
-  => [Text]
+  => Spec.SpecFilePath
+  -> Spec.SpecEntryPath
   -> Int
   -> Map Text Spec.CustomType
   -> Spec.ConfigValue
@@ -90,14 +92,15 @@ parseConfigValue
   -> FileValueOrigin
   -> JSON.Value
   -> m ConfigValue
-parseConfigValue keyPath priorityIndex customTypes spec fileIndex fileOrigin jsonVal =
+parseConfigValue specFilePath keyPath priorityIndex customTypes spec fileIndex fileOrigin jsonVal =
   case (spec, jsonVal) of
     (Spec.SubConfig currentSpec, JSON.Object object) -> SubConfig <$> foldM
       (\acc (key, subConfigValue) -> case Map.lookup key currentSpec of
         Nothing ->
           throwM $ UnknownConfigKeyFound fileOrigin keyPath key (Map.keys currentSpec)
         Just subConfigSpec -> do
-          value1 <- parseConfigValue (key : keyPath)
+          value1 <- parseConfigValue specFilePath
+                                     (key : keyPath)
                                      priorityIndex
                                      customTypes
                                      subConfigSpec
@@ -114,7 +117,7 @@ parseConfigValue keyPath priorityIndex customTypes spec fileIndex fileOrigin jso
     (Spec.ConfigValue Spec.ConfigValueData { Spec.configValueSensitive, Spec.configValueType }, _)
       -> do
         either throwM return $ Spec.assertFieldTypeMatchesE
-          (ConfigFileValueTypeMismatch fileOrigin keyPath)
+          (ConfigFileValueTypeMismatch fileOrigin specFilePath keyPath)
           customTypes
           configValueType
           jsonVal
@@ -159,7 +162,8 @@ readConfigFromFileSources throwErrors fileContentsParser priorityIndex customTyp
           mContents <- readConfigFile fileContentsParser (getFileSourcePath fileOrigin)
           let result =
                 either throwM return mContents
-                >>= parseConfig fileContentsParser
+                >>= parseConfig (Spec.configSpecFilePath spec)
+                                fileContentsParser
                                 priorityIndex
                                 customTypes
                                 (Spec.getConfigSpecEntries spec)
@@ -189,26 +193,47 @@ readConfigFromFileSources throwErrors fileContentsParser priorityIndex customTyp
 
 resolveFilesInternal
   :: (MonadThrow m, MonadIO m)
-  => FileFormat e
+  => Bool
   -> Bool
+  -> FileFormat e
   -> Int
   -> Map Text Spec.CustomType
   -> Spec.ConfigSpec
   -> m (Config, [SomeException])
-resolveFilesInternal fileContentsParser throwErrors priorityIndex customTypes spec = do
-  result <- JSON.parseValueM parseConfigSpec (JSON.Object $ Spec.getConfigSpecJSON spec)
+resolveFilesInternal requiredFileEntry throwErrors fileContentsParser priorityIndex customTypes spec = do
+  let result =
+        JSON.parseValue
+          parseConfigSpec
+          (JSON.Object $ Spec.getConfigSpecJSON spec)
   case result of
-    Left  err                  -> throwM (ResolverError err)
+    Left err ->
+      -- Because we are providing an easy to use API that includes support
+      -- for both env vars and file configuration, we cannot raise an exception when
+      -- this entry is missing, this will always return the exception if the user is explicit
+      -- using the fileResolver
+      case err of
+        JSON.BadSchema _ (JSON.CustomError ConfigSpecFilesEntryMissing {})
+          | not requiredFileEntry -> return (mempty, [])
+        _ -> throwM (ResolverError err)
     Right (fileEnvVar, paths0) -> do
-      let getPaths = case fileEnvVar of
-            Nothing       -> return $ map SpecFileOrigin paths0
-            Just filePath -> do
-              envFilePath <- liftIO $ lookupEnv (Text.unpack filePath)
-              let envPath =
-                    maybeToList (EnvFileOrigin . EnvOrigin filePath . Text.pack <$> envFilePath)
-              return $ map SpecFileOrigin paths0 ++ envPath
+      let getPaths =
+            case fileEnvVar of
+              Nothing -> return $ map SpecFileOrigin paths0
+              Just filePath -> do
+                envFilePath <- liftIO $ lookupEnv (Text.unpack filePath)
+                let envPath =
+                      maybeToList
+                        (EnvFileOrigin . EnvOrigin filePath . Text.pack <$>
+                         envFilePath)
+                return $ map SpecFileOrigin paths0 ++ envPath
       paths <- reverse <$> getPaths
-      readConfigFromFileSources throwErrors fileContentsParser priorityIndex customTypes spec paths
+      readConfigFromFileSources
+        throwErrors
+        fileContentsParser
+        priorityIndex
+        customTypes
+        spec
+        paths
 
 getConfigFileWarnings ::
      (MonadThrow m, MonadIO m)
@@ -218,28 +243,34 @@ getConfigFileWarnings ::
 getConfigFileWarnings fileContentsParser spec =
   let
     throwErrors = False
+    requiredFilesEntry = False
     priorityIndex = 0
   in
     snd `fmap`
       resolveFilesInternal
-        fileContentsParser
         throwErrors
+        requiredFilesEntry
+        fileContentsParser
         priorityIndex
         Map.empty
         spec
 
 resolveFiles ::
      (MonadThrow m, MonadIO m)
-  => FileFormat e
+  => Bool
+  -> FileFormat e
   -> Int
   -> Map Text Spec.CustomType
   -> Spec.ConfigSpec
   -> m Config
-resolveFiles fileContentsParser priorityIndex customTypes spec =
-  fst `fmap` resolveFilesInternal fileContentsParser True priorityIndex customTypes spec
+resolveFiles requiredFileEntry fileContentsParser priorityIndex customTypes spec =
+  fst `fmap` resolveFilesInternal requiredFileEntry True fileContentsParser  priorityIndex customTypes spec
+
+fileResolverInternal :: (MonadThrow m, MonadIO m) => Bool -> FileFormat e -> Resolver m
+fileResolverInternal requiredFileEntry fileContentsParser = Resolver (resolveFiles requiredFileEntry fileContentsParser)
 
 fileResolver :: (MonadThrow m, MonadIO m) => FileFormat e -> Resolver m
-fileResolver fileContentsParser = Resolver (resolveFiles fileContentsParser)
+fileResolver = fileResolverInternal True
 
 jsonConfig :: FileFormat (JSON.ParseError FileResolverError)
 jsonConfig = jsonFormat
