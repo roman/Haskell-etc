@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_HADDOCK hide #-}
 module Etc.Internal.Resolver.Env (envResolver, pureEnvResolver) where
 
 import           RIO

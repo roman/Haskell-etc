@@ -2,6 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
+{-# OPTIONS_HADDOCK hide #-}
 module Etc.Internal.Spec.Parser where
 
 import           RIO
@@ -271,11 +272,23 @@ readConfigSpec fileFormat customTypes filepath = do
   bytes <- readFileBinary filepath
   parseConfigSpecInternal (Text.pack filepath) fileFormat customTypes bytes
 
+-- | Reads, parses and validates a configuration spec file. This function allows
+-- to use a custom 'FileFormat' in case you want to parse a configuration spec
+-- file in any other format that is not YAML.
+--
+-- ==== Important
+--
+-- Given this function uses @TemplateHaskell@, you'll get the validation of the
+-- configuration spec file at compilation time.
+--
+--
 readConfigSpecFormatTH ::
      (Typeable err, Show err, HumanErrorMessage err)
-  => FileFormat (SpecError err)
-  -> [(Text, CustomType)]
-  -> FilePath
+  => FileFormat (SpecError err) -- ^ File Format for the configuration spec file
+  -> [(Text, CustomType)]       -- ^ List of 'CustomTypes' associated to an
+                                -- identifier; the identifier may be used in the
+                                -- configuration spec file
+  -> FilePath                   -- ^ Path of the configuration spec file
   -> ExpQ
 readConfigSpecFormatTH fileFormat customTypes filepath = do
   addDependentFile filepath
@@ -283,6 +296,19 @@ readConfigSpecFormatTH fileFormat customTypes filepath = do
     readConfigSpec fileFormat customTypes filepath
   [| configSpec |]
 
-readConfigSpecTH :: [(Text, CustomType)] -> FilePath -> ExpQ
+-- | Reads, parses and validates a YAML configuration spec file.
+--
+-- ==== Important
+--
+-- Given this function uses @TemplateHaskell@, you'll get the validation of the
+-- configuration spec file at compilation time.
+--
+--
+readConfigSpecTH
+  :: [(Text, CustomType)] -- ^ List of 'CustomTypes' associated to an
+                          -- identifier; the identifier may be used in the
+                          -- configuration spec file
+  -> FilePath             -- ^ Path of the configuration spec file
+  -> ExpQ
 readConfigSpecTH =
   readConfigSpecFormatTH yamlSpec

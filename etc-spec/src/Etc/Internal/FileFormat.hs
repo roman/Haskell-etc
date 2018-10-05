@@ -2,6 +2,8 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_HADDOCK hide #-}
+-- | @since 1.0.0.0
 module Etc.Internal.FileFormat where
 
 import RIO

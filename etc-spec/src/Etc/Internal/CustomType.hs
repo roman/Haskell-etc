@@ -1,9 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# OPTIONS_HADDOCK hide #-}
+-- | @since 1.0.0.0
 module Etc.Internal.CustomType where
 
 import RIO
@@ -27,9 +29,9 @@ aesonCustomType1 _ =
   }
 
 -- | Creates a 'CustomType' from a 'JSON.FromJSON' instance. You'll need
--- to enable the _TypeApplications_ GHC extension for this to work.
+-- to enable the @TypeApplications@ GHC extension for this to work.
 --
--- Example:
+-- ==== Example
 --
 -- @
 -- newtype IpAddress = IpAddress Text
@@ -48,7 +50,7 @@ aesonCustomType =
 
 -- | Creates a 'CustomType' from a predicate that checks strings.
 --
--- Example:
+-- ==== Example
 --
 -- @
 -- ipAddressTy = textCustomType (isJust . parseIpAddress)
@@ -69,7 +71,7 @@ textCustomType predFn =
 
 -- | Creates a 'CustomType' from a predicate that checks bounded integers.
 --
--- Example:
+-- ==== Example
 --
 -- @
 -- parsePortNumber :: Int -> Bool

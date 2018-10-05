@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_HADDOCK hide #-}
 module Etc.Internal.Resolver.Env.Error where
 
 import RIO
@@ -20,7 +21,7 @@ envValueTypeMismatchFoundBody
 envValueTypeMismatchFoundBody varName sourcePath keyPath cvType jsonVal =
   vsep
     [ reflow
-        "I detected a mistmach between an environment variable value and the type specified in the configuration spec"
+        "I detected a mistmach between an environment variable value and the expected type specified in the configuration spec"
     , mempty
     , reflow "The configuration spec file located at" <+> sourcePath <+> reflow "has the following entry:"
     , mempty
@@ -33,7 +34,7 @@ envValueTypeMismatchFoundBody varName sourcePath keyPath cvType jsonVal =
     , "But the recognized environment variable has this value:"
     , mempty
     , indent 2 $
-      varName <> "=" <> annotate Current (renderJsonValue jsonVal)
+      varName <> "=" <> annotate Current (pointed (renderJsonValue jsonVal))
     , mempty
     , "The" <+>
       annotate Current "current value" <+>
@@ -47,7 +48,7 @@ renderEnvValueTypeMismatchFound varName sourcePath keyPath cvType jsonVal =
   foundError3
     "env resolver"
     (envValueTypeMismatchFoundBody (pretty varName) (pretty sourcePath) (map pretty keyPath) cvType jsonVal)
-    [ reflow "Change the value of" <+> pretty varName <+> reflow "to match the given type" <+>
+    [ reflow "Change the value of the environment variable" <+> pretty varName <+> reflow "to match the expected type" <+>
       dquotes (renderConfigValueType cvType)
     , case renderJsonType jsonVal of
         Just jsonTyDoc ->
@@ -57,7 +58,7 @@ renderEnvValueTypeMismatchFound varName sourcePath keyPath cvType jsonVal =
     , case stripArrayWrapper cvType of
         CVTCustom customName ->
           reflow
-            "Environment variables are parsed as JSON strings, make sure the parser for the type" <+>
+            "Environment variables are parsed as JSON strings, make sure the parser for the expected type" <+>
           dquotes (pretty customName) <+>
           "supports JSON strings as inputs"
         _ -> mempty

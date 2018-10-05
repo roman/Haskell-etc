@@ -6,6 +6,7 @@
 {-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
+{-# OPTIONS_HADDOCK hide #-}
 module Etc.Internal.Spec.Types where
 
 import           RIO
@@ -33,9 +34,10 @@ instance Exception SpecParserError
 
 -- | Represents a type that can be used in your configuration values.
 --
--- Once you define a CustomType, the library will check that configuration
--- files can be transformed to the specified custom type.
+-- To create a @CustomType@, you'll need to use one of the constructor
+-- functions. We recommend using the 'aesonCustomType' builder.
 --
+-- @since 1.0.0.0
 newtype CustomType
   = CustomType {customTypeParser :: JSON.Parse () () }
 
@@ -104,7 +106,9 @@ instance Lift ConfigValue where
 type SpecFilePath = Text
 type SpecEntryPath = [Text]
 
--- |
+-- | A validated in-memory representation of a configuration spec file.
+--
+-- @since 0.0.0.0
 data ConfigSpec
   = ConfigSpec { configSpecFilePath :: !SpecFilePath
                , configSpecJSON     :: !JSON.Object

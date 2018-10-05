@@ -1,8 +1,9 @@
 {-# LANGUAGE RecordWildCards   #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_HADDOCK hide #-}
 module Etc.Internal.Spec.Serializer where
 
 import           RIO

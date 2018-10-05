@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE ExistentialQuantification  #-}
@@ -5,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# OPTIONS_HADDOCK hide #-}
 module Etc.Internal.Config where
 
 import           RIO
@@ -164,60 +166,17 @@ filterMaybe pfn mvalue = case mvalue of
          | otherwise -> mvalue
   Nothing -> Nothing
 
+-- | Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+-- incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
+-- nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+-- Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
 newtype Config
   = Config { fromConfig :: ConfigValue }
   deriving (Eq, Show, Semigroup, Monoid)
 
-class IConfig config where
-  -- | Fetches a configuration value from a given key, if key
-  -- is not found, you may pick the failure mode via the 'MonadThrow'
-  -- interface.
-  --
-  -- example:
-  --
-  -- >>> getConfigValue ["db", "user"] config :: Maybe Text
-  -- Just "root"
-  -- >>> getConfigValue ["db", "password"] config :: Maybe Text
-  -- Nothing
-  getConfigValue
-    :: (MonadThrow m, JSON.FromJSON result)
-    => [Text]   -- ^ Key to fetch from config map
-    -> config   -- ^ Config record
-    -> m result
-
-  -- | Fetches a configuration value from a given key, normally this key will
-  -- point to a sub-config JSON object, which is then passed to the given JSON
-  -- parser function. If key is not found, you may pick the failure mode via the
-  -- 'MonadThrow' interface.
-  --
-  -- example:
-  --
-  -- >>> import qualified Data.Aeson as JSON
-  -- >>> import qualified Data.Aeson.Types as JSON (Parser)
-  --
-  -- >>> connectInfoParser :: JSON.Value -> JSON.Parser DbConnectInfo
-  --
-  -- >>> getConfigValueWith connectInfoParser ["db"] config
-  -- Just (DbConnectInfo {...})
-  --
-  getConfigValueWith
-    :: (MonadThrow m)
-    => (JSON.Value -> JSON.Parser result) -- ^ JSON Parser function
-    -> [Text]                             -- ^ Key to fetch from config map
-    -> config                             -- ^ Config record
-    -> m result
-
-  getAllConfigSources
-    :: (MonadThrow m)
-    => [Text]
-    -> config
-    -> m (Set SomeConfigSource)
-
-  getSelectedConfigSource
-    :: (MonadThrow m, IConfigSource source)
-    => [Text]
-    -> config
-    -> m source
+-- | Utility typeclass that allows custom types to use the @etc@ config API.
+class HasConfig a where
+  toConfig :: a -> Config
 
 configValueToJsonObject :: ConfigValue -> JSON.Value
 configValueToJsonObject configValue = case configValue of
@@ -235,10 +194,59 @@ configValueToJsonObject configValue = case configValue of
           HashMap.empty
       & JSON.Object
 
-_getConfigValueWith
-  :: (MonadThrow m) => (JSON.Value -> JSON.Parser result) -> [Text] -> Config -> m result
-_getConfigValueWith parser keys0 (Config configValue0) =
+getSelectedConfigSource
+  :: (MonadThrow m, IConfigSource result) => [Text] -> Config -> m result
+getSelectedConfigSource keys0 (Config configValue0) =
+  let loop keys configValue = case (keys, configValue) of
+        ([], ConfigValue _ sources) -> case Set.minView sources of
+          Nothing -> throwM $ InvalidConfigKeyPath keys0
+
+          Just (SomeConfigSource _ source, _) ->
+            -- TODO: Change exception from InvalidConfigKeyPath
+            maybe (throwM $ InvalidConfigKeyPath keys0) return (cast source)
+
+        (k : keys1, SubConfig configm) -> case Map.lookup k configm of
+          Nothing           -> throwM $ InvalidConfigKeyPath keys0
+          Just configValue1 -> loop keys1 configValue1
+
+        _ -> throwM $ InvalidConfigKeyPath keys0
+  in  loop keys0 configValue0
+
+
+getAllConfigSources :: (MonadThrow m) => [Text] -> Config -> m (Set SomeConfigSource)
+getAllConfigSources keys0 (Config configValue0) =
+  let loop keys configValue = case (keys, configValue) of
+        ([]       , ConfigValue _ sources) -> return sources
+
+        (k : keys1, SubConfig configm  ) -> case Map.lookup k configm of
+          Nothing           -> throwM $ InvalidConfigKeyPath keys0
+          Just configValue1 -> loop keys1 configValue1
+
+        _ -> throwM $ InvalidConfigKeyPath keys0
+  in  loop keys0 configValue0
+
+-- | Fetches a configuration value from a given key, normally this key will
+-- point to a sub-config JSON object, which is then passed to the given JSON
+-- parser function. If key is not found, you may pick the failure mode via the
+-- 'MonadThrow' interface.
+--
+-- ==== Example
+--
+-- >>> import qualified Data.Aeson as JSON
+-- >>> import qualified Data.Aeson.Types as JSON (Parser)
+-- >>> connectInfoParser :: JSON.Value -> JSON.Parser DbConnectInfo
+-- >>> getConfigValueWith connectInfoParser ["db"] config
+-- Just (DbConnectInfo {...})
+--
+getConfigValueWith ::
+     (HasConfig config, MonadThrow m)
+  => (JSON.Value -> JSON.Parser result)
+  -> [Text]
+  -> config
+  -> m result
+getConfigValueWith parser keys0 config =
   let
+    (Config configValue0) = toConfig config
     loop keys configValue = case (keys, configValue) of
       ([], ConfigValue _ sources) -> case Set.minView sources of
         Nothing          -> throwM $ InvalidConfigKeyPath keys0
@@ -264,42 +272,23 @@ _getConfigValueWith parser keys0 (Config configValue0) =
       _ -> throwM $ InvalidConfigKeyPath keys0
   in  loop keys0 configValue0
 
-_getSelectedConfigSource
-  :: (MonadThrow m, IConfigSource result) => [Text] -> Config -> m result
-_getSelectedConfigSource keys0 (Config configValue0) =
-  let loop keys configValue = case (keys, configValue) of
-        ([], ConfigValue _ sources) -> case Set.minView sources of
-          Nothing -> throwM $ InvalidConfigKeyPath keys0
+-- | Fetches a configuration value from a given key, if key
+-- is not found, you may pick the failure mode via the 'MonadThrow'
+-- interface.
+--
+-- ==== Example
+--
+-- >>> getConfigValue ["db", "user"] config :: Maybe Text
+-- Just "root"
+-- >>> getConfigValue ["db", "password"] config :: Maybe Text
+-- Nothing
+--
+getConfigValue ::
+     (HasConfig config, MonadThrow m, JSON.FromJSON result)
+  => [Text]
+  -> config
+  -> m result
+getConfigValue = getConfigValueWith JSON.parseJSON
 
-          Just (SomeConfigSource _ source, _) ->
-            -- TODO: Change exception from InvalidConfigKeyPath
-            maybe (throwM $ InvalidConfigKeyPath keys0) return (cast source)
-
-        (k : keys1, SubConfig configm) -> case Map.lookup k configm of
-          Nothing           -> throwM $ InvalidConfigKeyPath keys0
-          Just configValue1 -> loop keys1 configValue1
-
-        _ -> throwM $ InvalidConfigKeyPath keys0
-  in  loop keys0 configValue0
-
-
-_getAllConfigSources :: (MonadThrow m) => [Text] -> Config -> m (Set SomeConfigSource)
-_getAllConfigSources keys0 (Config configValue0) =
-  let loop keys configValue = case (keys, configValue) of
-        ([]       , ConfigValue _ sources) -> return sources
-
-        (k : keys1, SubConfig configm  ) -> case Map.lookup k configm of
-          Nothing           -> throwM $ InvalidConfigKeyPath keys0
-          Just configValue1 -> loop keys1 configValue1
-
-        _ -> throwM $ InvalidConfigKeyPath keys0
-  in  loop keys0 configValue0
-
-_getConfigValue :: (MonadThrow m, JSON.FromJSON result) => [Text] -> Config -> m result
-_getConfigValue = _getConfigValueWith JSON.parseJSON
-
-instance IConfig Config where
-  getConfigValue = _getConfigValue
-  getConfigValueWith = _getConfigValueWith
-  getAllConfigSources = _getAllConfigSources
-  getSelectedConfigSource = _getSelectedConfigSource
+instance HasConfig Config where
+  toConfig = id

@@ -4,6 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
+{-# OPTIONS_HADDOCK hide #-}
 module Etc.Internal.Resolver.File.Types where
 
 import RIO

@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# OPTIONS_HADDOCK hide #-}
 -- TODO: Make sure to remove usage of MonadThrow in favor of m (Either
 -- FileResolverError result)
 module Etc.Internal.Resolver.File where
