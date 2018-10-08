@@ -95,6 +95,9 @@ fixedWidth noWidthDoc widthFn =
       AvailablePerLine w _ -> widthFn w
       _ -> noWidthDoc
 
+filePath :: Text -> Doc Ann
+filePath = dquotes . annotate Filepath . pretty
+
 title :: Int -> Doc Ann -> Doc Ann
 title msgLength msgDoc =
   fixedWidth msgDoc $ \w ->

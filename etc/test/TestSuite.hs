@@ -1,43 +1,19 @@
-{-# LANGUAGE CPP               #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 import RIO
+import Test.Hspec
 
-import Test.Tasty         (defaultMainWithIngredients, testGroup)
-import Test.Tasty.Runners (consoleTestReporter, listingTests)
-
-import qualified System.Etc.ConfigTest
-import qualified System.Etc.Resolver.DefaultTest
-import qualified System.Etc.Resolver.EnvTest
-import qualified System.Etc.Resolver.FileTest
-import qualified System.Etc.SpecTest
-
-#ifdef WITH_CLI
-import qualified System.Etc.Resolver.CliTest
-#endif
-
-#ifdef WITH_EXTRA
-import qualified System.Etc.Extra.EnvMisspellTest
-#endif
+import qualified Etc.Resolver.FileSpec
+import qualified Etc.SpecSpec
+import qualified Etc.CustomTypeSpec
+import qualified Etc.FileFormatSpec
 
 main :: IO ()
-main = defaultMainWithIngredients
-  [listingTests, consoleTestReporter]
-  (testGroup
-    "etc"
-    [ System.Etc.SpecTest.tests
-    , System.Etc.ConfigTest.tests
-    , System.Etc.Resolver.DefaultTest.tests
-    , System.Etc.Resolver.FileTest.tests
-    , System.Etc.Resolver.EnvTest.tests
-#ifdef WITH_CLI
-                     , System.Etc.Resolver.CliTest.tests
-#endif
-
-#ifdef WITH_EXTRA
-                     , System.Etc.Extra.EnvMisspellTest.tests
-#endif
-    ]
-  )
+main = hspec $ do
+  Etc.CustomTypeSpec.spec
+  Etc.FileFormatSpec.spec
+  Etc.SpecSpec.spec
+  describe "Etc.Resolver" $ do
+    describe "File" Etc.Resolver.FileSpec.spec

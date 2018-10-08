@@ -1,4 +1,4 @@
-name: etc-spec
+name: etc
 author: open-source@roman-gonzalez.info
 
 dependencies:
@@ -17,7 +17,10 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
+  # Public API
   - Etc
+  - Etc.Resolver
+  - Etc.Spec
   # Internal API
   - Etc.Internal.Config
   - Etc.Internal.Config.TH
@@ -30,9 +33,6 @@ library:
   - Etc.Internal.Spec.Serializer
   - Etc.Internal.Spec.Types
   - Etc.Internal.CustomType
-  # Public API
-  - Etc.Resolver
-  - Etc.Spec
 
 tests:
   etc-spec-tests:
@@ -45,5 +45,4 @@ tests:
       - hspec
       - QuickCheck
       - rio
-
-      - etc-spec
+      - etc

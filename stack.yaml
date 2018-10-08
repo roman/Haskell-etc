@@ -36,13 +36,13 @@ resolver: lts-11.11
 # non-dependency (i.e. a user package), and its test suites and benchmarks
 # will not be run. This is useful for tweaking upstream packages.
 packages:
-- 'etc'
-- 'examples/etc-command-example'
-- 'examples/etc-plain-example'
-- 'examples/etc-embedded-config-example'
-- 'examples/etc-compile-time-spec-check-example'
+# - 'examples/etc-command-example'
+# - 'examples/etc-plain-example'
+# - 'examples/etc-embedded-config-example'
+# - 'examples/etc-compile-time-spec-check-example'
 
-- 'etc-spec'
+- 'etc'
+- 'etc-cli'
 - 'examples/etc-spec-errors-example'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
@@ -53,11 +53,11 @@ extra-deps:
   - unliftio-core-0.1.1.0
 
 # Override default flag values for local packages and extra-deps
-flags:
-  etc:
-    extra: true
-    cli: true
-    yaml: true
+# flags:
+#   etc:
+#     extra: true
+#     cli: true
+#     yaml: true
 
 # Extra package databases containing global packages
 extra-package-dbs: []
