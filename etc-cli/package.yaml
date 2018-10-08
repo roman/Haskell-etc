@@ -8,6 +8,7 @@ dependencies:
   - prettyprinter
   - rio
   - optparse-applicative
+  - etc
 
 library:
   source-dirs: src
@@ -29,5 +30,4 @@ tests:
       - hspec
       - QuickCheck
       - rio
-      - etc
       - etc-cli

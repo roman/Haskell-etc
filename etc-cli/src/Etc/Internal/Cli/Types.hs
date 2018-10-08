@@ -8,7 +8,7 @@ import RIO
 
 import qualified Data.Aeson as JSON
 
-import qualified Etc.Internal.Config  as Config
+import Etc.Internal.Config  (IConfigSource(..))
 
 type CliEntryParseError = Text -> [Text] -> CliResolverError
 
@@ -25,7 +25,7 @@ data CliSource =
   deriving (Generic, Show, Eq)
 
 instance NFData CliSource
-instance Config.IConfigSource CliSource where
+instance IConfigSource CliSource where
   sourceValue = csValue
   sourcePrettyDoc (CliSource {}) =
     "Cli"

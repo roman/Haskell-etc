@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a2ed9d33f4fa9d37cecde3b929165bf6f3c42904e96db6ad287513788a4e09b9
+-- hash: fd9c8c04801b3d770235e2801469e0058e3b5a16ac1d17c29c570dbb8dbea397
 
 name:           etc-cli
 version:        0.0.0
@@ -25,6 +25,7 @@ library
       aeson
     , aeson-better-errors
     , base
+    , etc
     , optparse-applicative
     , prettyprinter
     , rio
