@@ -1,0 +1,33 @@
+name: etc-cli
+author: open-source@roman-gonzalez.info
+
+dependencies:
+  - aeson
+  - aeson-better-errors
+  - base
+  - prettyprinter
+  - rio
+  - optparse-applicative
+
+library:
+  source-dirs: src
+  exposed-modules:
+  # Public API
+  - Etc.Cli
+  # Internal API
+  - Etc.Internal.Cli
+  - Etc.Internal.Cli.Error
+  - Etc.Internal.Cli.Types
+
+tests:
+  etc-spec-tests:
+    main: TestSuite.hs
+    source-dirs: test
+    dependencies:
+      - raw-strings-qq
+      - base
+      - hspec
+      - QuickCheck
+      - rio
+      - etc
+      - etc-cli
