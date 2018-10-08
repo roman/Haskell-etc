@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 20afd0affa7d4395679a2559a2c40de69ae23dd85f4bb547939210bf9267b9c5
+-- hash: 202807ad34f1bc85831775d5e5081d1578e9fb8fa258fd487c1c1ca505f119ae
 
 name:           etc
 version:        0.0.0
@@ -18,6 +18,7 @@ library
       Etc.Internal.Config
       Etc.Internal.Config.TH
       Etc.Internal.FileFormat
+      Etc.Internal.Renderer
       Etc.Internal.Resolver.Types
       Etc.Internal.Resolver.File
       Etc.Internal.Resolver.File.Types
@@ -27,7 +28,6 @@ library
       Etc.Internal.Spec.Types
       Etc.Internal.CustomType
   other-modules:
-      Etc.Internal.Renderer
       Etc.Internal.Resolver
       Etc.Internal.Resolver.Default
       Etc.Internal.Resolver.Env

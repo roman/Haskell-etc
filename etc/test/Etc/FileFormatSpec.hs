@@ -51,7 +51,7 @@ spec =
         -- the Functor instance of FileFormat, we can compose them with a high level ADT
         let newFileFormat = fmap Left (SUT.jsonFormat @Resolver.FileResolverError)  <> fmap Right SUT.yamlFormat
 
-        config <- Resolver.resolveConfigWith [] configSpec [Resolver.fileResolver newFileFormat]
+        config <- Resolver.resolveConfigWith [] [Resolver.fileResolver newFileFormat] configSpec
 
         databaseValue <- Config.getConfigValue ["greeting"] config
         databaseValue `shouldBe` ("config1.yaml" :: Text)

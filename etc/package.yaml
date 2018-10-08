@@ -25,6 +25,7 @@ library:
   - Etc.Internal.Config
   - Etc.Internal.Config.TH
   - Etc.Internal.FileFormat
+  - Etc.Internal.Renderer
   - Etc.Internal.Resolver.Types
   - Etc.Internal.Resolver.File
   - Etc.Internal.Resolver.File.Types
