@@ -5,12 +5,12 @@
 
 :set -Wall
 :set -fno-warn-type-defaults
-:set -package pretty-show
+:set -package pretty-simple
 
 :set -DGHCI
 
 import RIO
-import Text.Show.Pretty (pPrint)
+import Text.Pretty.Simple (pPrint)
 
 :set -interactive-print pPrint
 

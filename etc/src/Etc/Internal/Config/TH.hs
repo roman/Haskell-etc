@@ -12,6 +12,7 @@ import qualified RIO.Text as Text
 import Language.Haskell.TH        (ExpQ, runIO)
 
 import qualified  Data.Text.Prettyprint.Doc as Doc
+import qualified  Data.Text.Prettyprint.Doc.Util as Doc (reflow)
 
 import Etc.Internal.Renderer
 import Etc.Internal.Spec.Types as Spec
@@ -34,7 +35,91 @@ data CheckedConfigValueError
   deriving (Show)
 
 instance HumanErrorMessage CheckedConfigValueError where
-  humanErrorMessage = Doc.pretty . show
+  humanErrorMessage err =
+    case err of
+      UnexpectedSubConfigEntry specFilepath keyPath childKeys ->
+        foundError3
+          "application error"
+          (Doc.vsep
+             [ Doc.reflow "I've found an invalid query in your configuration."
+             , mempty
+             , Doc.reflow "The given path:"
+             , mempty
+             , Doc.indent 2 $ Doc.prettyList keyPath
+             , mempty
+             , Doc.reflow
+                 "Is declared as a map entry in the configuration spec file located at" Doc.<+>
+               filePath specFilepath
+             ])
+          [ Doc.vsep
+              [ "Try to use one of the following key paths in your config query call instead:"
+              , Doc.indent 2 $
+                Doc.vsep
+                  (map
+                     (\key -> "- " <> Doc.prettyList (keyPath <> [key]))
+                     childKeys)
+              ]
+          , Doc.reflow "Modify entry definition to only contain the keys" Doc.<+>
+            Doc.dquotes (Doc.pretty (Text.intercalate "." keyPath)) Doc.<+>
+            Doc.reflow "in the configuration spec file"
+          ]
+      UnexpectedConfigValueEntry specFilepath expectedKeys extraInvalidKeys ->
+        foundError3
+          "application error"
+          (Doc.vsep
+             [ Doc.reflow "I've found an invalid query in your configuration."
+             , mempty
+             , Doc.reflow "The given path:"
+             , mempty
+             , Doc.indent 2 $ Doc.viaShow (expectedKeys <> extraInvalidKeys)
+             , mempty
+             , Doc.reflow "Is not defined in your configuration spec located at" Doc.<+>
+               filePath specFilepath
+             ])
+          [ Doc.reflow "Remove the extra invalid keys" Doc.<+>
+            Doc.viaShow extraInvalidKeys Doc.<+>
+            "from your call"
+          , Doc.vsep
+              [ Doc.reflow
+                  "Modify your entry definition to contain the extra keys like so:"
+              , mempty
+              , Doc.indent 2 $
+                renderSpecKeyPath
+                  (map Doc.pretty $ expectedKeys <> extraInvalidKeys)
+                  (newlineBody "...")
+              , mempty
+              , Doc.reflow "in the configuration spec file"
+              ]
+          ]
+      FoundUnknownKey specFilepath correctPath expectedKeys unknownKey ->
+        foundError3
+          "application error"
+          (Doc.vsep
+             [ Doc.reflow "I've found an invalid query in your configuration."
+             , mempty
+             , Doc.reflow "The given path:"
+             , mempty
+             , Doc.indent 2 $ Doc.viaShow (correctPath <> [unknownKey])
+             , mempty
+             , Doc.reflow "Is not defined in your configuration spec located at" Doc.<+>
+               filePath specFilepath
+             ])
+          [ Doc.reflow "Remove the unknown key" Doc.<+>
+            Doc.dquotes (Doc.pretty unknownKey) Doc.<+>
+            "from your call"
+          , Doc.vsep
+              [ "Try to use one of the following key paths in your config query call instead:"
+              , Doc.indent 2 $
+                Doc.vsep
+                  (map
+                     (\key -> "- " <> Doc.viaShow (correctPath <> [key]))
+                     expectedKeys)
+              ]
+          , Doc.reflow "Modify entry definition to only contain the keys" Doc.<+>
+            Doc.dquotes
+              (Doc.pretty (Text.intercalate "." (correctPath <> [unknownKey]))) Doc.<+>
+            Doc.reflow "in the configuration spec file"
+          ]
 
 assertKeyPath :: [Text] -> ConfigSpec -> IO ()
 assertKeyPath keyPath (ConfigSpec {configSpecFilePath, configSpecEntries}) =
