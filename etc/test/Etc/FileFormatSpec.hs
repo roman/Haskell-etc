@@ -23,7 +23,7 @@ import qualified Etc.Internal.FileFormat as SUT
 testFixturePath :: FilePath -> FilePath
 testFixturePath path =
 #ifdef GHCI
-  "etc-spec/test/fixtures" </> path
+  "etc/test/fixtures" </> path
 #else
   "test/fixtures" </> path
 #endif

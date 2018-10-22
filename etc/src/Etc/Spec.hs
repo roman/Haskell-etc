@@ -20,7 +20,6 @@ module Etc.Spec
   , Types.getConfigSpecJSON
   , Types.getConfigSpecEntries
 
-
   , Parser.jsonSpec
   , Parser.yamlSpec
   , Parser.readConfigSpec
