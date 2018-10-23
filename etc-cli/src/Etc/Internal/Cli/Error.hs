@@ -102,7 +102,8 @@ switchIncompatibleType specFilePath keyPath cvType =
            ]
        , mempty
        , reflow "The" <+>
-         dquotes "type" <+> reflow "attribute of the cli entry should be" <+> dquotes "boolean"
+         dquotes "type" <+>
+         reflow "attribute of the cli entry should be" <+> dquotes "boolean"
        ])
     [reflow "Replace the entry's type to boolean"]
 
