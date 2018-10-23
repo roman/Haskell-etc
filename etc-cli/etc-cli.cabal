@@ -1,14 +1,15 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fd9c8c04801b3d770235e2801469e0058e3b5a16ac1d17c29c570dbb8dbea397
+-- hash: d78de66b10b097f283a6eb64c46f91a6f1fa7062fdbe385018db64283e89d51a
 
 name:           etc-cli
 version:        0.0.0
 author:         open-source@roman-gonzalez.info
 build-type:     Simple
-cabal-version:  >= 1.10
 
 library
   exposed-modules:
@@ -31,7 +32,7 @@ library
     , rio
   default-language: Haskell2010
 
-test-suite etc-spec-tests
+test-suite etc-cli-tests
   type: exitcode-stdio-1.0
   main-is: TestSuite.hs
   other-modules:
@@ -42,6 +43,7 @@ test-suite etc-spec-tests
       QuickCheck
     , aeson
     , aeson-better-errors
+    , aeson-qq
     , base
     , etc
     , etc-cli

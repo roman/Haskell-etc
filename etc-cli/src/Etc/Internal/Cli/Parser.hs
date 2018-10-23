@@ -6,13 +6,17 @@ module Etc.Internal.Cli.Parser where
 import RIO
 
 import qualified Data.Aeson.BetterErrors as JSON
+import Etc.Internal.Spec.Types
 import Etc.Internal.Cli.Types
 
-parseCliSwitchSpec :: JSON.Parse err CliSwitchSpec
-parseCliSwitchSpec =
-  CliSwitchSpec
-    <$> JSON.key "long" JSON.asText
-    <*> JSON.keyMay "help" JSON.asText
+parseCliSwitchSpec ::
+     ConfigValueType -> JSON.Parse CliEntryParseError CliSwitchSpec
+parseCliSwitchSpec cvType =
+  case cvType of
+    CVTSingle CVTBool ->
+      CliSwitchSpec <$> JSON.key "long" JSON.asText <*>
+      JSON.keyMay "help" JSON.asText
+    _ -> JSON.throwCustomError (SwitchIncompatibleType cvType)
 
 parseCliArgSpec :: JSON.Parse err CliArgSpec
 parseCliArgSpec =
@@ -32,13 +36,13 @@ parseCliOptSpec = do
          (fromMaybe False <$> JSON.keyMay "hidden" JSON.asBool) <*>
          (fromMaybe False <$> JSON.keyMay "internal" JSON.asBool)
 
-parseCliEntrySpec :: JSON.Parse CliEntryParseError CliEntrySpec
-parseCliEntrySpec = do
+parseCliEntrySpec :: ConfigValueType -> JSON.Parse CliEntryParseError CliEntrySpec
+parseCliEntrySpec cvType = do
   inputName <- JSON.key "input" JSON.asText
   case inputName of
     "option" -> Opt <$> parseCliOptSpec
     "argument" -> Arg <$> parseCliArgSpec
-    "switch" -> Switch <$> parseCliSwitchSpec
+    "switch" -> Switch <$> parseCliSwitchSpec cvType
     _ -> JSON.throwCustomError (InvalidInputName inputName)
 
 parseCliInfoSpec :: JSON.Parse err CliInfoSpec

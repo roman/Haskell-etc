@@ -21,11 +21,12 @@ library:
   - Etc.Internal.Cli.Types
 
 tests:
-  etc-spec-tests:
+  etc-cli-tests:
     main: TestSuite.hs
     source-dirs: test
     dependencies:
       - raw-strings-qq
+      - aeson-qq
       - base
       - hspec
       - QuickCheck

@@ -54,6 +54,7 @@ module Etc
     Spec.ConfigSpec
   , Spec.readConfigSpecTH
   , Spec.readConfigSpecFormatTH
+  , Spec.parseConfigSpec
   , Spec.yamlSpec
   , Spec.jsonSpec
 
@@ -89,6 +90,8 @@ module Etc
     -- $config_api
   , Config.Config
   , Config.HasConfig (..)
+  , Config.ConfigValueParserFailed(..)
+  , Config.InvalidConfigKeyPath(..)
   , Config.getConfigValue
   , Config.getConfigValueWith
   , Config.checkedConfigValue

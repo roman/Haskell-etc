@@ -136,13 +136,18 @@ parseConfigValueType ::
 parseConfigValueType sourceName customTypes fieldKeypath mdefaultValue =
   case mdefaultValue of
     Nothing ->
-      fst <$> JSON.key "type" (parseConfigValueType1 sourceName customTypes fieldKeypath)
+      fst <$>
+      JSON.key
+        "type"
+        (parseConfigValueType1 sourceName customTypes fieldKeypath)
     Just defaultValue -> do
       mFieldType <-
-        JSON.keyMay "type" (parseConfigValueType1 sourceName customTypes fieldKeypath)
+        JSON.keyMay
+          "type"
+          (parseConfigValueType1 sourceName customTypes fieldKeypath)
       case mFieldType of
-        Nothing -> inferConfigValueTypeFromJSON sourceName fieldKeypath defaultValue
-
+        Nothing ->
+          inferConfigValueTypeFromJSON sourceName fieldKeypath defaultValue
         Just (fieldType, Nothing) -> do
           assertFieldTypeMatches
             (DefaultValueTypeMismatchFound sourceName fieldKeypath)
@@ -150,16 +155,18 @@ parseConfigValueType sourceName customTypes fieldKeypath mdefaultValue =
             fieldType
             defaultValue
           return fieldType
-
         Just (fieldType, Just customType) -> do
-          let
-            parseError =
-              (DefaultValueTypeMismatchFound
+          let parseError =
+                (DefaultValueTypeMismatchFound
                    sourceName
                    fieldKeypath
                    fieldType
                    defaultValue)
-          parseCustomType (isCVTArray fieldType) parseError defaultValue customType
+          parseCustomType
+            (isCVTArray fieldType)
+            parseError
+            defaultValue
+            customType
           return fieldType
 
 parseConfigValueData ::
@@ -168,17 +175,24 @@ parseConfigValueData ::
   -> Map Text CustomType
   -> [Text]
   -> JSON.ParseT SpecParserError m ConfigValueData
-parseConfigValueData sourceName customTypes fieldKeypath = JSON.key "etc/spec" $ do
-  configValueDefault   <- JSON.keyMay "default" JSON.asValue
-  configValueType      <- parseConfigValueType sourceName customTypes fieldKeypath configValueDefault
-  configValueSensitive <- JSON.keyOrDefault "sensitive" False JSON.asBool
-  configValueJSON      <- JSON.asValue
-  return $ ConfigValueData
-    { configValueDefault
-    , configValueType
-    , configValueSensitive
-    , configValueJSON
-    }
+parseConfigValueData sourceName customTypes fieldKeypath =
+  JSON.key "etc/spec" $ do
+    configValueDefault <- JSON.keyMay "default" JSON.asValue
+    configValueType <-
+      parseConfigValueType
+        sourceName
+        customTypes
+        fieldKeypath
+        configValueDefault
+    configValueSensitive <- JSON.keyOrDefault "sensitive" False JSON.asBool
+    configValueJSON <- JSON.asValue
+    return $
+      ConfigValueData
+        { configValueDefault
+        , configValueType
+        , configValueSensitive
+        , configValueJSON
+        }
 
 parseConfigSpecEntries ::
      Monad m
@@ -189,31 +203,39 @@ parseConfigSpecEntries ::
 parseConfigSpecEntries sourceName customTypes fieldKeypath = do
   jsonValue <- JSON.asValue
   case jsonValue of
-    JSON.Object object -> case HashMap.lookup "etc/spec" object of
-      Nothing -> parseSubConfig
-      Just _
-        |
+    JSON.Object object ->
+      case HashMap.lookup "etc/spec" object of
+        Nothing -> parseSubConfig
+        Just _
         -- TODO: Test this case
         -- There is more than one entry in the map containing 'etc/spec', this is likely
         -- an error and should be reported as soon as possible
-          HashMap.size object > 1 -> JSON.throwCustomError
-          (RedundantKeysOnValueSpec sourceName fieldKeypath $ HashMap.keys $ HashMap.delete
-            "etc/spec"
-            object
-          )
-        | otherwise -> parseConfigValue
+          | HashMap.size object > 1 ->
+            JSON.throwCustomError
+              (RedundantKeysOnValueSpec sourceName fieldKeypath $
+               HashMap.keys $ HashMap.delete "etc/spec" object)
+          | otherwise -> parseConfigValue
     _ -> do
-      configValueType <- inferConfigValueTypeFromJSON sourceName fieldKeypath jsonValue
-      return $ ConfigValue $ ConfigValueData
-        { configValueDefault   = Just jsonValue
-        , configValueType
-        , configValueSensitive = False
-        , configValueJSON      = jsonValue
-        }
- where
-  parseSubConfig = SubConfig . Map.fromList <$> JSON.forEachInObject
-    (\key -> (,) key <$> parseConfigSpecEntries sourceName customTypes (key : fieldKeypath))
-  parseConfigValue = ConfigValue <$> parseConfigValueData sourceName customTypes fieldKeypath
+      configValueType <-
+        inferConfigValueTypeFromJSON sourceName fieldKeypath jsonValue
+      return $
+        ConfigValue $
+        ConfigValueData
+          { configValueDefault = Just jsonValue
+          , configValueType
+          , configValueSensitive = False
+          , configValueJSON = jsonValue
+          }
+  where
+    parseSubConfig =
+      SubConfig . Map.fromList <$>
+      JSON.forEachInObject
+        (\key ->
+           (,) key <$>
+           parseConfigSpecEntries sourceName customTypes (key : fieldKeypath))
+    parseConfigValue =
+      ConfigValue <$>
+      (parseConfigValueData sourceName customTypes fieldKeypath)
 
 configSpecParser ::
      (Monad m)

@@ -1,14 +1,15 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 202807ad34f1bc85831775d5e5081d1578e9fb8fa258fd487c1c1ca505f119ae
+-- hash: bbc91ca61ef7cf8131dfb8f9765d390a8d3c8b0bfb8c7298e3daacaf25a97598
 
 name:           etc
 version:        0.0.0
 author:         open-source@roman-gonzalez.info
 build-type:     Simple
-cabal-version:  >= 1.10
 
 library
   exposed-modules:

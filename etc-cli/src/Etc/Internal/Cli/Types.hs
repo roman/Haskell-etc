@@ -8,6 +8,7 @@ import RIO
 
 import qualified Data.Aeson as JSON
 
+import Etc.Internal.Spec.Types (ConfigValueType)
 import Etc.Internal.Config  (IConfigSource(..))
 
 type CliEntryParseError = Text -> [Text] -> CliResolverError
@@ -15,6 +16,7 @@ type CliEntryParseError = Text -> [Text] -> CliResolverError
 data CliResolverError
   = MissingOptName !Text ![Text]
   | InvalidInputName !Text !Text ![Text]
+  | SwitchIncompatibleType !ConfigValueType !Text ![Text]
   | InfoModMissing !Text
   deriving (Show)
 

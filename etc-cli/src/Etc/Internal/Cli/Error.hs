@@ -12,6 +12,7 @@ import Data.Text.Prettyprint.Doc.Util (reflow)
 import Etc.Internal.Renderer
 import Etc.Resolver (HumanErrorMessage(..))
 import Etc.Internal.Cli.Types
+import Etc.Internal.Spec.Types (ConfigValueType)
 
 renderMissingOptName :: Text -> [Text] -> Doc Ann
 renderMissingOptName specFilePath keyPath =
@@ -81,6 +82,31 @@ infoModMissing specFilePath =
     , reflow "Drop the usage of cliResolver or pureCliResolver from the code"
     ]
 
+switchIncompatibleType :: Text -> [Text] -> ConfigValueType -> Doc Ann
+switchIncompatibleType specFilePath keyPath cvType =
+  foundError3
+    "cli resolver"
+    (vsep
+       [ reflow "I detected an invalid CLI configuration for an entry"
+       , mempty
+       , reflow "The configuration spec file located at" <+>
+         filePath specFilePath <+> reflow "has the following entry:"
+       , mempty
+       , indent 2 $
+         renderSpecKeyPath (map pretty keyPath) $
+         newlineBody $
+         hang 2 $
+         vsep
+           [ "cli:"
+           , annotate Error $ "type:" <+> pointed (renderConfigValueType cvType)
+           ]
+       , mempty
+       , reflow "The" <+>
+         dquotes "type" <+> reflow "attribute of the cli entry should be" <+> dquotes "boolean"
+       ])
+    [reflow "Replace the entry's type to boolean"]
+
+
 instance HumanErrorMessage CliResolverError where
   humanErrorMessage err =
     case err of
@@ -90,3 +116,5 @@ instance HumanErrorMessage CliResolverError where
         invalidInputName specFilePath keyPath givenInputName
       InfoModMissing specFilePath ->
         infoModMissing specFilePath
+      SwitchIncompatibleType cvType specFilePath keyPath ->
+        switchIncompatibleType specFilePath keyPath cvType

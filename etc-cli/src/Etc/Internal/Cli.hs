@@ -199,18 +199,25 @@ specToConfigValueOptParser specFilePath priorityIndex customTypes keyPath acc (s
                                           , Spec.configValueSensitive
                                           , Spec.configValueJSON
                                           } ->
-      case JSON.parseValue (JSON.keyMay "cli" parseCliEntrySpec) configValueJSON of
-        Left err -> throwM (fromCliParseError specFilePath (keyPath |> specEntryKey) err)
-        Right Nothing -> return acc
-        Right (Just cliSpec) ->
-          configValueSpecToOptParser
-            priorityIndex
-            customTypes
-            specEntryKey
-            configValueType
-            configValueSensitive
-            cliSpec
-            acc
+      case configValueJSON of
+        JSON.Object _ ->
+          case JSON.parseValue
+                 (JSON.keyMay "cli" (parseCliEntrySpec configValueType))
+                 configValueJSON of
+            Left err ->
+              throwM
+                (fromCliParseError specFilePath (keyPath |> specEntryKey) err)
+            Right Nothing -> return acc
+            Right (Just cliSpec) ->
+              configValueSpecToOptParser
+                priorityIndex
+                customTypes
+                specEntryKey
+                configValueType
+                configValueSensitive
+                cliSpec
+                acc
+        _ -> return acc
     Spec.SubConfig subConfigSpec ->
       subConfigSpecToOptParser
         specFilePath
