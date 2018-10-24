@@ -16,7 +16,8 @@ library:
   # Public API
   - Etc.Cli
   # Internal API
-  - Etc.Internal.Cli.Parser
+  - Etc.Internal.Cli.Plain.Parser
+  - Etc.Internal.Cli.Plain.Resolver
   - Etc.Internal.Cli.Error
   - Etc.Internal.Cli.Types
 

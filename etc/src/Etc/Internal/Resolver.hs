@@ -15,6 +15,11 @@ import qualified Etc.Internal.Spec.Types       as Spec
 import Etc.Internal.Resolver.Env  (envResolver)
 import qualified Etc.Internal.Resolver.File as File
 
+-- | Utility dummy 'Resolver' used to reserve a priorityIndex
+emptyResolver :: Monad m => Resolver m
+emptyResolver =
+  Resolver $ \_priorityIndex _customTypes _spec -> return mempty
+
 -- | Use each input 'Resolver' to gather configuration values, all
 -- runtime configuration values are stored in the returned 'Config' record.
 --

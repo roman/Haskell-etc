@@ -1,13 +1,14 @@
 {-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module Etc.Internal.Cli.Parser where
+{-# LANGUAGE OverloadedStrings #-}
+module Etc.Internal.Cli.Plain.Parser where
 
-import RIO
+import           RIO
+import qualified RIO.Map as Map
 
 import qualified Data.Aeson.BetterErrors as JSON
-import Etc.Internal.Spec.Types
-import Etc.Internal.Cli.Types
+import           Etc.Internal.Cli.Types
+import           Etc.Internal.Spec.Types
 
 parseCliSwitchSpec ::
      ConfigValueType -> JSON.Parse CliEntryParseError CliSwitchSpec
@@ -40,14 +41,22 @@ parseCliEntrySpec :: ConfigValueType -> JSON.Parse CliEntryParseError CliEntrySp
 parseCliEntrySpec cvType = do
   inputName <- JSON.key "input" JSON.asText
   case inputName of
-    "option" -> Opt <$> parseCliOptSpec
+    "option"   -> Opt <$> parseCliOptSpec
     "argument" -> Arg <$> parseCliArgSpec
-    "switch" -> Switch <$> parseCliSwitchSpec cvType
-    _ -> JSON.throwCustomError (InvalidInputName inputName)
+    "switch"   -> Switch <$> parseCliSwitchSpec cvType
+    _          -> JSON.throwCustomError (InvalidInputName inputName)
 
-parseCliInfoSpec :: JSON.Parse err CliInfoSpec
-parseCliInfoSpec = do
-  CliInfoSpec
+parseCliInfoSpecData :: JSON.Parse err CliInfoSpecData
+parseCliInfoSpecData =
+  CliInfoSpecData
     <$> JSON.key "desc" JSON.asText
     <*> JSON.keyMay "header" JSON.asText
     <*> JSON.keyMay "footer" JSON.asText
+
+parseCliInfoSpec :: JSON.Parse err CliInfoSpec
+parseCliInfoSpec = do
+  infoSpecData <- parseCliInfoSpecData
+  mcommands <- JSON.keyMay "commands" (JSON.eachInObject parseCliInfoSpecData)
+  case mcommands of
+    Nothing       -> pure $ PlainCliInfoSpec infoSpecData
+    Just commands -> pure $ CommandCliInfoSpec infoSpecData (Map.fromList commands)

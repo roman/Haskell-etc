@@ -2,6 +2,7 @@ module Etc.Resolver
   ( Types.Resolver (..)
   , Types.ResolverError (..)
   , Resolver.resolveConfigWith
+  , Resolver.emptyResolver
   , Renderer.HumanErrorMessage (..)
 
   -- * File Resolver Utilities

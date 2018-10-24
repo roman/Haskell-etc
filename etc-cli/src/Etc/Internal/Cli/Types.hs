@@ -7,8 +7,9 @@ module Etc.Internal.Cli.Types where
 import RIO
 
 import qualified Data.Aeson as JSON
+import qualified Options.Applicative as Opt
 
-import Etc.Internal.Spec.Types (ConfigValueType)
+import Etc.Internal.Spec.Types (ConfigSpec, CustomType, ConfigValueData, ConfigValueType)
 import Etc.Internal.Config  (IConfigSource(..))
 
 type CliEntryParseError = Text -> [Text] -> CliResolverError
@@ -18,6 +19,9 @@ data CliResolverError
   | InvalidInputName !Text !Text ![Text]
   | SwitchIncompatibleType !ConfigValueType !Text ![Text]
   | InfoModMissing !Text
+  | PlainInfoModExpected !Text
+  | CommandInfoModExpected !Text
+  | CommandListMismatch !Text !(Set Text) !(Set Text)
   deriving (Show)
 
 data CliSource =
@@ -63,12 +67,19 @@ data CliSwitchSpec
 
 instance NFData CliSwitchSpec
 
-data CliInfoSpec
-  = CliInfoSpec {
+data CliInfoSpecData
+  = CliInfoSpecData {
     cisProgDesc :: !Text
   , cisHeader   :: !(Maybe Text)
   , cisFooter   :: !(Maybe Text)
   }
+  deriving (Generic, Show, Eq)
+
+instance NFData CliInfoSpecData
+
+data CliInfoSpec
+  = PlainCliInfoSpec !CliInfoSpecData
+  | CommandCliInfoSpec !CliInfoSpecData !(Map Text CliInfoSpecData)
   deriving (Generic, Show, Eq)
 
 instance NFData CliInfoSpec
@@ -80,3 +91,27 @@ data CliEntrySpec
   deriving (Generic, Show, Eq)
 
 instance NFData CliEntrySpec
+
+-- | References that come handy when building an optparse-applicative
+-- 'Opt.Parser'; by using this record, we avoid threading through a bunch of
+-- variables
+data BuilderEnv
+  = BuilderEnv {
+    envPriorityIndex   :: !Int
+  , envCustomTypes     :: !(Map Text CustomType)
+  , envConfigSpec      :: !ConfigSpec
+  }
+
+-- | References that come handy when building an optparse-applicative
+-- 'Opt.Parser'; by using this record, we avoid threading through a bunch of
+-- variables
+data FieldEnv
+  = FieldEnv {
+      fieldBuildEnv        :: !BuilderEnv
+    , fieldCliEntrySpec    :: !CliEntrySpec
+    , fieldConfigValueSpec :: !ConfigValueData
+    }
+
+data CliInfoMod f
+  = PlainCli !(Opt.InfoMod f)
+  | CommandCli !(Opt.InfoMod f) !(Map Text (Opt.InfoMod f))

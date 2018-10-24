@@ -115,7 +115,10 @@ instance HumanErrorMessage CliResolverError where
         renderMissingOptName specFilePath keyPath
       InvalidInputName givenInputName specFilePath keyPath ->
         invalidInputName specFilePath keyPath givenInputName
-      InfoModMissing specFilePath ->
-        infoModMissing specFilePath
       SwitchIncompatibleType cvType specFilePath keyPath ->
         switchIncompatibleType specFilePath keyPath cvType
+      InfoModMissing specFilePath -> infoModMissing specFilePath
+      PlainInfoModExpected _specFilePath -> error "pending"
+      CommandInfoModExpected _specFilePath -> error "pending"
+      CommandListMismatch _specFilePath _unknownCommands _missingCommands ->
+        error "pending"

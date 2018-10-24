@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Internal.Cli.Plain where
+module Etc.Internal.Cli.Plain.Resolver where
 
 import           RIO
 import qualified RIO.Map  as Map
@@ -24,32 +24,14 @@ import qualified Etc.Internal.Spec.Types  as Spec
 import qualified Etc.Resolver             as Resolver
 
 import Etc.Internal.Cli.Error ()
-import Etc.Internal.Cli.Parser (parseCliEntrySpec, parseCliInfoSpec)
+import Etc.Internal.Cli.Common (toOptInfoMod, fetchPlainCliInfoSpec)
+import Etc.Internal.Cli.Plain.Parser (parseCliEntrySpec)
 import Etc.Internal.Cli.Types
 --------------------------------------------------------------------------------
 
--- | References that come handy when building an optparse-applicative
--- 'Opt.Parser'; by using this record, we avoid threading through a bunch of
--- variables
-data BuilderEnv
-  = BuilderEnv {
-    envPriorityIndex   :: !Int
-  , envCustomTypes     :: !(Map Text Spec.CustomType)
-  , envConfigSpec      :: !Spec.ConfigSpec
-  }
-
--- | References that come handy when building an optparse-applicative
--- 'Opt.Parser'; by using this record, we avoid threading through a bunch of
--- variables
-data FieldEnv
-  = FieldEnv {
-      fieldBuildEnv        :: !BuilderEnv
-    , fieldCliEntrySpec    :: !CliEntrySpec
-    , fieldConfigValueSpec :: !Spec.ConfigValueData
-    }
-
 #if MIN_VERSION_optparse_applicative(0,14,0)
-cliOptSpecToFieldMod :: (Opt.HasMetavar f, Opt.HasName f) => CliOptSpec -> Opt.Mod f a
+cliOptSpecToFieldMod ::
+     (Opt.HasMetavar f, Opt.HasName f) => CliOptSpec -> Opt.Mod f a
 #endif
 cliOptSpecToFieldMod optSpec =
   maybe Opt.idm (Opt.long . Text.unpack) (optLong optSpec)
@@ -237,6 +219,10 @@ subConfigSpecToOptParser keyPath specEntryKey subConfigSpec acc = do
         Config.SubConfig subConfigMap ->
           Config.SubConfig
             (Map.alter (const $ Just subConfig) specEntryKey subConfigMap)
+    updateAccConfigOptParser ::
+         Opt.Parser Config.ConfigValue
+      -> Opt.Parser Config.ConfigValue
+      -> Opt.Parser Config.ConfigValue
     updateAccConfigOptParser subConfigParser accOptParser =
       updateAccConfig <$> subConfigParser <*> accOptParser
 
@@ -297,24 +283,6 @@ specToConfigValueOptParser keyPath acc (specEntryKey, specConfigValue) = do
     Spec.SubConfig subConfigSpec ->
       subConfigSpecToOptParser keyPath specEntryKey subConfigSpec acc
 
-toOptInfoMod :: MonadThrow m => Spec.ConfigSpec -> m (Opt.InfoMod a)
-toOptInfoMod Spec.ConfigSpec {Spec.configSpecFilePath, Spec.configSpecJSON} = do
-  let result =
-        JSON.parseValue
-          (JSON.keyMay "etc/cli" parseCliInfoSpec)
-          (JSON.Object configSpecJSON)
-  case result of
-    Left err ->
-      throwM (Resolver.ResolverError (err :: JSON.ParseError CliResolverError))
-    Right Nothing ->
-      throwM (Resolver.ResolverError (InfoModMissing configSpecFilePath))
-    Right (Just cliInfoSpec) ->
-      return $
-      Opt.fullDesc <>
-      Opt.progDesc (Text.unpack $ cisProgDesc cliInfoSpec) <>
-      maybe Opt.idm (Opt.header . Text.unpack) (cisHeader cliInfoSpec) <>
-      maybe Opt.idm (Opt.footer . Text.unpack) (cisFooter cliInfoSpec)
-
 toOptParser :: (MonadReader BuilderEnv m, MonadThrow m) => m (Opt.Parser Config)
 toOptParser = do
   spec <- envConfigSpec <$> ask
@@ -335,7 +303,8 @@ resolveCli priorityIndex customTypes spec = do
                               , envConfigSpec = spec
                               }
   configParser <- runReaderT toOptParser builderEnv
-  infoMod <- toOptInfoMod spec
+  cliInfoSpecData <- fetchPlainCliInfoSpec spec
+  let infoMod = toOptInfoMod cliInfoSpecData
   liftIO $
     Opt.execParser
       (Opt.info (configParser Opt.<**> Opt.helper)
@@ -350,7 +319,8 @@ resolveCliPure inputArgs priorityIndex customTypes spec = do
                               , envConfigSpec = spec
                               }
   configParser <- runReaderT toOptParser builderEnv
-  infoMod <- toOptInfoMod spec
+  cliInfoSpecData <- fetchPlainCliInfoSpec spec
+  let infoMod = toOptInfoMod cliInfoSpecData
   liftIO $
     Opt.handleParseResult $
     Opt.execParserPure
@@ -359,8 +329,10 @@ resolveCliPure inputArgs priorityIndex customTypes spec = do
                 infoMod)
       inputArgs
 
+-- | PENDING
 cliResolver :: (MonadIO m, MonadThrow m) => Resolver.Resolver m
 cliResolver = Resolver.Resolver resolveCli
 
+-- | PENDING
 pureCliResolver :: (MonadIO m, MonadThrow m) => [String] -> Resolver.Resolver m
 pureCliResolver args = Resolver.Resolver $ resolveCliPure args
