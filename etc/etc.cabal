@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bbc91ca61ef7cf8131dfb8f9765d390a8d3c8b0bfb8c7298e3daacaf25a97598
+-- hash: 337c11e383fa0d8e581d2f826c42dd09471deed09d06cdd270f46a5adee97044
 
 name:           etc
 version:        0.0.0
@@ -62,6 +62,7 @@ test-suite etc-spec-tests
       Etc.Generators
       Etc.Resolver.FileSpec
       Etc.SpecSpec
+      Spec
       Paths_etc
   hs-source-dirs:
       test
@@ -75,6 +76,7 @@ test-suite etc-spec-tests
     , etc
     , filepath
     , hspec
+    , hspec-discover
     , prettyprinter
     , raw-strings-qq
     , rio
