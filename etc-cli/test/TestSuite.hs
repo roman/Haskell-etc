@@ -351,8 +351,8 @@ switch_spec =
               expectationFailure
                 ("Expecting type validation to work on cli; got " <> show err)
         Right _ -> expectationFailure "Expecting type validation to work on cli"
-    describe "when etc/spec.default is false" $ do
-      it "returns false when flag not given" $ do
+    context "when etc/spec.default is false" $ do
+      it "returns false when flag is not given" $ do
         let input =
               [aesonQQ|
         {
@@ -382,7 +382,7 @@ switch_spec =
           Right config -> do
             greeting <- getConfigValue ["greeting"] config
             greeting `shouldBe` False
-      it "returns true when flag given" $ do
+      it "returns true when flag is given" $ do
         let input =
               [aesonQQ|
         {
@@ -396,7 +396,7 @@ switch_spec =
                 , "default": false
                 , "cli": {
                     "input": "switch"
-                  , "long": "valid"
+                  , "long": "disabled"
                 }
               }
             }
@@ -404,7 +404,7 @@ switch_spec =
         }
         |]
         configSpec <- parseConfigSpecValue "<<input>>" [] input
-        result <- try $ resolveConfigWith [] [SUT.pureCliResolver ["--valid"]] configSpec
+        result <- try $ resolveConfigWith [] [SUT.pureCliResolver ["--disabled"]] configSpec
         case result of
           Left (err :: SomeException) ->
             expectationFailure
@@ -413,37 +413,87 @@ switch_spec =
             greeting <- getConfigValue ["greeting"] config
             greeting `shouldBe` True
 
-    -- TODO: This testcase is failing, and it is because the optparse-applicative
-    -- API _always_ returns a value, if the flag is not present, it will return
-    -- false. Once refactoring of parser is done, we need to make use of the
-    -- default value to change the behavior of the optparse-applicative API to
-    -- return the appropiate result
-    -- context "when default is true" $ do
-    --   it "entry should use default when not specified (true case)" $ do
-    --     let input =
-    --           [aesonQQ|
-    --     {
-    --       "etc/cli": {
-    --         "desc": "Some Description"
-    --       }
-    --     , "etc/entries": {
-    --         "greeting": {
-    --             "etc/spec": {
-    --               "type": "bool"
-    --             , "default": true
-    --             , "cli": {
-    --                 "input": "switch"
-    --               , "long": "invalid"
-    --             }
-    --           }
-    --         }
-    --       }
-    --     }
-    --     |]
-    --     configSpec <- parseConfigSpecValue "<<input>>" [] input
-    --     config <- resolveConfigWith [] [SUT.pureCliResolver ["--invalid"]] configSpec
-    --     greeting <- getConfigValue ["greeting"] config
-    --     greeting `shouldBe` True
+    context "when etc/spec.default is true" $ do
+      it "returns true when flag is not given" $ do
+        let input =
+              [aesonQQ|
+        {
+          "etc/cli": {
+            "desc": "Some Description"
+          }
+        , "etc/entries": {
+            "greeting": {
+                "etc/spec": {
+                  "type": "bool"
+                , "default": true
+                , "cli": {
+                    "input": "switch"
+                  , "long": "invalid"
+                  , "help": "This is a description"
+                }
+              }
+            }
+          }
+        }
+        |]
+        configSpec <- parseConfigSpecValue "<<input>>" [] input
+        config <- resolveConfigWith [] [SUT.pureCliResolver []] configSpec
+        greeting <- getConfigValue ["greeting"] config
+        greeting `shouldBe` True
+      it "returns false when flag is given" $ do
+        let input =
+              [aesonQQ|
+        {
+          "etc/cli": {
+            "desc": "Some Description"
+          }
+        , "etc/entries": {
+            "greeting": {
+                "etc/spec": {
+                  "type": "bool"
+                , "default": false
+                , "cli": {
+                    "input": "switch"
+                  , "long": "invalid"
+                  , "help": "This is a description"
+                }
+              }
+            }
+          }
+        }
+        |]
+        configSpec <- parseConfigSpecValue "<<input>>" [] input
+        config <- resolveConfigWith [] [SUT.pureCliResolver []] configSpec
+        greeting <- getConfigValue ["greeting"] config
+        greeting `shouldBe` False
+
+    it "creates a no- flag" $ do
+      let input =
+            [aesonQQ|
+      {
+        "etc/cli": {
+          "desc": "Some Description"
+        }
+      , "etc/entries": {
+          "disabled": {
+              "etc/spec": {
+                "type": "bool"
+              , "default": false
+              , "cli": {
+                  "input": "switch"
+                , "long": "disabled"
+                , "help": "This is a description"
+              }
+            }
+          }
+        }
+      }
+      |]
+      configSpec <- parseConfigSpecValue "<<input>>" [] input
+      config <- resolveConfigWith [] [SUT.pureCliResolver ["--no-disabled"]] configSpec
+      isDisabled <- getConfigValue ["disabled"] config
+      isDisabled `shouldBe` False
+
 
 
 spec :: Spec

@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -22,10 +23,30 @@ import qualified Etc.Internal.Spec.Parser as Spec (matchesConfigValueType)
 import qualified Etc.Internal.Spec.Types  as Spec
 import qualified Etc.Resolver             as Resolver
 
-import Etc.Internal.Cli.Parser (parseCliEntrySpec, parseCliInfoSpec)
 import Etc.Internal.Cli.Error ()
+import Etc.Internal.Cli.Parser (parseCliEntrySpec, parseCliInfoSpec)
 import Etc.Internal.Cli.Types
 --------------------------------------------------------------------------------
+
+-- | References that come handy when building an optparse-applicative
+-- 'Opt.Parser'; by using this record, we avoid threading through a bunch of
+-- variables
+data BuilderEnv
+  = BuilderEnv {
+    envPriorityIndex   :: !Int
+  , envCustomTypes     :: !(Map Text Spec.CustomType)
+  , envConfigSpec      :: !Spec.ConfigSpec
+  }
+
+-- | References that come handy when building an optparse-applicative
+-- 'Opt.Parser'; by using this record, we avoid threading through a bunch of
+-- variables
+data FieldEnv
+  = FieldEnv {
+      fieldBuildEnv        :: !BuilderEnv
+    , fieldCliEntrySpec    :: !CliEntrySpec
+    , fieldConfigValueSpec :: !Spec.ConfigValueData
+    }
 
 #if MIN_VERSION_optparse_applicative(0,14,0)
 cliOptSpecToFieldMod :: (Opt.HasMetavar f, Opt.HasName f) => CliOptSpec -> Opt.Mod f a
@@ -42,16 +63,41 @@ cliOptSpecToFieldMod optSpec =
     shortStr <- optShort optSpec
     fst <$> Text.uncons shortStr
 
-#if MIN_VERSION_optparse_applicative(0,14,0)
-cliSwitchSpecToFieldMod :: Opt.HasName f => CliSwitchSpec -> Opt.Mod f a
-#endif
-cliSwitchSpecToFieldMod switchSpec =
-  Opt.long (Text.unpack $ switchLong switchSpec)
-    `mappend` maybe Opt.idm (Opt.help . Text.unpack) (switchHelp switchSpec)
+-- Taken from stack codebase
+-- | Enable/disable flags for any type, without a default (to allow chaining with '<|>')
+enableDisableFlagsNoDefault ::
+     Bool -- ^ Enabled value
+  -> String -- ^ Name
+  -> Maybe String -- ^ Help suffix
+  -> Mod FlagFields Bool
+  -> Parser Bool
+enableDisableFlagsNoDefault defaultValue name helpSuffix mods =
+  last <$>
+  Opt.some
+    (Opt.flag'
+       (not defaultValue)
+       (Opt.hidden <> Opt.internal <> Opt.long name <> Opt.help (fromMaybe ("Enable " ++ name) helpSuffix) <>
+        mods) <|>
+     Opt.flag'
+       defaultValue
+       (Opt.hidden <> Opt.internal <> Opt.long ("no-" ++ name) <>
+        Opt.help (fromMaybe ("Disable " ++ name) helpSuffix) <>
+        mods) <|>
+     Opt.flag'
+       (not defaultValue)
+       (Opt.long ("[no-]" ++ name) <> Opt.help ("Enable/disable " ++ name ++ maybe "" (" - " ++) helpSuffix) <>
+        mods))
+  where
+    last xs =
+      case reverse xs of
+        [] -> impureThrow $ stringException "enableDisableFlagsNoDefault.last"
+        x:_ -> x
 
-cliArgSpecToFieldMod :: CliArgSpec -> Opt.Mod f a
+cliArgSpecToFieldMod :: Opt.HasMetavar f => CliArgSpec -> Opt.Mod f a
 cliArgSpecToFieldMod argSpec =
   maybe Opt.idm (Opt.help . Text.unpack) (argHelp argSpec)
+    `mappend` maybe Opt.idm (Opt.metavar . Text.unpack) (argMetavar argSpec)
+    `mappend` maybe Opt.idm (Opt.metavar . Text.unpack) (argHelp argSpec)
 
 coerceConfigValueType ::
      Text
@@ -70,7 +116,11 @@ coerceConfigValueType rawValue json cvType = case (json, cvType) of
   (_, Spec.CVTSingle (Spec.CVTCustom _))         -> Just json
   _                                              -> Nothing
 
-jsonOptReader :: Map Text Spec.CustomType -> Spec.ConfigValueType -> String -> Either String JSON.Value
+jsonOptReader ::
+     Map Text Spec.CustomType
+  -> Spec.ConfigValueType
+  -> String
+  -> Either String JSON.Value
 jsonOptReader customTypes cvType input =
   let cvTypeName = show (Renderer.renderConfigValueType cvType)
       inputText = Text.pack input
@@ -81,36 +131,57 @@ jsonOptReader customTypes cvType input =
    in case coerceConfigValueType inputText jsonValue cvType of
         Nothing ->
           Left $
-          "\"" <> input <> "\" doesn't match expected type " <>
-          cvTypeName
+          "\"" <> input <> "\" doesn't match expected type " <> cvTypeName
         Just jsonValue1
           | Spec.matchesConfigValueType customTypes cvType jsonValue1 ->
             Right jsonValue1
           | otherwise ->
             Left $
-            "\"" <> input <> "\" doesn't match expected type " <>
-            cvTypeName
+            "\"" <> input <> "\" doesn't match expected type " <> cvTypeName
 
-cliSpecToJsonOptParser
-  :: Map Text Spec.CustomType
-  -> Spec.ConfigValueType
-  -> CliEntrySpec
-  -> Opt.Parser (Maybe JSON.Value)
-cliSpecToJsonOptParser customTypes cvType specSettings =
+buildSwitchOptParser ::
+     MonadReader FieldEnv m => CliSwitchSpec -> m (Parser (Maybe JSON.Value))
+buildSwitchOptParser switchSpec = do
+  defaultValue <-
+    (inferDefaultValue . Spec.configValueDefault . fieldConfigValueSpec) <$> ask
+  let switchName = Text.unpack $ switchLong switchSpec
+      switchFlag :: Opt.Parser Bool
+      switchFlag =
+        enableDisableFlagsNoDefault
+          defaultValue
+          switchName
+          (Text.unpack <$> switchHelp switchSpec)
+          Opt.idm
+  return ((Just . JSON.Bool <$> switchFlag) <|> (pure Nothing))
+  where
+    inferDefaultValue result =
+      case result of
+        Nothing -> False
+        Just (JSON.Bool b) -> b
+        _ ->
+          error
+            "The `buildSwitchOptParser` function relies on validations done a priory that make sure the type of the default value is a boolean, this assumption has been broken from a likely bad usage of this API or an unforseen bug"
+
+cliSpecToJsonOptParser :: MonadReader FieldEnv m => m (Opt.Parser (Maybe JSON.Value))
+cliSpecToJsonOptParser = do
+  customTypes <- (envCustomTypes . fieldBuildEnv) <$> ask
+  cvType <- (Spec.configValueType . fieldConfigValueSpec) <$> ask
+  specSettings <- fieldCliEntrySpec <$> ask
   case specSettings of
     Opt optSpec ->
+      return $
       Opt.optional $
       Opt.option
         (Opt.eitherReader $ jsonOptReader customTypes cvType)
         (cliOptSpecToFieldMod optSpec)
     Arg argSpec ->
+      return $
       Opt.optional $
       Opt.argument
         (Opt.eitherReader $ jsonOptReader customTypes cvType)
         (cliArgSpecToFieldMod argSpec)
-    Switch switchSpec ->
-      fmap (Just . JSON.Bool) (Opt.switch (cliSwitchSpecToFieldMod switchSpec)) <|>
-      pure Nothing
+    Switch switchSpec -> buildSwitchOptParser switchSpec
+
 
 jsonToSomeConfigValue ::
   Int -> Bool -> CliEntrySpec -> JSON.Value -> Config.ConfigValue
@@ -122,57 +193,53 @@ jsonToSomeConfigValue priorityIndex isSensitive cliSpec jsonValue =
     Config.ConfigValue isSensitive (Set.singleton fieldValue)
 
 configValueSpecToOptParser
-  :: (MonadThrow m)
-  => Int
-  -> Map Text Spec.CustomType
-  -> Text
-  -> Spec.ConfigValueType
-  -> Bool
-  -> CliEntrySpec
+  :: (MonadReader FieldEnv m, MonadThrow m)
+  => Text
   -> Parser Config.ConfigValue
   -> m (Parser Config.ConfigValue)
-configValueSpecToOptParser priorityIndex customTypes specEntryKey cvType isSensitive cliSpec acc =
-  let updateAccConfigOptParser configValueParser accOptParser =
+configValueSpecToOptParser specEntryKey acc = do
+  priorityIndex <- (envPriorityIndex . fieldBuildEnv) <$> ask
+  configValueData <- fieldConfigValueSpec <$> ask
+  cliSpec <- fieldCliEntrySpec <$> ask
+  let Spec.ConfigValueData {Spec.configValueSensitive} = configValueData
+      updateAccConfigOptParser configValueParser' accOptParser =
         (\configValue accSubConfig ->
            case accSubConfig of
              Config.ConfigValue {} -> accSubConfig
              Config.SubConfig subConfigMap ->
                Config.SubConfig $
                Map.alter (const configValue) specEntryKey subConfigMap) <$>
-        configValueParser <*>
+        configValueParser' <*>
         accOptParser
-   in do let jsonOptParser = cliSpecToJsonOptParser customTypes cvType cliSpec
-         let configValueParser =
-               (fmap (jsonToSomeConfigValue priorityIndex isSensitive cliSpec)) <$>
-               jsonOptParser
-         return $ updateAccConfigOptParser configValueParser acc
+  jsonOptParser <- cliSpecToJsonOptParser
+  let configValueParser =
+        (fmap (jsonToSomeConfigValue priorityIndex configValueSensitive cliSpec)) <$>
+        jsonOptParser
+  return $ updateAccConfigOptParser configValueParser acc
 
 subConfigSpecToOptParser
-  :: (MonadThrow m)
-  => Text
-  -> Int
-  -> Map Text Spec.CustomType
-  -> Seq Text
+  :: (MonadReader BuilderEnv m, MonadThrow m)
+  => Seq Text
   -> Text
   -> Map Text (Spec.ConfigValue)
   -> Opt.Parser Config.ConfigValue
   -> m (Opt.Parser Config.ConfigValue)
-subConfigSpecToOptParser specFilePath priorityIndex customTypes keyPath specEntryKey subConfigSpec acc =
-  let updateAccConfigOptParser subConfigParser accOptParser =
-        (\subConfig accSubConfig ->
-           case accSubConfig of
-             Config.ConfigValue {} -> accSubConfig
-             Config.SubConfig subConfigMap ->
-               Config.SubConfig
-                 (Map.alter (const $ Just subConfig) specEntryKey subConfigMap)) <$>
-        subConfigParser <*>
-        accOptParser
-   in do configOptParser <-
-           foldM
-             (specToConfigValueOptParser specFilePath priorityIndex customTypes (keyPath |> specEntryKey))
-             (pure $ Config.SubConfig Map.empty)
-             (Map.toList subConfigSpec)
-         return $ updateAccConfigOptParser configOptParser acc
+subConfigSpecToOptParser keyPath specEntryKey subConfigSpec acc = do
+  configOptParser <-
+    foldM
+      (specToConfigValueOptParser (keyPath |> specEntryKey))
+      (pure $ Config.SubConfig Map.empty)
+      (Map.toList subConfigSpec)
+  return $ updateAccConfigOptParser configOptParser acc
+  where
+    updateAccConfig subConfig accSubConfig =
+      case accSubConfig of
+        Config.ConfigValue {} -> accSubConfig
+        Config.SubConfig subConfigMap ->
+          Config.SubConfig
+            (Map.alter (const $ Just subConfig) specEntryKey subConfigMap)
+    updateAccConfigOptParser subConfigParser accOptParser =
+      updateAccConfig <$> subConfigParser <*> accOptParser
 
 fromCliParseError ::
      Text
@@ -184,74 +251,78 @@ fromCliParseError specFilePath keyPath =
   where
     fromParseError_ mkErr = mkErr specFilePath (toList keyPath)
 
+fetchCliSpec ::
+     (MonadReader BuilderEnv m, MonadThrow m)
+  => Seq Text
+  -> Text
+  -> Spec.ConfigValueData
+  -> m (Maybe CliEntrySpec)
+fetchCliSpec keyPath specEntryKey specData = do
+  specFilePath <- (Spec.configSpecFilePath . envConfigSpec) <$> ask
+  let Spec.ConfigValueData {Spec.configValueType, Spec.configValueJSON} =
+        specData
+  case configValueJSON of
+    JSON.Object _ -> do
+      let result = JSON.parseValue
+                     (JSON.keyMay "cli" (parseCliEntrySpec configValueType))
+                     configValueJSON
+      case result of
+        Left err ->
+          throwM (fromCliParseError specFilePath (keyPath |> specEntryKey) err)
+        Right Nothing -> return Nothing
+        Right (Just cliSpec) -> return $ Just cliSpec
+    _ -> return Nothing
+
 specToConfigValueOptParser
-  :: (MonadThrow m)
-  => Text
-  -> Int
-  -> Map Text Spec.CustomType
-  -> Seq Text
+  :: (MonadReader BuilderEnv m, MonadThrow m)
+  => Seq Text
   -> Opt.Parser Config.ConfigValue
   -> (Text, Spec.ConfigValue)
   -> m (Opt.Parser Config.ConfigValue)
-specToConfigValueOptParser specFilePath priorityIndex customTypes keyPath acc (specEntryKey, specConfigValue) =
+specToConfigValueOptParser keyPath acc (specEntryKey, specConfigValue) = do
   case specConfigValue of
-    Spec.ConfigValue Spec.ConfigValueData { Spec.configValueType
-                                          , Spec.configValueSensitive
-                                          , Spec.configValueJSON
-                                          } ->
-      case configValueJSON of
-        JSON.Object _ ->
-          case JSON.parseValue
-                 (JSON.keyMay "cli" (parseCliEntrySpec configValueType))
-                 configValueJSON of
-            Left err ->
-              throwM
-                (fromCliParseError specFilePath (keyPath |> specEntryKey) err)
-            Right Nothing -> return acc
-            Right (Just cliSpec) ->
-              configValueSpecToOptParser
-                priorityIndex
-                customTypes
-                specEntryKey
-                configValueType
-                configValueSensitive
-                cliSpec
-                acc
-        _ -> return acc
+    Spec.ConfigValue configValueData -> do
+      result <- fetchCliSpec keyPath specEntryKey configValueData
+      case result of
+        Nothing -> return acc
+        Just cliSpec -> do
+          env <- ask
+          flip
+            runReaderT
+            (FieldEnv
+               { fieldBuildEnv = env
+               , fieldCliEntrySpec = cliSpec
+               , fieldConfigValueSpec = configValueData
+               }) $
+            configValueSpecToOptParser specEntryKey acc
     Spec.SubConfig subConfigSpec ->
-      subConfigSpecToOptParser
-        specFilePath
-        priorityIndex
-        customTypes
-        keyPath
-        specEntryKey
-        subConfigSpec
-        acc
+      subConfigSpecToOptParser keyPath specEntryKey subConfigSpec acc
 
 toOptInfoMod :: MonadThrow m => Spec.ConfigSpec -> m (Opt.InfoMod a)
-toOptInfoMod Spec.ConfigSpec {Spec.configSpecFilePath, Spec.configSpecJSON} =
-  case JSON.parseValue
-         (JSON.keyMay "etc/cli" parseCliInfoSpec)
-         (JSON.Object configSpecJSON) of
-    Left err -> throwM (Resolver.ResolverError (err :: JSON.ParseError CliResolverError))
-    Right Nothing -> throwM (Resolver.ResolverError (InfoModMissing configSpecFilePath))
+toOptInfoMod Spec.ConfigSpec {Spec.configSpecFilePath, Spec.configSpecJSON} = do
+  let result =
+        JSON.parseValue
+          (JSON.keyMay "etc/cli" parseCliInfoSpec)
+          (JSON.Object configSpecJSON)
+  case result of
+    Left err ->
+      throwM (Resolver.ResolverError (err :: JSON.ParseError CliResolverError))
+    Right Nothing ->
+      throwM (Resolver.ResolverError (InfoModMissing configSpecFilePath))
     Right (Just cliInfoSpec) ->
       return $
-      Opt.fullDesc <> Opt.progDesc (Text.unpack $ cisProgDesc cliInfoSpec) <>
+      Opt.fullDesc <>
+      Opt.progDesc (Text.unpack $ cisProgDesc cliInfoSpec) <>
       maybe Opt.idm (Opt.header . Text.unpack) (cisHeader cliInfoSpec) <>
       maybe Opt.idm (Opt.footer . Text.unpack) (cisFooter cliInfoSpec)
 
-toOptParser ::
-     MonadThrow m
-  => Int
-  -> Map Text Spec.CustomType
-  -> Spec.ConfigSpec
-  -> m (Opt.Parser Config)
-toOptParser priorityIndex customTypes spec = do
+toOptParser :: (MonadReader BuilderEnv m, MonadThrow m) => m (Opt.Parser Config)
+toOptParser = do
+  spec <- envConfigSpec <$> ask
   let acc = pure $ Config.SubConfig Map.empty
   parser <-
     foldM
-      (specToConfigValueOptParser (Spec.configSpecFilePath spec) priorityIndex customTypes Seq.empty)
+      (specToConfigValueOptParser Seq.empty)
       acc
       (Map.toList $ Spec.configSpecEntries spec)
   return (Config <$> parser)
@@ -260,7 +331,11 @@ resolveCli ::
   (MonadIO m, MonadThrow m) =>
   Int -> Map Text Spec.CustomType -> Spec.ConfigSpec -> m Config
 resolveCli priorityIndex customTypes spec = do
-  configParser <- toOptParser priorityIndex customTypes spec
+  let builderEnv = BuilderEnv { envPriorityIndex = priorityIndex
+                              , envCustomTypes = customTypes
+                              , envConfigSpec = spec
+                              }
+  configParser <- runRIO builderEnv toOptParser
   infoMod <- toOptInfoMod spec
   liftIO $
     Opt.execParser
@@ -271,7 +346,11 @@ resolveCliPure ::
   (MonadIO m, MonadThrow m) =>
   [String] -> Int -> Map Text Spec.CustomType -> Spec.ConfigSpec -> m Config
 resolveCliPure inputArgs priorityIndex customTypes spec = do
-  configParser <- toOptParser priorityIndex customTypes spec
+  let builderEnv = BuilderEnv { envPriorityIndex = priorityIndex
+                              , envCustomTypes = customTypes
+                              , envConfigSpec = spec
+                              }
+  configParser <- runRIO builderEnv toOptParser
   infoMod <- toOptInfoMod spec
   liftIO $
     Opt.handleParseResult $
