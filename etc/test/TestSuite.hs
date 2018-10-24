@@ -3,8 +3,7 @@
 module Main where
 
 import RIO
-import Spec (spec)
-import Test.Hspec (hspec)
+import qualified Spec
 
 main :: IO ()
-main = hspec spec
+main = Spec.main
