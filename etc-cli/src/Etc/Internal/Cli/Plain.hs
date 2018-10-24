@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Etc.Internal.Cli where
+module Etc.Internal.Cli.Plain where
 
 import           RIO
 import qualified RIO.Map  as Map
@@ -182,7 +182,6 @@ cliSpecToJsonOptParser = do
         (cliArgSpecToFieldMod argSpec)
     Switch switchSpec -> buildSwitchOptParser switchSpec
 
-
 jsonToSomeConfigValue ::
   Int -> Bool -> CliEntrySpec -> JSON.Value -> Config.ConfigValue
 jsonToSomeConfigValue priorityIndex isSensitive cliSpec jsonValue =
@@ -335,7 +334,7 @@ resolveCli priorityIndex customTypes spec = do
                               , envCustomTypes = customTypes
                               , envConfigSpec = spec
                               }
-  configParser <- runRIO builderEnv toOptParser
+  configParser <- runReaderT toOptParser builderEnv
   infoMod <- toOptInfoMod spec
   liftIO $
     Opt.execParser
@@ -350,7 +349,7 @@ resolveCliPure inputArgs priorityIndex customTypes spec = do
                               , envCustomTypes = customTypes
                               , envConfigSpec = spec
                               }
-  configParser <- runRIO builderEnv toOptParser
+  configParser <- runReaderT toOptParser builderEnv
   infoMod <- toOptInfoMod spec
   liftIO $
     Opt.handleParseResult $
