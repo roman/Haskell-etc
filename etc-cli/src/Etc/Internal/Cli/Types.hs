@@ -12,6 +12,10 @@ import qualified Options.Applicative as Opt
 import Etc.Internal.Spec.Types (ConfigSpec, CustomType, ConfigValueData, ConfigValueType)
 import Etc.Internal.Config  (IConfigSource(..))
 
+type EntryKey = Text
+newtype CmdName =
+  CmdName { fromCmdName :: Text }  deriving (Show, Eq, Ord)
+
 type CliEntryParseError = Text -> [Text] -> CliResolverError
 
 data CliResolverError
@@ -21,7 +25,8 @@ data CliResolverError
   | InfoModMissing !Text
   | PlainInfoModExpected !Text
   | CommandInfoModExpected !Text
-  | CommandListMismatch !Text !(Set Text) !(Set Text)
+  | CommandListMismatch !Text !(Set CmdName) !(Set CmdName)
+  | UnknownCommandOnEntry !Text ![Text] !(Set CmdName) !(Set CmdName)
   deriving (Show)
 
 data CliSource =
@@ -79,7 +84,7 @@ instance NFData CliInfoSpecData
 
 data CliInfoSpec
   = PlainCliInfoSpec !CliInfoSpecData
-  | CommandCliInfoSpec !CliInfoSpecData !(Map Text CliInfoSpecData)
+  | CommandCliInfoSpec !CliInfoSpecData !(Map CmdName CliInfoSpecData)
   deriving (Generic, Show, Eq)
 
 instance NFData CliInfoSpec
@@ -100,6 +105,7 @@ data BuilderEnv
     envPriorityIndex   :: !Int
   , envCustomTypes     :: !(Map Text CustomType)
   , envConfigSpec      :: !ConfigSpec
+  , envCommandNames    :: !(Set CmdName)
   }
 
 -- | References that come handy when building an optparse-applicative

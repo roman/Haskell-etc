@@ -118,7 +118,9 @@ instance HumanErrorMessage CliResolverError where
       SwitchIncompatibleType cvType specFilePath keyPath ->
         switchIncompatibleType specFilePath keyPath cvType
       InfoModMissing specFilePath -> infoModMissing specFilePath
-      PlainInfoModExpected _specFilePath -> error "pending"
-      CommandInfoModExpected _specFilePath -> error "pending"
-      CommandListMismatch _specFilePath _unknownCommands _missingCommands ->
-        error "pending"
+      PlainInfoModExpected _specFilePath -> pretty $ show err
+      CommandInfoModExpected _specFilePath -> pretty $ show err
+      CommandListMismatch _specFilePath _missingCommands _unknownCommands ->
+        pretty $ show err
+      UnknownCommandOnEntry _specFilePath _keyPath _validCommands _unknownCommands ->
+        pretty $ show err

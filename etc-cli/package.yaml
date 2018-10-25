@@ -30,6 +30,7 @@ tests:
       - aeson-qq
       - base
       - hspec
+      - hspec-discover
       - QuickCheck
       - rio
       - etc-cli

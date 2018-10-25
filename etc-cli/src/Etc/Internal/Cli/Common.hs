@@ -41,12 +41,16 @@ fetchPlainCliInfoSpec spec@Spec.ConfigSpec {Spec.configSpecFilePath} = do
     CommandCliInfoSpec {} ->
       throwM (Resolver.ResolverError $ PlainInfoModExpected configSpecFilePath)
 
-fetchCommandCliInfoSpec :: MonadThrow m => Spec.ConfigSpec -> m (CliInfoSpecData, Map Text CliInfoSpecData)
+fetchCommandCliInfoSpec ::
+     MonadThrow m
+  => Spec.ConfigSpec
+  -> m (CliInfoSpecData, Map CmdName CliInfoSpecData)
 fetchCommandCliInfoSpec spec@Spec.ConfigSpec {Spec.configSpecFilePath} = do
   result <- fetchCliInfoSpec spec
   case result of
     PlainCliInfoSpec _ ->
-      throwM (Resolver.ResolverError $ CommandInfoModExpected configSpecFilePath)
+      throwM
+        (Resolver.ResolverError $ CommandInfoModExpected configSpecFilePath)
     CommandCliInfoSpec topLevelInfo infoPerCmdName ->
       return (topLevelInfo, infoPerCmdName)
 

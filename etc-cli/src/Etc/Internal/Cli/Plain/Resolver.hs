@@ -152,6 +152,7 @@ cliSpecToJsonOptParser = do
   case specSettings of
     Opt optSpec ->
       return $
+      traceShow optSpec $
       Opt.optional $
       Opt.option
         (Opt.eitherReader $ jsonOptReader customTypes cvType)
@@ -175,7 +176,7 @@ jsonToSomeConfigValue priorityIndex isSensitive cliSpec jsonValue =
 
 configValueSpecToOptParser
   :: (MonadReader FieldEnv m, MonadThrow m)
-  => Text
+  => EntryKey
   -> Parser Config.ConfigValue
   -> m (Parser Config.ConfigValue)
 configValueSpecToOptParser specEntryKey acc = do
@@ -189,7 +190,10 @@ configValueSpecToOptParser specEntryKey acc = do
              Config.ConfigValue {} -> accSubConfig
              Config.SubConfig subConfigMap ->
                Config.SubConfig $
-               Map.alter (const configValue) specEntryKey subConfigMap) <$>
+               Map.alter
+                 (const configValue)
+                 (fromEntryKey specEntryKey)
+                 subConfigMap) <$>
         configValueParser' <*>
         accOptParser
   jsonOptParser <- cliSpecToJsonOptParser
@@ -198,8 +202,8 @@ configValueSpecToOptParser specEntryKey acc = do
         jsonOptParser
   return $ updateAccConfigOptParser configValueParser acc
 
-subConfigSpecToOptParser
-  :: (MonadReader BuilderEnv m, MonadThrow m)
+subConfigSpecToOptParser ::
+     (MonadReader BuilderEnv m, MonadThrow m)
   => Seq Text
   -> Text
   -> Map Text (Spec.ConfigValue)
@@ -301,6 +305,7 @@ resolveCli priorityIndex customTypes spec = do
   let builderEnv = BuilderEnv { envPriorityIndex = priorityIndex
                               , envCustomTypes = customTypes
                               , envConfigSpec = spec
+                              , envCommandNames = Set.empty
                               }
   configParser <- runReaderT toOptParser builderEnv
   cliInfoSpecData <- fetchPlainCliInfoSpec spec
@@ -317,6 +322,7 @@ resolveCliPure inputArgs priorityIndex customTypes spec = do
   let builderEnv = BuilderEnv { envPriorityIndex = priorityIndex
                               , envCustomTypes = customTypes
                               , envConfigSpec = spec
+                              , envCommandNames = Set.empty
                               }
   configParser <- runReaderT toOptParser builderEnv
   cliInfoSpecData <- fetchPlainCliInfoSpec spec
