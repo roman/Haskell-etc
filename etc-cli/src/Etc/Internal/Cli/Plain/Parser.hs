@@ -58,5 +58,9 @@ parseCliInfoSpec = do
   infoSpecData <- parseCliInfoSpecData
   mcommands <- JSON.keyMay "commands" (JSON.eachInObject parseCliInfoSpecData)
   case mcommands of
-    Nothing       -> pure $ PlainCliInfoSpec infoSpecData
-    Just commands -> pure $ CommandCliInfoSpec infoSpecData (Map.fromList commands)
+    Nothing -> pure $ PlainCliInfoSpec infoSpecData
+    Just commands ->
+      pure $
+      CommandCliInfoSpec
+        infoSpecData
+        (Map.fromList $ map (first CmdName) commands)

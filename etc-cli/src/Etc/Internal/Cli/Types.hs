@@ -1,20 +1,22 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE NoImplicitPrelude          #-}
+{-# LANGUAGE OverloadedStrings          #-}
 module Etc.Internal.Cli.Types where
 
 import RIO
 
-import qualified Data.Aeson as JSON
+import qualified Data.Aeson          as JSON
 import qualified Options.Applicative as Opt
 
-import Etc.Internal.Spec.Types (ConfigSpec, CustomType, ConfigValueData, ConfigValueType)
-import Etc.Internal.Config  (IConfigSource(..))
+import Etc.Internal.Config     (IConfigSource (..))
+import Etc.Internal.Spec.Types (ConfigSpec, ConfigValueData, ConfigValueType, CustomType)
 
 type EntryKey = Text
 newtype CmdName =
-  CmdName { fromCmdName :: Text }  deriving (Show, Eq, Ord)
+  CmdName { fromCmdName :: Text }  deriving (Show, Eq, Ord, NFData, IsString)
 
 type CliEntryParseError = Text -> [Text] -> CliResolverError
 
@@ -102,10 +104,10 @@ instance NFData CliEntrySpec
 -- variables
 data BuilderEnv
   = BuilderEnv {
-    envPriorityIndex   :: !Int
-  , envCustomTypes     :: !(Map Text CustomType)
-  , envConfigSpec      :: !ConfigSpec
-  , envCommandNames    :: !(Set CmdName)
+    envPriorityIndex :: !Int
+  , envCustomTypes   :: !(Map Text CustomType)
+  , envConfigSpec    :: !ConfigSpec
+  , envCommandNames  :: !(Set CmdName)
   }
 
 -- | References that come handy when building an optparse-applicative
@@ -117,6 +119,19 @@ data FieldEnv
     , fieldCliEntrySpec    :: !CliEntrySpec
     , fieldConfigValueSpec :: !ConfigValueData
     }
+
+runFieldEnv ::
+  MonadReader BuilderEnv m =>
+  ConfigValueData -> CliEntrySpec -> ReaderT FieldEnv m b -> m b
+runFieldEnv configValueData cliEntrySpec subroutine = do
+  env <- ask
+  runReaderT
+    subroutine
+    (FieldEnv
+       { fieldBuildEnv = env
+       , fieldCliEntrySpec = cliEntrySpec
+       , fieldConfigValueSpec = configValueData
+       })
 
 data CliInfoMod f
   = PlainCli !(Opt.InfoMod f)

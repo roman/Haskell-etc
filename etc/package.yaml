@@ -30,6 +30,7 @@ library:
   - Etc.Internal.Resolver.File
   - Etc.Internal.Resolver.File.Types
   - Etc.Internal.Resolver.File.Error
+  - Etc.Internal.Spec.Error
   - Etc.Internal.Spec.Parser
   - Etc.Internal.Spec.Serializer
   - Etc.Internal.Spec.Types

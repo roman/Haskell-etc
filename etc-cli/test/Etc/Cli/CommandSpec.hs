@@ -1,293 +1,359 @@
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Etc.Cli.CommandSpec where
 
-import RIO
+import           RIO
+import qualified RIO.Set as Set
 
 -- import Data.Aeson ((.:), withObject)
 -- import qualified Data.Aeson.BetterErrors as JSON
-import Data.Aeson.QQ
-import Test.Hspec
+import qualified Data.Aeson          as JSON
+import           Data.Aeson.QQ
+import qualified Options.Applicative as Opt
+import           Test.Hspec
 
 import           Etc
-import qualified Etc.Cli                  as SUT
--- import qualified Etc.Internal.Cli.Types   as SUT
-import           Etc.Internal.Spec.Parser (parseConfigSpecValue)
+import qualified Etc.Cli                     as SUT
+import           Etc.Internal.Cli.Types      (CliResolverError (..))
+import           Etc.Internal.Resolver.Types (ResolverError (..))
+import           Etc.Internal.Spec.Types     (SpecError (..))
+
+import Etc.Internal.Spec.Parser (parseConfigSpecValue)
 -- import           Etc.Internal.Resolver.Types (ResolverError(..))
 
 data MyCmd
   = Foo Config
   | Bar Config
 
-resolver_spec :: Spec
-resolver_spec =
+data MyRecord
+  = MyRecord !Int
+
+transform_spec :: Spec
+transform_spec = error "pending"
+
+simpleExample :: JSON.Value
+simpleExample =
+  [aesonQQ|
+    {
+      "etc/cli": {
+        "desc": "Some Description"
+      , "commands": {
+          "foobar": {
+            "desc": "Running some foos"
+          }
+        }
+      }
+    , "etc/entries": {
+        "greeting": {
+          "etc/spec": {
+            "default": "default"
+          , "type": "string"
+          , "cli": {
+              "input": "option"
+            , "short": "g"
+            , "long": "greeting"
+            , "commands": ["foobar"]
+            }
+          }
+        }
+      }
+    }
+  |]
+
+invalidCmdOnEntry :: JSON.Value
+invalidCmdOnEntry =
+  [aesonQQ|
+    {
+      "etc/cli": {
+        "desc": "Some Description"
+      , "commands": {
+          "foobar": {
+            "desc": "Running some foos"
+          }
+        }
+      }
+    , "etc/entries": {
+        "greeting": {
+          "etc/spec": {
+            "type": "string"
+          , "cli": {
+              "input": "option"
+            , "short": "g"
+            , "long": "greeting"
+            , "commands": ["invalid"]
+            }
+          }
+        }
+      }
+    }
+  |]
+
+multipleCommands :: JSON.Value
+multipleCommands =
+  [aesonQQ|
+    { "etc/cli": {
+        "desc": "Some Description"
+      , "commands": {
+          "foo": {
+            "desc": "Runs a bunch of foos"
+          },
+          "bar": {
+            "desc": "Runs a bunch of bars"
+          }
+        }
+      }
+    , "etc/entries": {
+        "foo": {
+          "etc/spec": {
+            "type": "string"
+          , "cli": {
+              "input": "option"
+            , "short": "g"
+            , "meta": "STR"
+            , "long": "foo"
+            , "commands": ["foo"]
+            }
+          }
+        },
+        "bar": {
+          "etc/spec": {
+            "type": "string"
+          , "cli": {
+              "input": "option"
+            , "short": "g"
+            , "meta": "STR"
+            , "long": "bar"
+            , "commands": ["bar"]
+            }
+          }
+        }
+      }
+    }
+  |]
+
+sameOptionOnSameCommand :: JSON.Value
+sameOptionOnSameCommand =
+  [aesonQQ|
+    { "etc/cli": {
+        "desc": "Some Description"
+      , "commands": {
+          "foo": {
+            "desc": "Runs a bunch of foos"
+          },
+          "bar": {
+            "desc": "Runs a bunch of bars"
+          }
+        }
+      }
+    , "etc/entries": {
+        "foo1": {
+          "etc/spec": {
+            "type": "string"
+          , "cli": {
+              "input": "option"
+            , "short": "g"
+            , "meta": "STR"
+            , "long": "my-option"
+            , "commands": ["foo"]
+            }
+          }
+        },
+        "foo2": {
+          "etc/spec": {
+            "type": "string"
+          , "cli": {
+              "input": "option"
+            , "short": "g"
+            , "meta": "STR"
+            , "long": "my-option"
+            , "commands": ["foo"]
+            }
+          }
+        }
+      }
+    }
+  |]
+
+sameOptionOnDifferentCommands :: JSON.Value
+sameOptionOnDifferentCommands =
+  [aesonQQ|
+    { "etc/cli": {
+        "desc": "Some Description"
+      , "commands": {
+          "foo": {
+            "desc": "Runs a bunch of foos"
+          },
+          "bar": {
+            "desc": "Runs a bunch of bars"
+          }
+        }
+      }
+    , "etc/entries": {
+        "foo": {
+          "etc/spec": {
+            "type": "string"
+          , "cli": {
+              "input": "option"
+            , "short": "g"
+            , "meta": "STR"
+            , "long": "my-option"
+            , "commands": ["foo"]
+            }
+          }
+        },
+        "bar": {
+          "etc/spec": {
+            "type": "string"
+          , "cli": {
+              "input": "option"
+            , "short": "g"
+            , "meta": "STR"
+            , "long": "my-option"
+            , "commands": ["bar"]
+            }
+          }
+        }
+      }
+    }
+  |]
+
+foobarCommands :: [(Text, Opt.Parser (Config -> MyCmd))]
+foobarCommands = [("foo", pure Foo), ("bar", pure Bar)]
+
+spec :: Spec
+spec =
   describe "resolveConfigWith1" $ do
-    -- xit "simple use case works" $ do
-    --   let input =
-    --         [aesonQQ|
-    --           { "etc/cli": {
-    --               "desc": "Some Description"
-    --             , "commands": {
-    --                 "foobar": {
-    --                   "desc": "Running some foos"
-    --                 }
-    --               }
-    --             }
-    --           , "etc/entries": {
-    --               "greeting": {
-    --                 "etc/spec": {
-    --                   "default": "default"
-    --                 , "type": "string"
-    --                 , "cli": {
-    --                     "input": "option"
-    --                   , "short": "g"
-    --                   , "long": "greeting"
-    --                   , "commands": ["foobar"]
-    --                   }
-    --                 }
-    --               }
-    --             }
-    --           }
-    --    |]
-    --   configSpec <- parseConfigSpecValue "<<input>>" [] input
-    --   config <-
-    --     SUT.resolveConfigWith1
-    --       ["foobar", "--greeting", "this input"]
-    --       [("foobar", pure id)]
-    --       []
-    --       []
-    --       configSpec
-    --   str <- getConfigValue ["greeting"] config
-    --   ("this input" :: Text) `shouldBe` str
+    it "detects when a command name is missing in the resolve call" $ do
+      configSpec <- parseConfigSpecValue "<<input>>" [] simpleExample
+      let resolveAction =
+            SUT.resolveConfigWith1
+              ["foobar", "--greeting", "this input"]
+              []
+              []
+              []
+              configSpec
+      resolveAction `shouldThrow`
+        (\case
+           ResolverError (CommandListMismatch _ _unknown missing) ->
+             missing == Set.singleton "foobar"
+           _ -> False)
+    it "detects when an invalid command is given in the resolve call" $ do
+      configSpec <- parseConfigSpecValue "<<input>>" [] simpleExample
+      let resolveAction =
+            SUT.resolveConfigWith1
+              ["foobar", "--greeting", "this input"]
+              [("invalid", pure Foo)]
+              []
+              []
+              configSpec
+      resolveAction `shouldThrow`
+        (\case
+           ResolverError (CommandListMismatch _ unknown _missing) ->
+             unknown == Set.singleton "invalid"
+           _ -> False)
+    it "detects when an invalid command is used in a field spec" $ do
+      configSpec <- parseConfigSpecValue "<<input>>" [] invalidCmdOnEntry
+      let resolveAction =
+            SUT.resolveConfigWith1
+              ["foobar", "--greeting", "this input"]
+              [("foobar", pure Foo)]
+              []
+              []
+              configSpec
+      resolveAction `shouldThrow`
+        (\case
+           SpecError (UnknownCommandOnEntry _ _ _valid unknown) ->
+             unknown == Set.singleton "invalid"
+           _ -> False)
+    it "allows to integrate with existing optparse-applicative parsers" $ do
+      let myRecordParser =
+            MyRecord <$> Opt.option Opt.auto (Opt.long "my-number")
+      configSpec <- parseConfigSpecValue "<<input>>" [] simpleExample
+      (MyRecord n, config) <-
+        SUT.resolveConfigWith1
+          ["foobar", "--my-number", "42", "--greeting", "this input"]
+          [("foobar", (,) <$> myRecordParser)]
+          []
+          []
+          configSpec
+      n `shouldBe` 42
+      str <- getConfigValue ["greeting"] config
+      ("this input" :: Text) `shouldBe` str
+
+    it "simple use case works" $ do
+      configSpec <- parseConfigSpecValue "<<input>>" [] simpleExample
+      config <-
+        SUT.resolveConfigWith1
+          ["foobar", "--greeting", "this input"]
+          [("foobar", pure id)]
+          []
+          []
+          configSpec
+      str <- getConfigValue ["greeting"] config
+      ("this input" :: Text) `shouldBe` str
+
     context "multiple commands" $ do
-      it "allows the same option name as long as the commands are different" $ do
-        let
-          input =
-              [aesonQQ|
-                { "etc/cli": {
-                    "desc": "Some Description"
-                  , "commands": {
-                      "foo": {
-                        "desc": "Runs a bunch of foos"
-                      },
-                      "bar": {
-                        "desc": "Runs a bunch of bars"
-                      }
-                    }
-                  }
-                , "etc/entries": {
-                    "canada": {
-                      "greeting": {
-                        "etc/spec": {
-                          "default": "default"
-                        , "type": "string"
-                        , "cli": {
-                            "input": "option"
-                          , "short": "g"
-                          , "meta": "STR"
-                          , "long": "greeting"
-                          , "commands": ["bar"]
-                          }
-                        }
-                      }
-                    },
-                    "top": {
-                      "etc/spec": {
-                        "default": "default"
-                      , "type": "string"
-                      , "cli": {
-                          "input": "option"
-                        , "short": "g"
-                        , "meta": "STR"
-                        , "long": "another"
-                        , "commands": ["foo"]
-                        }
-                      }
-                    },
-                    "mexico": {
-                      "bar": {
-                        "etc/spec": {
-                          "default": "default"
-                        , "type": "string"
-                        , "cli": {
-                            "input": "option"
-                          , "long": "gonzo"
-                          , "commands": ["bar"]
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              |]
-          commands =
-            [ ("foo", pure Foo)
-            , ("bar", pure Bar)
-            ]
+      it "simple case works" $ do
+        configSpec <- parseConfigSpecValue "<<input>>" [] multipleCommands
 
-        configSpec <- parseConfigSpecValue "<<input>>" [] input
-        -- Foo fooConfig <-
-        --   SUT.resolveConfigWith1
-        --     ["foo", "--help"]
-        --     -- ["foo", "--greeting", "this foo"]
-        --     commands
-        --     []
-        --     []
-        --     configSpec
-        -- fooGreet <- getConfigValue ["foo", "greeting"] fooConfig
-        -- fooGreet `shouldBe` ("this foo" :: Text)
-
-        Bar barConfig <-
+        Foo fooConfig <-
           SUT.resolveConfigWith1
-            ["bar", "--help"]
-            -- ["bar", "--greeting", "this bar"]
-            commands
+            ["foo", "--foo", "from foo"]
+            foobarCommands
             []
             []
             configSpec
-        barGreet <- getConfigValue ["greeting"] barConfig
-        barGreet `shouldBe` ("this bar" :: Text)
+        fooGreet <- getConfigValue ["foo"] fooConfig
+        fooGreet `shouldBe` ("from foo" :: Text)
 
-      -- xit "allows a single entry to be in multiple commands" $ do
-      --   let
-      --     input =
-      --         [aesonQQ|
-      --           { "etc/cli": {
-      --               "desc": "Some Description"
-      --             , "commands": {
-      --                 "foo": {
-      --                   "desc": "Runs a bunch of foos"
-      --                 },
-      --                 "bar": {
-      --                   "desc": "Runs a bunch of bars"
-      --                 }
-      --               }
-      --             }
-      --           , "etc/entries": {
-      --               "greeting": {
-      --                 "etc/spec": {
-      --                   "default": "default"
-      --                 , "type": "string"
-      --                 , "cli": {
-      --                     "input": "option"
-      --                   , "short": "g"
-      --                   , "meta": "STR"
-      --                   , "long": "greeting"
-      --                   , "commands": ["foo", "bar"]
-      --                   }
-      --                 }
-      --               },
-      --               "only_bar": {
-      --                 "etc/spec": {
-      --                   "default": "only_bar",
-      --                   "type": "string",
-      --                   "cli": {
-      --                     "input": "option"
-      --                   , "long": "only-bar"
-      --                   , "commands": ["bar"]
-      --                   }
-      --                 }
-      --               }
-      --             }
-      --           }
-      --         |]
-      --     commands =
-      --       [ ("foo", pure Foo)
-      --       , ("bar", pure Bar)
-      --       ]
+        Bar barConfig <-
+          SUT.resolveConfigWith1
+            ["bar", "--bar", "from bar"]
+            foobarCommands
+            []
+            []
+            configSpec
+        barGreet <- getConfigValue ["bar"] barConfig
+        barGreet `shouldBe` ("from bar" :: Text)
 
-      --   configSpec <- parseConfigSpecValue "<<input>>" [] input
+      it
+        "works correctly with same option name as long as commands are different" $ do
+        configSpec <- parseConfigSpecValue "<<input>>" [] sameOptionOnDifferentCommands
+        Foo fooConfig <-
+          SUT.resolveConfigWith1
+            ["foo", "--my-option", "from foo"]
+            foobarCommands
+            []
+            []
+            configSpec
+        fooGreet <- getConfigValue ["foo"] fooConfig
+        fooGreet `shouldBe` ("from foo" :: Text)
+        getConfigValue ["bar"] fooConfig `shouldBe` (Nothing :: Maybe Text)
+        Bar barConfig <-
+          SUT.resolveConfigWith1
+            ["bar", "--my-option", "from bar"]
+            foobarCommands
+            []
+            []
+            configSpec
+        barGreet <- getConfigValue ["bar"] barConfig
+        barGreet `shouldBe` ("from bar" :: Text)
+        getConfigValue ["foo"] barConfig `shouldBe` (Nothing :: Maybe Text)
+      -- NOTE: This should throw an error instead, pending ticket
+      it "works incorrectly with same option on same command but different entries" $ do
+        configSpec <- parseConfigSpecValue "<<input>>" [] sameOptionOnSameCommand
+        Foo fooConfig <-
+          SUT.resolveConfigWith1
+            ["foo", "--my-option", "from foo"]
+            foobarCommands
+            []
+            []
+            configSpec
 
-      --   Foo fooConfig <-
-      --     SUT.resolveConfigWith1
-      --       ["foo", "--greeting", "this foo"]
-      --       commands
-      --       []
-      --       []
-      --       configSpec
-      --   fooGreet <- getConfigValue ["greeting"] fooConfig
-      --   fooGreet `shouldBe` ("this foo" :: Text)
-
-      --   Bar barConfig <-
-      --     SUT.resolveConfigWith1
-      --       -- ["bar", "--greeting", "this bar"]
-      --       ["bar", "--help"]
-      --       commands
-      --       []
-      --       []
-      --       configSpec
-      --   barGreet <- getConfigValue ["greeting"] barConfig
-      --   barGreet `shouldBe` ("this bar" :: Text)
-
-    -- it "throws an error when input type does not match with spec type" $ do
-    --   let input =
-    --         [aesonQQ|
-    --       { "etc/cli": {
-    --           "desc": "Some Description"
-    --         }
-    --       , "etc/entries": {
-    --           "greeting": {
-    --             "etc/spec": {
-    --               "default": [123]
-    --             , "type": "[number]"
-    --             , "cli": {
-    --                 "input": "option"
-    --               , "short": "g"
-    --               , "long": "greeting"
-    --               , "required": true
-    --               }
-    --             }
-    --           }
-    --         }
-    --       }
-    --    |]
-    --   configSpec <- parseConfigSpecValue "<<input>>" [] input
-    --   let configResolver =
-    --         resolveConfigWith
-    --           []
-    --           [SUT.pureCliResolver ["-g", "hello world"]]
-    --           configSpec
-    --   configResolver `shouldThrow` \(ExitFailure n) -> n > 0
-    -- it "throws an error when entry is not given and is requested" $ do
-    --   let input =
-    --         [aesonQQ|
-    --       {
-    --         "etc/cli": {
-    --           "desc": "Some Description"
-    --         }
-    --       , "etc/entries": {
-    --           "database": {
-    --             "username": {
-    --               "etc/spec": {
-    --                 "default": [123]
-    --               , "type": "[number]"
-    --               , "cli": {
-    --                   "input": "option"
-    --                 , "long": "username"
-    --                 , "required": false
-    --                 }
-    --               }
-    --             }
-    --           , "password": "abc-123"
-    --           }
-    --         }
-    --       }
-    --    |]
-    --   configSpec <- parseConfigSpecValue "<<input>>" [] input
-    --   config <- resolveConfigWith [] [SUT.cliResolver] configSpec
-    --   let parseDb =
-    --         withObject "Database" $ \obj ->
-    --           (,) <$> obj .: "username" <*> obj .: "password"
-    --   case getConfigValueWith parseDb ["database"] config of
-    --     Left err ->
-    --       case fromException err of
-    --         Just (ConfigValueParserFailed keyPath _) ->
-    --           keyPath `shouldBe` ["database"]
-    --         _ ->
-    --           expectationFailure $
-    --           "expecting ConfigValueParserFailed; got something else: " <>
-    --           show err
-    --     Right (_ :: ([Int], Text)) ->
-    --       expectationFailure "expecting error; got none"
+        fooGreet <- getConfigValue ["foo1"] fooConfig
+        fooGreet `shouldBe` ("from foo" :: Text)
+        getConfigValue ["foo2"] fooConfig `shouldBe` (Nothing :: Maybe Text)
