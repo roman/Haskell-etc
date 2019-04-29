@@ -18,7 +18,9 @@ import qualified Data.Aeson.Internal as JSON (IResult (..), iparse)
 import qualified Data.Text.IO        as Text
 import qualified Options.Applicative as Opt
 
+#if !MIN_VERSION_rio(0,1,9)
 import System.Exit
+#endif
 
 import qualified System.Etc.Internal.Spec.Parser as Spec
 import qualified System.Etc.Internal.Spec.Types  as Spec

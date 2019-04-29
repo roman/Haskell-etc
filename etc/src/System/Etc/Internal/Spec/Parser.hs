@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE CPP               #-} 
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,7 +10,9 @@ import RIO
 import qualified RIO.HashMap as HashMap
 import qualified RIO.Text    as Text
 
+#if !MIN_VERSION_rio(0,1,9)
 import Prelude (fail)
+#endif
 
 import qualified RIO.Vector.Partial as Vector (head)
 
