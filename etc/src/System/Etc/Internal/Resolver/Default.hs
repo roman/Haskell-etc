@@ -13,14 +13,14 @@ import           System.Etc.Internal.Types
 
 toDefaultConfigValue :: Bool -> JSON.Value -> ConfigValue
 toDefaultConfigValue sensitive =
-  ConfigValue . Set.singleton . Default . markAsSensitive sensitive
+  ConfigValue . Set.singleton . defaultSource . markAsSensitive sensitive
 
 buildDefaultResolver :: Spec.ConfigSpec cmd -> Maybe ConfigValue
 buildDefaultResolver spec =
   let resolverReducer
         :: Text -> Spec.ConfigValue cmd -> Maybe ConfigValue -> Maybe ConfigValue
       resolverReducer specKey specValue mConfig = case specValue of
-        Spec.ConfigValue { Spec.defaultValue, Spec.isSensitive } ->
+        Spec.ConfigValue Spec.ConfigValueData { Spec.defaultValue, Spec.isSensitive } ->
           let mConfigSource = toDefaultConfigValue isSensitive <$> defaultValue
 
               updateConfig  = writeInSubConfig specKey <$> mConfigSource <*> mConfig

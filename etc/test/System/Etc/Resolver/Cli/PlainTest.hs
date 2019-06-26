@@ -13,7 +13,8 @@ import qualified Data.Aeson as JSON
 import Test.Tasty       (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 
-import qualified System.Etc as SUT
+import qualified System.Etc                as SUT
+import           System.Etc.Internal.Types (CliSource (..))
 
 resolver_tests :: TestTree
 resolver_tests = testGroup
@@ -96,8 +97,9 @@ option_tests = testGroup
 
     case SUT.getAllConfigSources ["greeting"] config of
       Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
-      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (SUT.Cli "hello cli") aSet)
+      Just aSet -> assertBool
+        ("expecting to see entry from env; got " <> show aSet)
+        (Set.member (SUT.SomeConfigSource 3 $ CliSource "hello cli") aSet)
   , testCase "entry accepts long" $ do
     let input = mconcat
           [ "{ \"etc/entries\": {"
@@ -115,8 +117,9 @@ option_tests = testGroup
 
     case SUT.getAllConfigSources ["greeting"] config of
       Nothing   -> assertFailure ("expecting to get entries for greeting\n" <> show config)
-      Just aSet -> assertBool ("expecting to see entry from env; got " <> show aSet)
-                              (Set.member (SUT.Cli "hello cli") aSet)
+      Just aSet -> assertBool
+        ("expecting to see entry from env; got " <> show aSet)
+        (Set.member (SUT.SomeConfigSource 3 $ CliSource "hello cli") aSet)
   , testCase "entry gets validated with a type" $ do
     let input = mconcat
           [ "{ \"etc/entries\": {"

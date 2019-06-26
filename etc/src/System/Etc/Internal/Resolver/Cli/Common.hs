@@ -141,7 +141,7 @@ parseCommandJsonValue commandValue = case JSON.iparse JSON.parseJSON commandValu
 
 jsonToConfigValue :: Maybe (Value JSON.Value) -> ConfigValue
 jsonToConfigValue specEntryDefVal =
-  ConfigValue $ Set.fromList $ maybe [] ((: []) . Cli) specEntryDefVal
+  ConfigValue $ Set.fromList $ maybe [] ((: []) . cliSource 3) specEntryDefVal
 
 handleCliResult :: Either SomeException a -> IO a
 handleCliResult result = case result of

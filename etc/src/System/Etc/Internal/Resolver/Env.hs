@@ -19,12 +19,12 @@ resolveEnvVarSource
   -> Spec.ConfigValueType
   -> Bool
   -> Spec.ConfigSources cmd
-  -> Maybe ConfigSource
+  -> Maybe SomeConfigSource
 resolveEnvVarSource lookupEnv configValueType isSensitive specSources =
   let envTextToJSON = Spec.parseBytesToConfigValueJSON configValueType
 
       toEnvSource varname envValue =
-        Env varname . markAsSensitive isSensitive <$> envTextToJSON envValue
+        envSource 2 varname . markAsSensitive isSensitive <$> envTextToJSON envValue
   in  do
         varname <- Spec.envVar specSources
         envText <- lookupEnv varname
@@ -36,14 +36,15 @@ buildEnvVarResolver lookupEnv spec =
     resolverReducer
       :: Text -> Spec.ConfigValue cmd -> Maybe ConfigValue -> Maybe ConfigValue
     resolverReducer specKey specValue mConfig = case specValue of
-      Spec.ConfigValue { Spec.isSensitive, Spec.configValueType, Spec.configSources } ->
-        let updateConfig = do
-              envSource <- resolveEnvVarSource lookupEnv
-                                               configValueType
-                                               isSensitive
-                                               configSources
-              writeInSubConfig specKey (ConfigValue $ Set.singleton envSource) <$> mConfig
-        in  updateConfig <|> mConfig
+      Spec.ConfigValue Spec.ConfigValueData { Spec.isSensitive, Spec.configValueType, Spec.configSources }
+        -> let updateConfig = do
+                 envSource' <- resolveEnvVarSource lookupEnv
+                                                   configValueType
+                                                   isSensitive
+                                                   configSources
+                 writeInSubConfig specKey (ConfigValue $ Set.singleton envSource')
+                   <$> mConfig
+           in  updateConfig <|> mConfig
 
       Spec.SubConfig specConfigMap ->
         let mSubConfig =

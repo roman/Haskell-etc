@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
+{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RankNTypes                 #-}
 
 module System.Etc.Internal.Types
@@ -8,12 +10,22 @@ module System.Etc.Internal.Types
   , module System.Etc.Internal.Spec.Types
   ) where
 
-import           RIO
+import           RIO         hiding ((<>))
 import qualified RIO.HashMap as HashMap
 import qualified RIO.Set     as Set
+import qualified RIO.Text    as Text
+
+import           Text.PrettyPrint.ANSI.Leijen (Doc, (<+>))
+import qualified Text.PrettyPrint.ANSI.Leijen as Doc
+
+
+
+import Control.Exception (throw)
 
 import           Data.Bool      (bool)
+import           Data.Monoid    ((<>))
 import qualified Data.Semigroup as Semigroup
+import           Data.Typeable  (cast, typeOf)
 
 import qualified Data.Aeson       as JSON
 import qualified Data.Aeson.Types as JSON (Parser)
@@ -27,6 +39,8 @@ data Value a
   = Plain { fromValue :: !a }
   | Sensitive { fromValue :: !a }
   deriving (Generic, Eq, Ord)
+
+instance NFData a => NFData (Value a)
 
 instance Show a => Show (Value a) where
   show (Plain a)     = show a
@@ -53,70 +67,130 @@ instance IsString a => IsString (Value a) where
 markAsSensitive :: Bool -> (a -> Value a)
 markAsSensitive = bool Plain Sensitive
 
-data FileSource
-  = FilePathSource { fileSourcePath :: !Text }
-  | EnvVarFileSource { fileSourceEnvVar :: !Text,  fileSourcePath :: !Text }
-  deriving (Show, Eq)
+data FileValueOrigin
+  = ConfigFileOrigin { fileSourcePath :: !Text }
+  | EnvFileOrigin    { fileSourceEnvVar :: !Text,  fileSourcePath :: !Text }
+  deriving (Generic, Show, Eq)
 
-data ConfigSource
-  = File {
-      configIndex :: !Int
-    , filepath    :: !FileSource
-    , value       :: !(Value JSON.Value)
-    }
-  | Env {
-      envVar :: !Text
-    , value  :: !(Value JSON.Value)
-    }
-  | Cli {
-      value :: !(Value JSON.Value)
-    }
-  | Default {
-      value :: !(Value JSON.Value)
-    }
-  | None
-  deriving (Show, Eq)
+instance NFData FileValueOrigin
 
-instance Ord ConfigSource where
-  compare a b =
-    if a == b then
-      EQ
-    else
-      case (a, b) of
-        (None, _) ->
-          LT
+class (Show source, Typeable source) =>
+      IConfigSource source
+  where
+  sourceValue :: source -> Value JSON.Value
+  sourcePrettyDoc :: source -> Doc
+  compareSources :: source -> source -> Ordering
+  compareSources _ _ = EQ
 
-        (_, None) ->
-          GT
+data SomeConfigSource =
+  forall source. (IConfigSource source) =>
+                 SomeConfigSource !Int
+                                  !source
 
-        (_, _)
-          | fromValue (value a) == JSON.Null -> LT
-          | fromValue (value b) == JSON.Null -> GT
+instance Show SomeConfigSource where
+  show (SomeConfigSource i a) = "SomeConfigSource " <> show i <> " (" <> show a <> ")"
 
-        (Default {}, _) ->
-          LT
+-- | Thrown when comparing config sources of different types on a same
+-- precedence level, this should never happen because config source values of
+-- the same type are created and compared on a single execution; if this does
+-- happen, it maybe either be an urgent bug or you used the private API
+-- incorrectly.
+data InvalidConfigSourceComparison
+  = InvalidConfigSourceComparison !SomeConfigSource !SomeConfigSource
+  deriving (Show)
 
-        (Cli {}, _) ->
-          GT
+instance Exception InvalidConfigSourceComparison
 
-        (_, Cli {}) ->
-          LT
+instance IConfigSource SomeConfigSource where
+  sourcePrettyDoc (SomeConfigSource _ inner) = sourcePrettyDoc inner
+  sourceValue (SomeConfigSource _ inner) = sourceValue inner
+  compareSources x@(SomeConfigSource ia a) y@(SomeConfigSource ib b)
+    | ia == ib =
+      if fromValue (sourceValue a) == JSON.Null && fromValue (sourceValue b) == JSON.Null then
+        EQ
+      else if typeOf a == typeOf b then
+        let b' = fromMaybe (throw (InvalidConfigSourceComparison x y)) (cast a)
+        in compareSources a b'
+      else
+        throw (InvalidConfigSourceComparison x y)
+    | fromValue (sourceValue a) == JSON.Null = LT
+    | fromValue (sourceValue b) == JSON.Null = GT
+    | otherwise =
+      compare ia ib
 
-        (Env {}, _) ->
-          GT
+instance Eq SomeConfigSource where
+  (==) a b = compareSources a b == EQ
 
-        (_, Env {}) ->
-          LT
+instance Ord SomeConfigSource where
+  compare = compareSources
 
-        (File {}, File {}) ->
-          comparing configIndex a b
+data FileSource = FileSource
+  { fsConfigIndex :: !Int
+  , fsValueOrigin :: !FileValueOrigin
+  , fsValue       :: !(Value JSON.Value) }
+  deriving (Generic, Typeable, Show, Eq)
 
-        (File {}, _) ->
-          GT
+instance NFData FileSource
+instance IConfigSource FileSource where
+  compareSources = comparing fsConfigIndex
+  sourceValue = fsValue
+  sourcePrettyDoc (FileSource _index origin _value) =
+    case origin of
+      ConfigFileOrigin filepath -> Doc.text "File:" <+> Doc.text (Text.unpack filepath)
+      EnvFileOrigin envVar filepath ->
+        Doc.text "File:" <+> Doc.text (Text.unpack envVar) <> "=" <> Doc.text (Text.unpack filepath)
+
+fileSource :: Int -> Int -> FileValueOrigin -> Value JSON.Value -> SomeConfigSource
+fileSource precedenceOrder index origin val =
+  SomeConfigSource precedenceOrder $ FileSource index origin val
+
+data EnvSource = EnvSource
+  {
+    esVarName :: !Text
+  , esValue   :: !(Value JSON.Value)
+  }
+  deriving (Generic, Typeable, Show, Eq)
+
+instance NFData EnvSource
+instance IConfigSource EnvSource where
+  sourceValue = esValue
+  sourcePrettyDoc (EnvSource varname _value) =
+    Doc.text "Env:" <+> Doc.text (Text.unpack varname)
+
+envSource :: Int -> Text -> Value JSON.Value -> SomeConfigSource
+envSource precedenceOrder varName val =
+  SomeConfigSource precedenceOrder $ EnvSource varName val
+
+newtype DefaultSource =
+  DefaultSource (Value JSON.Value)
+  deriving (Generic, Typeable, Show, Eq, NFData)
+
+instance IConfigSource DefaultSource where
+  sourceValue (DefaultSource value) = value
+  sourcePrettyDoc (DefaultSource _value) = Doc.text "Default"
+
+defaultSource :: Value JSON.Value -> SomeConfigSource
+defaultSource = SomeConfigSource 0 . DefaultSource
+
+--------------------------------------------------------------------------------
+-- TODO: Split out
+
+newtype CliSource
+  = CliSource (Value JSON.Value)
+  deriving (Generic, Typeable, Show, Eq, NFData)
+
+instance IConfigSource CliSource where
+  sourceValue (CliSource value) = value
+  sourcePrettyDoc (CliSource _value) = Doc.text "Cli"
+
+cliSource :: Int -> Value JSON.Value -> SomeConfigSource
+cliSource precedenceOrder val = SomeConfigSource precedenceOrder $ CliSource val
+
+--------------------------------------------------------------------------------
 
 data ConfigValue
   = ConfigValue {
-      configSource :: !(Set ConfigSource)
+      configSource :: !(Set SomeConfigSource)
     }
   | SubConfig {
       configMap :: !(HashMap Text ConfigValue)
@@ -208,9 +282,9 @@ class IConfig config where
     :: (MonadThrow m)
     => [Text]
     -> config
-    -> m (Set ConfigSource)
+    -> m (Set SomeConfigSource)
   getSelectedConfigSource
-    :: (MonadThrow m)
+    :: (MonadThrow m, IConfigSource source)
     => [Text]
     -> config
-    -> m ConfigSource
+    -> m source

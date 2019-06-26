@@ -185,22 +185,29 @@ instance Display ConfigValueType where
       CVTSingle singleVal -> display singleVal
       CVTArray  singleVal -> display $ "[" <> display singleVal <> "]"
 
-data ConfigValue cmd
-  = ConfigValue {
+data ConfigValueData cmd =
+  ConfigValueData {
     defaultValue    :: !(Maybe JSON.Value)
   , configValueType :: !ConfigValueType
   , isSensitive     :: !Bool
   , configSources   :: !(ConfigSources cmd)
-  }
-  | SubConfig {
-    subConfig :: !(HashMap Text (ConfigValue cmd))
+  , rawConfigValue  :: !JSON.Value
   }
   deriving (Generic, Show, Eq)
 
+instance Lift cmd => Lift (ConfigValueData cmd) where
+  lift ConfigValueData {defaultValue, configValueType, isSensitive, configSources, rawConfigValue } =
+    [| ConfigValueData defaultValue configValueType isSensitive configSources rawConfigValue |]
+
+data ConfigValue cmd
+  = ConfigValue !(ConfigValueData cmd)
+  | SubConfig   !(HashMap Text (ConfigValue cmd))
+  deriving (Generic, Show, Eq)
+
 instance Lift cmd => Lift (ConfigValue cmd) where
-  lift ConfigValue {defaultValue, configValueType, isSensitive, configSources} =
-    [| ConfigValue defaultValue configValueType isSensitive configSources |]
-  lift SubConfig {subConfig} =
+  lift (ConfigValue configValueData) =
+    [| ConfigValue configValueData |]
+  lift (SubConfig subConfig) =
     [| SubConfig (HashMap.fromList $ map (first Text.pack) subConfigList) |]
     where
       subConfigList = map (first Text.unpack) $ HashMap.toList subConfig
@@ -245,13 +252,15 @@ data ConfigSpec cmd
     specConfigFilepaths :: !(Maybe FilesSpec)
   , specCliProgramSpec  :: !(Maybe CliProgramSpec)
   , specConfigValues    :: !(HashMap Text (ConfigValue cmd))
+  , rawSpec             :: !JSON.Value
   }
   deriving (Generic, Show, Eq)
 
 instance Lift cmd => Lift (ConfigSpec cmd) where
-  lift ConfigSpec {specConfigFilepaths, specCliProgramSpec, specConfigValues} =
+  lift ConfigSpec {specConfigFilepaths, specCliProgramSpec, specConfigValues, rawSpec } =
     [| ConfigSpec specConfigFilepaths
                   specCliProgramSpec
-                  (HashMap.fromList $ map (first Text.pack) configValuesList) |]
+                  (HashMap.fromList $ map (first Text.pack) configValuesList)
+                  rawSpec |]
     where
       configValuesList = map (first Text.unpack) $ HashMap.toList specConfigValues

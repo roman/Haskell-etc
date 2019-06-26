@@ -89,7 +89,6 @@ renderConfigValueJSON value = case value of
     )
     (HashMap.toList obj)
 
-
 renderConfigValue :: (JSON.Value -> Doc) -> Value JSON.Value -> [Doc]
 renderConfigValue f value = case value of
   Plain (JSON.Array jsonArray) ->
@@ -97,37 +96,14 @@ renderConfigValue f value = case value of
   Plain jsonValue -> return $ f jsonValue
   Sensitive{}     -> return $ text "<<sensitive>>"
 
-renderConfigSource :: (JSON.Value -> Doc) -> ConfigSource -> ([Doc], Doc)
-renderConfigSource f configSource = case configSource of
-  Default value ->
-    let sourceDoc = text "Default"
-        valueDoc  = renderConfigValue f value
-    in  (valueDoc, sourceDoc)
-
-  File _index fileSource value ->
-    let sourceDoc = case fileSource of
-          FilePathSource filepath -> text "File:" <+> text (Text.unpack filepath)
-          EnvVarFileSource envVar filepath ->
-            text "File:" <+> text (Text.unpack envVar) <> "=" <> text (Text.unpack filepath)
-        valueDoc = renderConfigValue f value
-    in  (valueDoc, sourceDoc)
-
-  Env varname value ->
-    let sourceDoc = text "Env:" <+> text (Text.unpack varname)
-        valueDoc  = renderConfigValue f value
-    in  (valueDoc, sourceDoc)
-
-  Cli value ->
-    let sourceDoc = text "Cli"
-        valueDoc  = renderConfigValue f value
-    in  (valueDoc, sourceDoc)
-
-  None -> (mempty, mempty)
+renderConfigSource :: (JSON.Value -> Doc) -> SomeConfigSource -> ([Doc], Doc)
+renderConfigSource f source =
+  (renderConfigValue f (sourceValue source), sourcePrettyDoc source)
 
 renderConfig_ :: MonadThrow m => ColorFn -> Config -> m Doc
 renderConfig_ ColorFn { blueColor } (Config configMap) =
   let
-    renderSources :: MonadThrow m => [ConfigSource] -> m Doc
+    renderSources :: MonadThrow m => [SomeConfigSource] -> m Doc
     renderSources sources =
       let sourceDocs = map (renderConfigSource renderConfigValueJSON) sources
 
